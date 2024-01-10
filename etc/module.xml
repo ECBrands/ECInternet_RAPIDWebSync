@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!--
+/** Copyright (C) EC Brands Corporation - All Rights Reserved
+** Contact Licensing@ECInternet.com for use guidelines
+*/
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+	<module name="ECInternet_RAPIDWebSync" setup_version="2.0.0">
+		<sequence>
+			<module name="Magento_Catalog" />
+			<module name="Magento_ConfigurableProduct" />
+			<module name="Magento_Indexer" />
+			<module name="Magento_Webapi" />
+			<module name="ECInternet_Base" />
+		</sequence>
+	</module>
+</config>

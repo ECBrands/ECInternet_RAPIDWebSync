@@ -1,0 +1,30 @@
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+	<table name="ecinternet_rapidwebsync_log" resource="default" engine="innodb" comment="RAPIDWebSync Log">
+		<column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true"
+		        comment="Entity Id" />
+		<column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+		        comment="Created At" />
+		<column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP"
+		        comment="Updated At" />
+		<column xsi:type="smallint" name="sync_operation" padding="5" unsigned="true" nullable="false" identity="false"
+		        default="0" comment="Sync Operation" />
+		<column xsi:type="varchar" name="job_id" nullable="true" length="40"
+		        comment="IMan Job Id" />
+		<column xsi:type="varchar" name="transform_id" nullable="true" length="20"
+		        comment="IMan Transform Id" />
+		<column xsi:type="int" name="duration_ms" padding="10" unsigned="true" nullable="true" identity="false"
+		        comment="Duration (in milliseconds)" />
+		<column xsi:type="int" name="count_in" padding="10" unsigned="true" nullable="false" identity="false"
+		        comment="Count In" />
+		<column xsi:type="int" name="count_out" padding="10" unsigned="true" nullable="false" identity="false"
+		        comment="Count Out" />
+		<column xsi:type="int" name="warning_count" padding="10" unsigned="true" nullable="false" identity="false"
+		        default="0" comment="Sync Warning Count" />
+		<column xsi:type="int" name="error_count" padding="10" unsigned="true" nullable="false" identity="false"
+		        default="0" comment="Sync Error Count" />
+		<constraint xsi:type="primary" referenceId="PRIMARY">
+			<column name="entity_id" />
+		</constraint>
+	</table>
+</schema>

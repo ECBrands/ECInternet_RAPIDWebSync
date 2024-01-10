@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+	<menu>
+		<add id="ECInternet_RAPIDWebSync::rapidwebsync"
+		     title="RAPID Web Sync"
+		     module="ECInternet_RAPIDWebSync"
+		     sortOrder="200"
+		     parent="ECInternet_Base::base"
+		     resource="ECInternet_RAPIDWebSync::rapid_web_sync"
+		/>
+
+		<add id="ECInternet_RAPIDWebSync::settings"
+		     title="Settings"
+		     module="ECInternet_RAPIDWebSync"
+		     sortOrder="1"
+		     parent="ECInternet_RAPIDWebSync::rapidwebsync"
+		     action="adminhtml/system_config/edit/section/rapid_web_sync"
+		     resource="ECInternet_RAPIDWebSync::settings"
+		/>
+
+		<add id="ECInternet_RAPIDWebSync::log"
+		     title="Sync Log"
+		     module="ECInternet_RAPIDWebSync"
+		     sortOrder="2"
+		     parent="ECInternet_RAPIDWebSync::rapidwebsync"
+		     action="rapidwebsync/log/index"
+		     resource="ECInternet_RAPIDWebSync::log"
+		/>
+
+		<add id="ECInternet_RAPIDWebSync::export"
+		     title="Product Data Export"
+		     module="ECInternet_RAPIDWebSync"
+		     sortOrder="3"
+		     parent="ECInternet_RAPIDWebSync::rapidwebsync"
+		     action="rapidwebsync/export/index"
+		     resource="ECInternet_RAPIDWebSync::export"
+		/>
+	</menu>
+</config>

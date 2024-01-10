@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+	<preference for="ECInternet\RAPIDWebSync\Api\BatchproductsInterface"
+	            type="ECInternet\RAPIDWebSync\Model\Batchproducts" />
+	<preference for="ECInternet\RAPIDWebSync\Api\BulkOperationInterface"
+	            type="ECInternet\RAPIDWebSync\Model\BulkOperation" />
+	<preference for="ECInternet\RAPIDWebSync\Api\LogRepositoryInterface"
+	            type="ECInternet\RAPIDWebSync\Model\LogRepository" />
+	<preference for="ECInternet\RAPIDWebSync\Api\Data\LogInterface"
+	            type="ECInternet\RAPIDWebSync\Model\Log" />
+
+	<!-- Custom Logger -->
+	<type name="ECInternet\RAPIDWebSync\Logger\Logger">
+		<arguments>
+			<argument name="name" xsi:type="string">RAPIDWebSync</argument>
+			<argument name="handlers" xsi:type="array">
+				<item name="system" xsi:type="object">ECInternet\RAPIDWebSync\Logger\Handler</item>
+			</argument>
+		</arguments>
+	</type>
+
+	<!-- Define grid data sources and matching Virtual Types -->
+	<type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+		<arguments>
+			<argument name="collections" xsi:type="array">
+				<item name="ecinternet_rapidwebsync_log_listing_data_source" xsi:type="string">ECInternet\RAPIDWebSync\Model\ResourceModel\Log\Grid\Collection</item>
+			</argument>
+		</arguments>
+	</type>
+	<virtualType name="ECInternet\RAPIDWebSync\Model\ResourceModel\Log\Grid\Collection"
+	             type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+		<arguments>
+			<argument name="mainTable" xsi:type="string">ecinternet_rapidwebsync_log</argument>
+			<argument name="resourceModel" xsi:type="string">ECInternet\RAPIDWebSync\Model\ResourceModel\Log</argument>
+		</arguments>
+	</virtualType>
+</config>

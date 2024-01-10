@@ -1,0 +1,140 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+	<system>
+		<section id="rapid_web_sync" translate="label" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1">
+			<class>separator-top</class>
+			<label>RAPID Web Sync</label>
+			<tab>ecinternet</tab>
+			<resource>ECInternet_RAPIDWebSync::settings</resource>
+			<group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+				<label>General Configuration</label>
+				<field id="enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Enable module</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+				<field id="debug_logging" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Enable debug logging</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+				<field id="query_logging" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Enable query logging</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+				<field id="speed_logging" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Enable speed logging</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+			</group>
+			<group id="defaults" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+				<label>Defaults</label>
+				<field id="attribute_set_id" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+					<label>Attribute set ID</label>
+					<source_model>Magento\Catalog\Model\Product\AttributeSet\Options</source_model>
+				</field>
+				<field id="type" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+					<label>Type</label>
+					<source_model>Magento\Catalog\Model\Product\Type</source_model>
+				</field>
+				<field id="status" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+					<label>Status</label>
+					<source_model>Magento\Catalog\Model\Product\Attribute\Source\Status</source_model>
+				</field>
+				<field id="visibility" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+					<label>Visibility</label>
+					<source_model>Magento\Catalog\Model\Product\Visibility</source_model>
+				</field>
+				<field id="tax_class" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+					<label>Tax class</label>
+					<source_model>ECInternet\RAPIDWebSync\Model\Config\Source\TaxClassOption</source_model>
+				</field>
+				<field id="news_to_date" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+					<label>Days to keep "new"</label>
+				</field>
+			</group>
+			<group id="attributes" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+				<label>Attribute Settings</label>
+				<field id="allow_new_values" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Allow new attribute values</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+				<field id="illegal_new_attribute_action" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Illegal new attribute action</label>
+					<source_model>ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption</source_model>
+				</field>
+			</group>
+			<group id="pricing" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+				<label>Pricing Settings</label>
+				<field id="mode" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Import mode</label>
+					<source_model>ECInternet\RAPIDWebSync\Model\Config\Source\PricingModeOption</source_model>
+					<comment><![CDATA[Operates on a "per-product" basis.<br /><b>Replacement</b> - Removes existing group/tier pricing before assigning.<br /><b>Addition</b> - Does not remove existing group/tier pricing before assigning.]]></comment>
+				</field>
+			</group>
+			<group id="categories" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+				<label>Category Settings</label>
+				<field id="mode" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+					<label>Import mode</label>
+					<source_model>ECInternet\RAPIDWebSync\Model\Config\Source\CategoryModeOption</source_model>
+					<comment><![CDATA[Operates on a "per-product" basis.<br /><b>Replacement</b> - Removes product from all existing categories before assigning.<br /><b>Addition</b> - Adds new category assignments and don't delete existing.]]></comment>
+				</field>
+				<field id="lastonly" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Assign product to last category in tree only</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+				<field id="category_delimeter" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Category delimeter</label>
+				</field>
+				<field id="category_tree_delimeter" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Category tree delimeter</label>
+				</field>
+				<field id="urlending" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>URL ending for category pages</label>
+				</field>
+			</group>
+			<group id="images" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+				<label>Image Settings</label>
+				<field id="source_directory" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Image search path</label>
+				</field>
+				<field id="media_gallery_delimeter" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Delimeter for `media_gallery` attribute</label>
+				</field>
+			</group>
+			<group id="inventory" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0">
+				<label>Inventory Settings</label>
+				<field id="auto_set_manage_stock" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Auto set "Manage Stock" when inventory synced</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+				<field id="auto_set_is_in_stock" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Auto set "Is In Stock" for positive inventory</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+			</group>
+			<group id="related_products" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="0" showInStore="0">
+				<label>Related Products</label>
+				<field id="mode" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+					<label>Import mode</label>
+					<source_model>ECInternet\RAPIDWebSync\Model\Config\Source\RelatedProductsModeOption</source_model>
+				</field>
+			</group>
+			<group id="post_import" translate="label" type="text" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="0">
+				<label>Post Import Tasks</label>
+				<field id="reindex_enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Enable reindex</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+				<field id="reindex_list" translate="label" type="multiselect" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Reindex List</label>
+					<source_model>ECInternet\RAPIDWebSync\Model\Config\Source\IndexerOption</source_model>
+					<comment><![CDATA[<a href="https://devdocs.magento.com/guides/v2.3/extension-dev-guide/indexing.html#m2devgde-indexing-outofbox">Magento2 Indexing Details</a>]]></comment>
+				</field>
+				<field id="clear_image_cache" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Clear image cache</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+			</group>
+		</section>
+	</system>
+</config>

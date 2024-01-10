@@ -1,0 +1,15 @@
+.product_export_link {
+    background: black;
+    border-radius: 5px;
+    color: white;
+    display: block;
+    height: auto;
+    padding: 10px;
+    text-align: center;
+    width: 115px;
+}
+
+.product_export_link.a:hover {
+    color: #fff;
+    text-decoration: none;
+}

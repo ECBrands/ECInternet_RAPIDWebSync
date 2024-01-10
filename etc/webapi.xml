@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+	<!-- Batch -->
+	<route url="/V1/catalog/batchproducts/add" method="POST">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="add" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+	<route url="/V1/catalog/batchproducts/update" method="POST">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="update" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+	<route url="/V1/catalog/batchproducts/upsert" method="POST">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="upsert" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+
+	<!-- Bulk -->
+	<route url="/V1/catalog/product/bulkAdd" method="POST">
+		<service class="ECInternet\RAPIDWebSync\Api\BulkOperationInterface" method="add" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+	<route url="/V1/catalog/product/bulkUpdate" method="POST">
+		<service class="ECInternet\RAPIDWebSync\Api\BulkOperationInterface" method="update" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+	<route url="/V1/catalog/product/bulkUpsert" method="POST">
+		<service class="ECInternet\RAPIDWebSync\Api\BulkOperationInterface" method="upsert" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+
+	<!-- Helpers -->
+	<route url="/V1/ecinternet/getSalesOrderColumns" method="GET">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="getSalesOrderColumns" />
+		<resources>
+			<resource ref="Magento_Sales::sales_order" />
+		</resources>
+	</route>
+	<route url="/V1/ecinternet/getProductAttributeCodes" method="GET">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="getProductAttributeCodes" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+
+	<!-- Indexer -->
+	<route url="/V1/ecinternet/reindex" method="GET">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="reindex" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+	<route url="/V1/ecinternet/reindexTables" method="POST">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="reindexTables" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+
+	<!-- Metadata -->
+	<route url="/V1/ecinternet/getMagentoVersion" method="GET">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="getMagentoVersion" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+	<route url="/V1/ecinternet/getMagentoEdition" method="GET">
+		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="getMagentoEdition" />
+		<resources>
+			<resource ref="Magento_Catalog::products" />
+		</resources>
+	</route>
+</routes>

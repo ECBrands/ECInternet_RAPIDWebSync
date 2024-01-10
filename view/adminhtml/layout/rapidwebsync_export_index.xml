@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+	<head>
+		<css src="ECInternet_RAPIDWebSync/css/styles.css" />
+	</head>
+	<body>
+		<referenceContainer name="content">
+			<block class="Magento\Backend\Block\Template" template="ECInternet_RAPIDWebSync::export.phtml">
+				<arguments>
+					<argument name="view_model" xsi:type="object">ECInternet\RAPIDWebSync\ViewModel\Export\Index</argument>
+				</arguments>
+			</block>
+		</referenceContainer>
+	</body>
+</page>

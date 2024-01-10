@@ -1,0 +1,21 @@
+{
+	"name": "ecinternet/rapidwebsync",
+	"description": "EC Internet RAPID Web Sync",
+	"license": [
+		"OSL-3.0",
+		"AFL-3.0"
+	],
+	"type": "magento2-module",
+	"version": "2.0.0.0",
+	"require": {
+		"php": "~5.6.0|~7.4.*"
+	},
+	"autoload": {
+		"files": [
+			"registration.php"
+		],
+		"psr-4": {
+			"ECInternet\\RAPIDWebSync\\": ""
+		}
+	}
+}

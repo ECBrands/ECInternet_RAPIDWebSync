@@ -1,0 +1,32 @@
+<?php
+/**
+ * Copyright (C) EC Brands Corporation - All Rights Reserved
+ * Contact Licensing@ECInternet.com for use guidelines
+ */
+declare(strict_types=1);
+?>
+
+<?php /** @var \Magento\Backend\Block\Template $block */ ?>
+<?php /** @var \Magento\Framework\Escaper $escaper */ ?>
+
+<?php /** @var \ECInternet\RAPIDWebSync\ViewModel\Export\Index $viewModel */ ?>
+<?php $viewModel = $block->getData('view_model'); ?>
+
+<h2>Product Export</h2>
+<p>Click here to export all product data to a spreadsheet.</p>
+<p><a href="<?= $escaper->escapeUrl($viewModel->getDownloadUrl()) ?>" class="product_export_link">Export</a></p><br />
+
+<h2>Importing to Excel</h2>
+<p>Excel may modify data when it attempts to open a CSV file.  Because of this, please follow the following steps to
+    ensure the data gets imported to Excel properly</p>
+<ol>
+    <li>Rename file extension from ".csv" to ".txt". This will cause Excel to run the Text Import Wizard</li>
+    <li>When opening the file in Excel, the Text Import Wizard should run. The following choices should be selected:
+        <ul>
+            <li>Original data type: <b>Delimited</b></li>
+            <li>Delimeters: <b>Comma</b></li>
+            <li>Column data format: <b>Text</b></li>
+        </ul>
+    </li>
+</ol>
+<p>Reference(s): <a href="https://superuser.com/a/240053">https://superuser.com/a/240053</a></p>
