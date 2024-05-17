@@ -14,7 +14,7 @@
 		     title="Settings"
 		     module="ECInternet_RAPIDWebSync"
 		     sortOrder="1"
-		     parent="ECInternet_RAPIDWebSync::rapidwebsync"
+		     parent="ECInternet_RAPIDWebSync::menu"
 		     action="adminhtml/system_config/edit/section/rapid_web_sync"
 		     resource="ECInternet_RAPIDWebSync::settings"
 		/>
@@ -23,7 +23,7 @@
 		     title="Sync Log"
 		     module="ECInternet_RAPIDWebSync"
 		     sortOrder="2"
-		     parent="ECInternet_RAPIDWebSync::rapidwebsync"
+		     parent="ECInternet_RAPIDWebSync::menu"
 		     action="rapidwebsync/log/index"
 		     resource="ECInternet_RAPIDWebSync::log"
 		/>
@@ -32,7 +32,7 @@
 		     title="Product Data Export"
 		     module="ECInternet_RAPIDWebSync"
 		     sortOrder="3"
-		     parent="ECInternet_RAPIDWebSync::rapidwebsync"
+		     parent="ECInternet_RAPIDWebSync::menu"
 		     action="rapidwebsync/export/index"
 		     resource="ECInternet_RAPIDWebSync::export"
 		/>
