@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Logger;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Monolog\DateTimeImmutable;
 
 /**
  * Logger channel
@@ -30,7 +31,7 @@ class Logger extends \Monolog\Logger
      * @param array                                              $processors
      */
     public function __construct(
-        $name,
+        string $name,
         ScopeConfigInterface $config,
         array $handlers = [],
         array $processors = []
@@ -40,12 +41,12 @@ class Logger extends \Monolog\Logger
         $this->config = $config;
     }
 
-    public function addRecord($level, $message, array $context = [])
+    public function addRecord(int $level, string $message, array $context = [], DateTimeImmutable $datetime = null): bool
     {
         if (!$this->config->isSetFlag(self::CONFIG_PATH_DEBUG_LOGGING)) {
             return false;
         }
 
-        return parent::addRecord($level, $message, $context);
+        return parent::addRecord($level, $message, $context, $datetime);
     }
 }
