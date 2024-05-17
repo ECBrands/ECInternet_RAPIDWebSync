@@ -13,7 +13,7 @@ interface BatchproductsInterface
      * Add Products
      *
      * @api
-     * @return mixed[]
+     * @return array
      */
     public function add();
 
@@ -21,7 +21,7 @@ interface BatchproductsInterface
      * Update Products
      *
      * @api
-     * @return mixed[]
+     * @return array
      */
     public function update();
 
@@ -29,7 +29,7 @@ interface BatchproductsInterface
      * Add or update Products
      *
      * @api
-     * @return mixed[]
+     * @return array
      */
     public function upsert();
 
@@ -37,7 +37,7 @@ interface BatchproductsInterface
      * Return a string array of 'sales_order' table columns
      *
      * @api
-     * @return string[]
+     * @return array
      */
     public function getSalesOrderColumns();
 
@@ -45,7 +45,7 @@ interface BatchproductsInterface
      * Return an array of ProductAttribute Codes
      *
      * @api
-     * @return string[]
+     * @return array
      */
     public function getProductAttributeCodes();
 
