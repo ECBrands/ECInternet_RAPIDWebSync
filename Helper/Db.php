@@ -204,21 +204,22 @@ class Db extends AbstractHelper
      * @param string $query
      * @param array  $params
      *
-     * @return \Zend_Db_Statement_Interface
+     * @return \Zend_Db_Statement_Interface|null
      */
     public function update(string $query, array $params = [])
     {
         $this->logQuery($query, $params);
 
-        $result = $this->_connection->query($query, $params);
-
         try {
+            $result = $this->_connection->query($query, $params);
             $this->log('update()', ['rowCount' => $result->rowCount()]);
+
+            return $result;
         } catch (\Zend_Db_Statement_Exception $e) {
             $this->log('update()', ['error' => $e->getMessage()]);
         }
 
-        return $result;
+        return null;
     }
 
     /**
