@@ -99,17 +99,22 @@ class Rewrite
             $this->upsertProductBaseRewrite($urlKey);
 
             if ($this->shouldGenerateCategoryProductRewrites()) {
+                $this->log('| Generating Category Product Rewrites');
+
                 // Handle category-specific target path
                 $categoryIds = $this->getCategoryIds($entityId);
                 $this->log('| CategoryIds:', $categoryIds);
 
-                // TODO: If/when should we clear existing?
+                // Clear existing category product rewrites
+                $this->clearCategoryProductRewrites($entityId);
 
                 foreach ($categoryIds as $categoryId) {
                     if (!in_array($categoryId, [1, 2])) {
                         $this->upsertProductCategoryRewrite($categoryId, $urlKey);
                     }
                 }
+            } else {
+                $this->log('| NOT Generating Category Product Rewrites');
             }
         }
 
@@ -629,6 +634,17 @@ class Rewrite
     private function shouldGenerateCategoryProductRewrites()
     {
         return $this->_helper->shouldGenerateCatalogProductRewrites();
+    }
+
+    private function clearCategoryProductRewrites(int $productId)
+    {
+        $this->log('clearCategoryProductRewrites()', ['productId' => $productId]);
+
+        $table = $this->_dbHelper->getTableName('url_rewrite');
+        $query = "DELETE FROM `$table` WHERE `entity_type` = 'product' AND `entity_id`=? AND `metadata` IS NOT NULL";
+        $binds = [$productId];
+
+        $this->_dbHelper->delete($query, $binds);
     }
 
     /**
