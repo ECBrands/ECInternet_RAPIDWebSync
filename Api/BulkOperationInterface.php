@@ -15,7 +15,7 @@ interface BulkOperationInterface
      * @param \Magento\Catalog\Api\Data\ProductInterface[] $products
      *
      * @api
-     * @return mixed[]
+     * @return array
      */
     public function add(array $products);
 
@@ -25,7 +25,7 @@ interface BulkOperationInterface
      * @param \Magento\Catalog\Api\Data\ProductInterface[] $products
      *
      * @api
-     * @return mixed[]
+     * @return array
      */
     public function update(array $products);
 
@@ -35,7 +35,7 @@ interface BulkOperationInterface
      * @param \Magento\Catalog\Api\Data\ProductInterface[] $products
      *
      * @api
-     * @return mixed[]
+     * @return array
      */
     public function upsert(array $products);
 }

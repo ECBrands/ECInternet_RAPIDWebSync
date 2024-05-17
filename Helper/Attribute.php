@@ -7,7 +7,10 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Helper;
 
+use Magento\Catalog\Api\Data\EavAttributeInterface as CatalogAttributeInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute as CatalogAttribute;
+use Magento\Eav\Api\Data\AttributeInterface;
 use Magento\Eav\Model\Config as EavConfig;
 use Magento\Eav\Model\Entity\Attribute\AbstractAttribute;
 use Magento\Eav\Model\Entity\Attribute\Source\Table;
@@ -173,8 +176,6 @@ class Attribute
      */
     public function getCatalogProductAttributeInfoByCode(string $attributeCode)
     {
-        //$this->log('getCatalogProductAttributeInfoByCode()', [$attributeCode]);
-
         if ($attributes = $this->getCatalogProductAttributes()) {
             if (isset($attributes[$attributeCode])) {
                 return $attributes[$attributeCode];
@@ -219,8 +220,8 @@ class Attribute
     {
         if ($attributes = $this->getCatalogProductAttributes()) {
             foreach ($attributes as $attribute) {
-                if (isset($attribute['attribute_id'])) {
-                    if ($attribute['attribute_id'] === $attributeId) {
+                if (isset($attribute[AttributeInterface::ATTRIBUTE_ID])) {
+                    if ($attribute[AttributeInterface::ATTRIBUTE_ID] === $attributeId) {
                         return $attribute;
                     }
                 }
@@ -400,14 +401,14 @@ class Attribute
 
         $results = $this->_dbHelper->select($query, $binds);
         foreach ($results as $result) {
-            $this->_attributes[$result['attribute_code']] = [
-                'attribute_id'    => (int)$result['attribute_id'],
-                'backend_type'    => (string)$result['backend_type'],
-                'frontend_input'  => (string)$result['frontend_input'],
-                'frontend_label'  => (string)$result['frontend_label'],
-                'source_model'    => (string)$result['source_model'],
-                'is_global'       => (int)$result['is_global'],
-                'apply_to'        => (string)$result['apply_to']
+            $this->_attributes[$result[AttributeInterface::ATTRIBUTE_CODE]] = [
+                AttributeInterface::ATTRIBUTE_ID    => (int)$result[AttributeInterface::ATTRIBUTE_ID],
+                AttributeInterface::BACKEND_TYPE    => (string)$result[AttributeInterface::BACKEND_TYPE],
+                AttributeInterface::FRONTEND_INPUT  => (string)$result[AttributeInterface::FRONTEND_INPUT],
+                AttributeInterface::FRONTEND_LABEL  => (string)$result[AttributeInterface::FRONTEND_LABEL],
+                AttributeInterface::SOURCE_MODEL    => (string)$result[AttributeInterface::SOURCE_MODEL],
+                CatalogAttribute::KEY_IS_GLOBAL     => (int)$result[CatalogAttribute::KEY_IS_GLOBAL],
+                CatalogAttributeInterface::APPLY_TO => (string)$result[CatalogAttributeInterface::APPLY_TO]
             ];
         }
     }
@@ -448,7 +449,7 @@ class Attribute
      */
     private function upsertProductAttribute(array $product, int $productId, string $attributeCode)
     {
-        $this->log('upsertProductAttribute()', ['productId' => $productId, 'attributeCode' => $attributeCode]);
+
 
         // We handle image attributes separately
         if ($this->isImageAttribute($attributeCode)) {
@@ -460,15 +461,22 @@ class Attribute
             return;
         }
 
-        $this->log('upsertProductAttribute()', ['value' => $product[$attributeCode]]);
+        // Cache passed-in value
+        $value = $product[$attributeCode];
+
+        $this->log('upsertProductAttribute()', [
+            'productId'     => $productId,
+            'attributeCode' => $attributeCode,
+            'value'         => $product[$attributeCode]
+        ]);
 
         // Make sure the attribute is in our system
         if ($attributeInfo = $this->getCatalogProductAttributeInfoByCode($attributeCode)) {
-            $attributeId            = (int)$attributeInfo['attribute_id'];
-            $attributeBackendType   = (string)$attributeInfo['backend_type'];
-            $attributeFrontendInput = (string)$attributeInfo['frontend_input'];
-            $attributeSourceModel   = (string)$attributeInfo['source_model'];
-            $attributeScope         = (int)$attributeInfo['is_global'];
+            $attributeId            = (int)$attributeInfo[AttributeInterface::ATTRIBUTE_ID];
+            $attributeBackendType   = (string)$attributeInfo[AttributeInterface::BACKEND_TYPE];
+            $attributeFrontendInput = (string)$attributeInfo[AttributeInterface::FRONTEND_INPUT];
+            $attributeSourceModel   = (string)$attributeInfo[AttributeInterface::SOURCE_MODEL];
+            $attributeScope         = (int)$attributeInfo[CatalogAttribute::KEY_IS_GLOBAL];
 
             // We only handle a subset of attribute types
             if (!$this->isValidAttributeType($attributeBackendType)) {
@@ -476,9 +484,6 @@ class Attribute
 
                 return;
             }
-
-            // Cache passed-in value
-            $value = $product[$attributeCode];
 
             // Handle delete
             if ($value === '__DELETE__') {
@@ -522,9 +527,13 @@ class Attribute
                         }
                     }
                 } else {
-                    $this->log("upsertProductAttribute() - non-null 'source_mode'");
-
                     $optionId = $this->getAttributeSourceOptionId($attributeCode, $value);
+                    $this->log('upsertProductAttribute()', [
+                        'attributeCode' => $attributeCode,
+                        'value'         => $value,
+                        'optionId'      => $optionId
+                    ]);
+
                     if ($optionId !== null) {
                         $value = $optionId;
                     } else {
@@ -650,8 +659,8 @@ class Attribute
      * @param int    $attributeId
      * @param int    $storeId
      * @param int    $productId
-     * @param mixed  $value
      * @param string $attributeType
+     * @param mixed  $value
      *
      * @return void
      */
@@ -683,8 +692,8 @@ class Attribute
     private function getAttributeIdFromCode(string $attributeCode)
     {
         if ($attributeInfo = $this->getCatalogProductAttributeInfoByCode($attributeCode)) {
-            if (isset($attributeInfo['attribute_id'])) {
-                $attributeId = $attributeInfo['attribute_id'];
+            if (isset($attributeInfo[AttributeInterface::ATTRIBUTE_ID])) {
+                $attributeId = $attributeInfo[AttributeInterface::ATTRIBUTE_ID];
                 if (is_numeric($attributeId)) {
                     return (int)$attributeId;
                 }
@@ -778,15 +787,24 @@ class Attribute
 
     private function getAttributeSourceOptionId(string $attributeCode, string $value)
     {
-        $this->log('getAttributeSourceOptionId()', ['attributeCode' => $attributeCode, 'value' => $value]);
+        //$this->log('getAttributeSourceOptionId()', ['attributeCode' => $attributeCode, 'value' => $value]);
 
         if ($attribute = $this->getAttribute($attributeCode)) {
-            $this->log('getAttributeSourceOptionId() - Attribute exists.');
             if ($attribute->usesSource()) {
-                $this->log('getAttributeSourceOptionId() - Attribute uses source.');
-
                 return $this->getOptionId($attribute, $value);
+            } else {
+                $this->log('getAttributeSourceOptionId()', [
+                    'attributeCode' => $attributeCode,
+                    'value'         => $value,
+                    'error'         => 'Attribute does not use source model.'
+                ]);
             }
+        } else {
+            $this->log('getAttributeSourceOptionId()', [
+                'attributeCode' => $attributeCode,
+                'value'         => $value,
+                'error'         => 'getAttribute() failed for attributeCode'
+            ]);
         }
 
         return null;
@@ -943,12 +961,12 @@ class Attribute
         $this->log('deleteProductAttributeValue()', [
             'productId'   => $productId,
             'storeId'     => $storeId,
-            'attributeId' => $attributeInfo['attribute_id']
+            'attributeId' => $attributeInfo[AttributeInterface::ATTRIBUTE_ID]
         ]);
 
         // Cache the 'backend_type' value as this determines which table to update
-        $attributeId = $attributeInfo['attribute_id'];
-        $backendType = $attributeInfo['backend_type'];
+        $attributeId = $attributeInfo[AttributeInterface::ATTRIBUTE_ID];
+        $backendType = $attributeInfo[AttributeInterface::BACKEND_TYPE];
 
         $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $backendType);
         $query = "DELETE FROM `$table` WHERE `attribute_id` = ? AND `store_id` = ? AND `{$this->getProductIdColumn()}` = ?";
@@ -971,12 +989,12 @@ class Attribute
         $this->log('deleteProductAttributeValueExclude()', [
             'productId'   => $productId,
             'storeId'     => $storeId,
-            'attributeId' => $attributeInfo['attribute_id']
+            'attributeId' => $attributeInfo[AttributeInterface::ATTRIBUTE_ID]
         ]);
 
         // Cache the 'backend_type' value as this determines which table to update
-        $attributeId = $attributeInfo['attribute_id'];
-        $backendType = $attributeInfo['backend_type'];
+        $attributeId = $attributeInfo[AttributeInterface::ATTRIBUTE_ID];
+        $backendType = $attributeInfo[AttributeInterface::BACKEND_TYPE];
 
         $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $backendType);
         $query = "DELETE FROM `$table` WHERE `attribute_id` = ? AND `store_id` <> ? AND `{$this->getProductIdColumn()}` = ?";

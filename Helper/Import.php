@@ -389,7 +389,7 @@ class Import
         $this->handleUrlKey($productData, $isNew);
 
         // HANDLE 'TAX_CLASS_ID'
-        $this->handleTaxClassId($productData);
+        $this->handleTaxClassId($productData, $isNew);
 
         // HANDLE ATTRIBUTES
         $this->processAttributes($productData);
@@ -785,16 +785,17 @@ class Import
 
     /**
      * Special handling for 'tax_class_id' field
-     *
      * Currently defaulting to "Taxable Goods"
+     * Should only run in product insert.
      *
      * @param array $productData
+     * @param bool  $isNew
      *
      * @return void
      */
-    private function handleTaxClassId(array &$productData)
+    private function handleTaxClassId(array &$productData, bool $isNew)
     {
-        if (!isset($productData['tax_class_id'])) {
+        if ($isNew && !isset($productData['tax_class_id'])) {
             $productData['tax_class_id'] = 'Taxable Goods';
         }
     }
@@ -854,7 +855,7 @@ class Import
     {
         $this->log('touchProduct()', ['productId' => $productId]);
 
-        $timestamp = strftime('%Y-%m-%d %H:%M:%S');
+        $timestamp = date('Y-m-d H:i:s');
 
         $table = $this->_dbHelper->getTableName('catalog_product_entity');
         $query = "UPDATE `$table` SET `updated_at`=? WHERE `entity_id`=?";

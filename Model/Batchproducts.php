@@ -126,7 +126,6 @@ class Batchproducts implements BatchproductsInterface
      * @return array
      * @throws \Exception
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function add()
     {
@@ -225,12 +224,11 @@ class Batchproducts implements BatchproductsInterface
     }
 
     /**
-     * Update product
+     * Update products
      *
      * @return array
      * @throws \Exception
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function update()
     {
@@ -324,12 +322,11 @@ class Batchproducts implements BatchproductsInterface
     }
 
     /**
-     * Upsert product
+     * Upsert products
      *
      * @return array
      * @throws \Exception
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function upsert()
     {
@@ -349,7 +346,10 @@ class Batchproducts implements BatchproductsInterface
         $products = $this->getProductsFromInput();
         $settings = $this->getSettingsFromInput();
 
-        $log->setCountIn(count($products));
+        $productInCount = count($products);
+        $log->setCountIn($productInCount);
+        $this->log("upsert() - Found [$productInCount] products in input.");
+
         if ($settings && $settings['transformId']) {
             $log->setTransformId($settings['transformId']);
         }
@@ -421,7 +421,7 @@ class Batchproducts implements BatchproductsInterface
     /**
      * Get columns of 'sales_order' table
      *
-     * @return string[]
+     * @return array
      */
     public function getSalesOrderColumns()
     {
@@ -431,7 +431,7 @@ class Batchproducts implements BatchproductsInterface
     /**
      * Get product attribute codes
      *
-     * @return string[]
+     * @return array
      * @throws \Exception
      */
     public function getProductAttributeCodes()
@@ -445,7 +445,6 @@ class Batchproducts implements BatchproductsInterface
      * @return void
      * @throws \Exception
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function reindex()
     {
@@ -500,7 +499,6 @@ class Batchproducts implements BatchproductsInterface
      * @throws \Magento\Framework\Exception\FileSystemException
      * @throws \Magento\Framework\Exception\LocalizedException
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function reindexTables()
     {

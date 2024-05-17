@@ -7,7 +7,7 @@
 - [Configuration](#configuration-header)
 - [Specifications](#specifications-header)
 - [Attributes](#attributes-header)
-- [Testing](#teesting-header)
+- [Testing](#testing-header)
 - [Notes](#notes-header)
 - [Version History](#version-history-header)
 
@@ -24,11 +24,15 @@ RAPIDWebSync adds IMan sync information to the Magento 2 backend for viewing syn
 - Flush the cache by running `php bin/magento cache:flush`
 
 ### Breaking Change
-Due to a 2.4.3 security update, built-in rate limiting was added to Magento APIs to prevent denial-of-service attacks.  This may cause some features of the Magento2 connector to not function properly.
+- Due to a 2.4.3 security update, built-in rate limiting was added to Magento APIs to prevent denial-of-service attacks.  This may cause some features of the Magento2 connector to not function properly.
 
-For more information, and instructions on how to patch, please see the following page:
+  For more information, and instructions on how to patch, please see the following page:
 
-https://support.magento.com/hc/en-us/articles/4406893342093-Web-API-unable-to-process-requests-with-more-than-20-items-in-array
+  https://experienceleague.adobe.com/en/docs/commerce-knowledge-base/kb/troubleshooting/known-issues-patches-attached/web-api-resources-limit
+
+- Due to a 2.4.4 security update, Integration Tokens are disabled by default.  To re-enable, run the following command:
+
+  ```bin/magento config:set oauth/consumer/enable_integration_as_bearer 1```
 
 ## Configuration
 
@@ -40,7 +44,7 @@ https://support.magento.com/hc/en-us/articles/4406893342093-Web-API-unable-to-pr
 ## Testing
 ### Integration Tests
 - Navigate to `public_html/dev/tests/integration`
-- Run `../../../vendor/bin/phpunit --testsuite "ECInternet Integration Tests"`   
+- Run `../../../vendor/bin/phpunit --testsuite "ECInternet Integration Tests"`
 
 ### Notes
 - Test cleanup setting is `TESTS_CLEANUP` located in `public_html/dev/tests/integration/phpunit.xml`
@@ -51,7 +55,29 @@ https://support.magento.com/hc/en-us/articles/4406893342093-Web-API-unable-to-pr
 - `related_products` - Comma-separated list of product SKUs
 - `websites` - Comma-separated list of Magento "Web Site Codes"
 
-### Issues
+### Inventory Notes
+- `setStockColumns()`
+  - Update `manage_stock`, `use_config_manage_stock`, `min_qty`, `is_in_stock` on `$product`
+- `upsertStockItemRecord()`
+  - `INSERT IGNORE INTO cataloginventory_stock_item (product_id, stock_id) VALUES (?,?)` 
+- `updateStockItemRecord()`
+  - Update `cataloginventory_stock_item` record, Use all table fields set on `$product`
+- `clearStockStatusRecords()`
+  - `DELETE FROM cataloginventory_stock_status`
+  
+    `WHERE product_id = ?`
+- `upsertStockStatusRecord()`
+  - `INSERT INTO cataloginventory_stock_status (product_id, website_id, stock_id, qty, stock_status)`
+  
+    `VALUES (?, ?, ?, ?, ?)`
+  
+    `ON DUPLICATE KEY UPDATE stock_status=VALUES(stock_status), qty=VALUES(qty)`
+- `upsertInventorySourceItem()` to `upsertInventorySourceItemRecord()`
+  - `INSERT INTO inventory_source_item (source_code, sku, quantity, status) VALUES (?, ?, ?, ?)`
+  
+    `ON DUPLICATE KEY UPDATE quantity=VALUES(quantity), status=VALUES(status)`
+
+### Known Issues
 - `url_rewrite` records are not cleared correctly when product is removed from category.
 
 ## Version History
@@ -74,7 +100,7 @@ https://support.magento.com/hc/en-us/articles/4406893342093-Web-API-unable-to-pr
 - 1.3.2.2 - Added check for existing `request_path`/`store_id` combination in `url_rewrite` table. 
 - 1.3.2.1 - Fixed issue with updating of `visibility` and `status` fields.  Removed use of `is_integer()`.
 - 1.3.2.0 - Added handling for `country_of_manufacture` field.  We check first for country_id and then country_name.
-- 1.3.1.0 - Fixed issue with writing of `url_rewrite` record.  
+- 1.3.1.0 - Fixed issue with writing of `url_rewrite` record.
 - 1.3.0.2 - Fixed issue in AttributeHelper where we weren't getting product_id correctly.
 - 1.3.0.1 - Fixed issue with CE versions attempting to write to `sequence_product` table.
 - 1.3.0.0 - Added handling for EE.  Fixed issue with clearing and then writing `cataloginventory_stock_status` records.

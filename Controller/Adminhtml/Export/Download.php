@@ -153,7 +153,7 @@ class Download extends Action implements HttpGetActionInterface
     /**
      * Build CSV
      *
-     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|\Magento\Framework\View\Result\Page
+     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface
      * @throws \Magento\Framework\Exception\FileSystemException
      * @throws \Magento\Framework\Exception\LocalizedException
      * @throws \Magento\Framework\Exception\NoSuchEntityException
@@ -227,13 +227,24 @@ class Download extends Action implements HttpGetActionInterface
             ->addAttributeToSelect('*')
             ->addMediaGalleryData();
 
+        $productCount = $products->getSize();
+        $i = 0;
+
         /** @var \Magento\Catalog\Model\Product $product */
         foreach ($products as $product) {
-            // Cache sku
+            $i++;
+
+            // Cache sku and product type
             $sku  = $product->getSku();
             $type = $product->getTypeId();
 
-            $this->log('execute()', ['id' => $product->getId(), 'sku' => $sku, 'type' => $type]);
+            $this->log('execute()', [
+                'index' => $i,
+                'total' => $productCount,
+                'id'    => $product->getId(),
+                'sku'   => $sku,
+                'type'  => $type
+            ]);
 
             // Error handling
             if (!$this->isProductTypeValid($product)) {

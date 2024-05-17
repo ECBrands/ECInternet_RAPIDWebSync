@@ -96,7 +96,7 @@ class Stock extends AbstractHelper
         // Intersect product columns with columns in stock_item table,
         // and drop out if we don't have any columns to process
         $itemStockItemColumns = array_intersect(array_keys($product), $this->_stockItemColumns);
-        $this->info('| Columns: [' . implode(', ', $itemStockItemColumns));
+        $this->info('| Columns: [' . implode(', ', $itemStockItemColumns) . ']');
         if (count($itemStockItemColumns) === 0) {
             $this->info('| -- End Stock Processor --' . PHP_EOL);
 
@@ -315,7 +315,7 @@ class Stock extends AbstractHelper
             $qty = $product['qty'];
 
             if (is_numeric($qty)) {
-                if ($this->_dbHelper->doesTableExist('inventory_source_item')) {
+                if ($this->_dbHelper->doesTableExist($this->_dbHelper->getTableName('inventory_source_item'))) {
                     // Use 'source_code' if passed in, else use default ('default')
                     $sourceCode = $product['source_code'] ?? self::DEFAULT_SOURCE_CODE;
 
@@ -329,14 +329,16 @@ class Stock extends AbstractHelper
         }
     }
 
-    private function upsertInventorySourceItemRecord(string $sourceCode, string $sku, int $qty, int $status = self::DEFAULT_STOCK_STATUS)
+    private function upsertInventorySourceItemRecord(string $sourceCode, string $sku, int $qty)
     {
         $this->info('upsertInventorySourceItemRecord()', [
             'sourceCode' => $sourceCode,
             'sku'        => $sku,
             'qty'        => $qty,
-            'status'     => $status
         ]);
+
+        // Set status based on qty
+        $status = $qty > 0 ? 1 : 0;
 
         $table = $this->_dbHelper->getTableName('inventory_source_item');
         $query = "INSERT INTO `$table` (`source_code`, `sku`, `quantity`, `status`)
