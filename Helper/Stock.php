@@ -96,7 +96,7 @@ class Stock extends AbstractHelper
         // Intersect product columns with columns in stock_item table,
         // and drop out if we don't have any columns to process
         $itemStockItemColumns = array_intersect(array_keys($product), $this->_stockItemColumns);
-        $this->info('| Columns: [' . implode(', ', $itemStockItemColumns));
+        $this->info('| Columns: [' . implode(', ', $itemStockItemColumns) . ']');
         if (count($itemStockItemColumns) === 0) {
             $this->info('| -- End Stock Processor --' . PHP_EOL);
 
