@@ -336,11 +336,7 @@ class Data extends AbstractHelper
     public function shouldGenerateCatalogProductRewrites()
     {
         if (version_compare($this->getMagentoVersion(), '2.3.3', '>=')) {
-            $value = $this->scopeConfig->isSetFlag(self::CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES);
-
-            if (!empty($value)) {
-                return $value;
-            }
+            return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES);
         }
 
         return true;
