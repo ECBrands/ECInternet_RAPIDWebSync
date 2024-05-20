@@ -7,7 +7,7 @@
 - [Configuration](#configuration-header)
 - [Specifications](#specifications-header)
 - [Attributes](#attributes-header)
-- [Testing](#teesting-header)
+- [Testing](#testing-header)
 - [Notes](#notes-header)
 - [Version History](#version-history-header)
 
@@ -40,7 +40,7 @@ https://support.magento.com/hc/en-us/articles/4406893342093-Web-API-unable-to-pr
 ## Testing
 ### Integration Tests
 - Navigate to `public_html/dev/tests/integration`
-- Run `../../../vendor/bin/phpunit --testsuite "ECInternet Integration Tests"`   
+- Run `../../../vendor/bin/phpunit --testsuite "ECInternet Integration Tests"`
 
 ### Notes
 - Test cleanup setting is `TESTS_CLEANUP` located in `public_html/dev/tests/integration/phpunit.xml`
@@ -74,7 +74,7 @@ https://support.magento.com/hc/en-us/articles/4406893342093-Web-API-unable-to-pr
 - 1.3.2.2 - Added check for existing `request_path`/`store_id` combination in `url_rewrite` table. 
 - 1.3.2.1 - Fixed issue with updating of `visibility` and `status` fields.  Removed use of `is_integer()`.
 - 1.3.2.0 - Added handling for `country_of_manufacture` field.  We check first for country_id and then country_name.
-- 1.3.1.0 - Fixed issue with writing of `url_rewrite` record.  
+- 1.3.1.0 - Fixed issue with writing of `url_rewrite` record.
 - 1.3.0.2 - Fixed issue in AttributeHelper where we weren't getting product_id correctly.
 - 1.3.0.1 - Fixed issue with CE versions attempting to write to `sequence_product` table.
 - 1.3.0.0 - Added handling for EE.  Fixed issue with clearing and then writing `cataloginventory_stock_status` records.
