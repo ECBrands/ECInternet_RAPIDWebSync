@@ -421,7 +421,7 @@ class Batchproducts implements BatchproductsInterface
     /**
      * Get columns of 'sales_order' table
      *
-     * @return string[]
+     * @return array
      */
     public function getSalesOrderColumns()
     {
@@ -431,7 +431,7 @@ class Batchproducts implements BatchproductsInterface
     /**
      * Get product attribute codes
      *
-     * @return string[]
+     * @return array
      * @throws \Exception
      */
     public function getProductAttributeCodes()
