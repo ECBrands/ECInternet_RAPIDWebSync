@@ -10,14 +10,13 @@ namespace ECInternet\RAPIDWebSync\Model;
 use Magento\Catalog\Model\Product\Image as ProductImage;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
-use Magento\Indexer\Model\IndexerFactory;
-use Magento\Indexer\Model\Indexer\CollectionFactory as IndexerCollectionFactory;
 use ECInternet\RAPIDWebSync\Api\BatchproductsInterface;
 use ECInternet\RAPIDWebSync\Api\LogRepositoryInterface;
 use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
 use ECInternet\RAPIDWebSync\Helper\Data as Helper;
 use ECInternet\RAPIDWebSync\Helper\Attribute as AttributeHelper;
 use ECInternet\RAPIDWebSync\Helper\Import as ImportHelper;
+use ECInternet\RAPIDWebSync\Helper\Indexer as IndexerHelper;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
 use Exception;
@@ -36,16 +35,6 @@ class Batchproducts implements BatchproductsInterface
      * @var \Magento\Framework\Filesystem\Driver\File
      */
     private $_fileDriver;
-
-    /**
-     * @var \Magento\Indexer\Model\IndexerFactory
-     */
-    private $_indexerFactory;
-
-    /**
-     * @var \Magento\Indexer\Model\Indexer\CollectionFactory
-     */
-    private $_indexerCollectionFactory;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Api\LogRepositoryInterface
@@ -68,6 +57,11 @@ class Batchproducts implements BatchproductsInterface
     private $_importHelper;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Helper\Indexer
+     */
+    private $indexerHelper;
+
+    /**
      * @var \ECInternet\RAPIDWebSync\Model\LogFactory
      */
     private $_logFactory;
@@ -87,37 +81,34 @@ class Batchproducts implements BatchproductsInterface
      *
      * @param \Magento\Catalog\Model\Product\Image                $productImage
      * @param \Magento\Framework\Filesystem\Driver\File           $fileDriver
-     * @param \Magento\Indexer\Model\IndexerFactory               $indexerFactory
-     * @param \Magento\Indexer\Model\Indexer\CollectionFactory    $indexerCollectionFactory
      * @param \ECInternet\RAPIDWebSync\Api\LogRepositoryInterface $logRepository
      * @param \ECInternet\RAPIDWebSync\Helper\Data                $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute           $attributeHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Import              $importHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Indexer             $indexerHelper
      * @param \ECInternet\RAPIDWebSync\Model\LogFactory           $logFactory
      * @param \ECInternet\RAPIDWebSync\Logger\Logger              $logger
      */
     public function __construct(
         ProductImage $productImage,
         File $fileDriver,
-        IndexerFactory $indexerFactory,
-        IndexerCollectionFactory $indexerCollectionFactory,
         LogRepositoryInterface $logRepository,
         Helper $helper,
         AttributeHelper $attributeHelper,
         ImportHelper $importHelper,
+        IndexerHelper $indexerHelper,
         LogFactory $logFactory,
         Logger $logger
     ) {
-        $this->_productImage             = $productImage;
-        $this->_fileDriver               = $fileDriver;
-        $this->_indexerFactory           = $indexerFactory;
-        $this->_indexerCollectionFactory = $indexerCollectionFactory;
-        $this->_logRepository            = $logRepository;
-        $this->_helper                   = $helper;
-        $this->_attributeHelper          = $attributeHelper;
-        $this->_importHelper             = $importHelper;
-        $this->_logFactory               = $logFactory;
-        $this->_logger                   = $logger;
+        $this->_productImage    = $productImage;
+        $this->_fileDriver      = $fileDriver;
+        $this->_logRepository   = $logRepository;
+        $this->_helper          = $helper;
+        $this->_attributeHelper = $attributeHelper;
+        $this->_importHelper    = $importHelper;
+        $this->indexerHelper    = $indexerHelper;
+        $this->_logFactory      = $logFactory;
+        $this->_logger          = $logger;
     }
 
     /**
@@ -126,7 +117,6 @@ class Batchproducts implements BatchproductsInterface
      * @return array
      * @throws \Exception
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function add()
     {
@@ -225,12 +215,11 @@ class Batchproducts implements BatchproductsInterface
     }
 
     /**
-     * Update product
+     * Update products
      *
      * @return array
      * @throws \Exception
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function update()
     {
@@ -324,12 +313,11 @@ class Batchproducts implements BatchproductsInterface
     }
 
     /**
-     * Upsert product
+     * Upsert products
      *
      * @return array
      * @throws \Exception
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function upsert()
     {
@@ -349,7 +337,10 @@ class Batchproducts implements BatchproductsInterface
         $products = $this->getProductsFromInput();
         $settings = $this->getSettingsFromInput();
 
-        $log->setCountIn(count($products));
+        $productInCount = count($products);
+        $log->setCountIn($productInCount);
+        $this->log("upsert() - Found [$productInCount] products in input.");
+
         if ($settings && $settings['transformId']) {
             $log->setTransformId($settings['transformId']);
         }
@@ -445,7 +436,6 @@ class Batchproducts implements BatchproductsInterface
      * @return void
      * @throws \Exception
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function reindex()
     {
@@ -462,7 +452,7 @@ class Batchproducts implements BatchproductsInterface
         $tablesToIndexCount = count($tablesToIndex);
         $this->log("reindex() - Found [$tablesToIndexCount] tables to re-index.");
 
-        if ($tablesToIndexCount == 0) {
+        if ($tablesToIndexCount === 0) {
             $this->log('NOTE: No tables set to reindex.');
 
             return;
@@ -476,7 +466,7 @@ class Batchproducts implements BatchproductsInterface
                 $startTimeIndexer = microtime(true);
 
                 /** @var \Magento\Indexer\Model\Indexer $indexer */
-                if ($indexer = $this->loadIndexerByName($tableToIndex)) {
+                if ($indexer = $this->indexerHelper->loadIndexerByName($tableToIndex)) {
                     $this->log("reindex() - Re-indexing table [$tableToIndex]...");
                     $indexer->reindexAll();
                     $this->log('reindex() - Done.');
@@ -500,7 +490,6 @@ class Batchproducts implements BatchproductsInterface
      * @throws \Magento\Framework\Exception\FileSystemException
      * @throws \Magento\Framework\Exception\LocalizedException
      * @throws \Throwable
-     * @noinspection PhpMultipleClassDeclarationsInspection
      */
     public function reindexTables()
     {
@@ -514,7 +503,7 @@ class Batchproducts implements BatchproductsInterface
                         $this->log("Found reindex name [$indexerName]");
 
                         /** @var \Magento\Indexer\Model\Indexer $indexer */
-                        if ($indexer = $this->getIndexerByName($indexerName)) {
+                        if ($indexer = $this->indexerHelper->getIndexerByName($indexerName)) {
                             $this->log("Reindexing '{$indexer->getTitle()}' ({$indexer->getId()})...");
                             $indexer->reindexAll();
                             $this->log('Reindex complete.');
@@ -584,44 +573,6 @@ class Batchproducts implements BatchproductsInterface
         return $tables;
     }
 
-    private function loadIndexerByName(string $indexerName)
-    {
-        $this->log('loadIndexerByName()', ['indexerName' => $indexerName]);
-
-        try {
-            return $this->_indexerFactory->create()->load($indexerName);
-        } catch (Exception $e) {
-            $this->log('loadIndexerByName()', ['exception' => $e->getMessage()]);
-        }
-
-        return null;
-    }
-
-    /**
-     * Lookup Indexer by name. Returns first match.
-     *
-     * @param string $indexerName
-     *
-     * @return \Magento\Framework\DataObject|\Magento\Indexer\Model\Indexer|null
-     */
-    private function getIndexerByName(string $indexerName)
-    {
-        $this->log('getIndexerByName()', ['indexer' => $indexerName]);
-
-        /** @var \Magento\Indexer\Model\Indexer\Collection $indexers */
-        $indexers = $this->_indexerCollectionFactory->create();
-
-        /** @var \Magento\Indexer\Model\Indexer $indexer */
-        foreach ($indexers as $indexer) {
-            if ($indexer->getTitle() === $indexerName) {
-                $this->log("getIndexerByName() - Found match: [{$indexer->getId()}]");
-
-                return $indexer;
-            }
-        }
-
-        return null;
-    }
 
     ////////////////////////////////////////////////////////////////////////////////
     ///

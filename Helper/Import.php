@@ -218,6 +218,8 @@ class Import
 
         // Prep product for insert
         $this->setNewProductDefaults($product);
+        $this->handleTaxClassId($product);
+
 
         // Creates master product record and adds to local dictionary of Sku/product_id
         $this->createProductRecord($product, $this->_sku);
@@ -387,9 +389,6 @@ class Import
 
         // HANDLE 'URL_KEY'
         $this->handleUrlKey($productData, $isNew);
-
-        // HANDLE 'TAX_CLASS_ID'
-        $this->handleTaxClassId($productData);
 
         // HANDLE ATTRIBUTES
         $this->processAttributes($productData);
@@ -761,6 +760,7 @@ class Import
      *
      * If 'url_key' is not set AND it's a new product, we need a value.
      * Try to pull it from name.  If that fails, fall back to sku.
+     * This can probably be driven by Magento settings.
      *
      * @param array $productData
      * @param bool  $isNew
@@ -785,8 +785,8 @@ class Import
 
     /**
      * Special handling for 'tax_class_id' field
-     *
      * Currently defaulting to "Taxable Goods"
+     * Should only run in product insert.
      *
      * @param array $productData
      *
@@ -854,7 +854,7 @@ class Import
     {
         $this->log('touchProduct()', ['productId' => $productId]);
 
-        $timestamp = strftime('%Y-%m-%d %H:%M:%S');
+        $timestamp = date('Y-m-d H:i:s');
 
         $table = $this->_dbHelper->getTableName('catalog_product_entity');
         $query = "UPDATE `$table` SET `updated_at`=? WHERE `entity_id`=?";

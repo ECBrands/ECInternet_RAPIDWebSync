@@ -529,7 +529,7 @@ class Category
             }
 
             // Check which root we have
-            if (substr($categoryString, 0, strlen($storeRootPathKey)) == $storeRootPathKey) {
+            if (str_starts_with($categoryString, $storeRootPathKey)) {
                 $storeRootPath = $storeRootPathKey;
                 break;
             }

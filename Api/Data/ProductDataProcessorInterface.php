@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 
-namespace ECInternet\RAPIDWebSync\Api;
+namespace ECInternet\RAPIDWebSync\Api\Data;
 
 interface ProductDataProcessorInterface
 {

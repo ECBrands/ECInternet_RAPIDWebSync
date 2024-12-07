@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Framework\Exception\InputException;
+use Magento\Store\Model\Data\StoreConfig;
+use Magento\Store\Model\Store;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use Exception;
 
@@ -25,27 +27,27 @@ class StoreWebsite
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
      */
-    private $_helper;
+    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Db
      */
-    private $_db;
+    private $db;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var array
      */
-    private $_stores = [];
+    private $stores = [];
 
     /**
      * @var array
      */
-    private $_websites = [];
+    private $websites = [];
 
     /**
      * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
@@ -57,9 +59,9 @@ class StoreWebsite
         Db $db,
         Logger $logger
     ) {
-        $this->_helper = $helper;
-        $this->_db     = $db;
-        $this->_logger = $logger;
+        $this->helper = $helper;
+        $this->db     = $db;
+        $this->logger = $logger;
 
         $this->initStoreArray();
         $this->initWebsiteArray();
@@ -73,7 +75,7 @@ class StoreWebsite
     public function getStoreIds()
     {
         $storeIds = [];
-        foreach ($this->_stores as $storeId => $storeData) {
+        foreach ($this->stores as $storeId => $storeData) {
             $storeIds[] = $storeId;
         }
 
@@ -93,7 +95,7 @@ class StoreWebsite
      */
     public function getStoreIdsForProduct(array $product, int $scope = 0)
     {
-        $this->log('getStoreIdsForProduct()', ['product' => $product, 'scope' => $scope]);
+        $this->log('getStoreIdsForProduct()', ['sku' => $product['sku'], 'scope' => $scope]);
 
         // If 'store' is not set, assume we're referring to admin (store_id = 0)
         if (!isset($product[self::FIELD_STORE])) {
@@ -132,17 +134,17 @@ class StoreWebsite
     {
         $storeIds = [];
 
-        $storeCodes = $this->_helper->commaSeparatedListToTrimmedArray($storeCodeString);
-        $values     = $this->_helper->arrayToCommaSeparatedValueString($storeCodes);
+        $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($storeCodeString);
+        $values     = $this->helper->arrayToCommaSeparatedValueString($storeCodes);
 
-        $table = $this->_db->getTableName('store');
+        $table = $this->db->getTableName('store');
         $query = "SELECT `store_id` FROM `$table` WHERE `code` IN ($values)";
         $binds = $storeCodes;
 
-        if ($results = $this->_db->select($query, $binds)) {
+        if ($results = $this->db->select($query, $binds)) {
             foreach ($results as $result) {
-                if (isset($result['store_id'])) {
-                    $storeId = $result['store_id'];
+                if (isset($result[Store::STORE_ID])) {
+                    $storeId = $result[Store::STORE_ID];
                     if (is_numeric($storeId)) {
                         $storeIds[] = (int)$storeId;
                     }
@@ -187,7 +189,7 @@ class StoreWebsite
     {
         $websiteIds = [];
 
-        $websiteCodes = $this->_helper->commaSeparatedListToTrimmedArray($websitesString);
+        $websiteCodes = $this->helper->commaSeparatedListToTrimmedArray($websitesString);
         foreach ($websiteCodes as $websiteCode) {
             if ($websiteId = $this->getWebsiteIdForWebsiteCode($websiteCode)) {
                 $websiteIds[] = $websiteId;
@@ -210,19 +212,19 @@ class StoreWebsite
     {
         $storeIds = [];
 
-        $storeCodes = $this->_helper->commaSeparatedListToTrimmedArray($storeCodeString);
-        $values     = $this->_helper->arrayToCommaSeparatedValueString($storeCodes);
+        $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($storeCodeString);
+        $values     = $this->helper->arrayToCommaSeparatedValueString($storeCodes);
 
-        $table = $this->_db->getTableName('store');
+        $table = $this->db->getTableName('store');
         $query = "SELECT `b`.`store_id` FROM `$table` as a
                   JOIN `$table` as b ON `b`.`website_id` = `a`.`website_id`
                   WHERE `a`.`code` IN ($values)";
         $binds = $storeCodes;
 
-        if ($results = $this->_db->select($query, $binds)) {
+        if ($results = $this->db->select($query, $binds)) {
             foreach ($results as $result) {
-                if (isset($result['store_id'])) {
-                    $storeId = $result['store_id'];
+                if (isset($result[Store::STORE_ID])) {
+                    $storeId = $result[Store::STORE_ID];
                     if (is_numeric($storeId)) {
                         $storeIds[] = (int)$storeId;
                     }
@@ -243,8 +245,8 @@ class StoreWebsite
      */
     private function getWebsiteIdForWebsiteCode(string $websiteCode)
     {
-        if (isset($this->_websites[$websiteCode])) {
-            $websiteId = $this->_websites[$websiteCode];
+        if (isset($this->websites[$websiteCode])) {
+            $websiteId = $this->websites[$websiteCode];
             if (is_numeric($websiteId)) {
                 return (int)$websiteId;
             }
@@ -271,15 +273,15 @@ class StoreWebsite
         $key = (string)$product[self::FIELD_STORE];
 
         if (trim($key) != static::ADMIN_STORECODE) {
-            $storeCodes = $this->_helper->commaSeparatedListToTrimmedArray($key);
+            $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($key);
             foreach ($storeCodes as $storeCode) {
                 $websiteIds[] = $this->getWebsiteIdsForStoreCode($storeCode);
             }
         } else {
-            foreach ($this->_stores as $storeId => $storeData) {
+            foreach ($this->stores as $storeId => $storeData) {
                 if ($storeId != 0) {
-                    if (isset($storeData['website_id'])) {
-                        $websiteId = $storeData['website_id'];
+                    if (isset($storeData[StoreConfig::KEY_WEBSITE_ID])) {
+                        $websiteId = $storeData[StoreConfig::KEY_WEBSITE_ID];
                         if (is_numeric($websiteId)) {
                             // Cast as int
                             $websiteId = (int)$websiteId;
@@ -307,10 +309,10 @@ class StoreWebsite
     {
         $websiteIds = [];
 
-        foreach ($this->_stores as $storeData) {
-            if ((string)$storeData['code'] === $storeCode) {
-                if (isset($storeData['website_id'])) {
-                    $websiteId = $storeData['website_id'];
+        foreach ($this->stores as $storeData) {
+            if ((string)$storeData[StoreConfig::KEY_CODE] === $storeCode) {
+                if (isset($storeData[StoreConfig::KEY_WEBSITE_ID])) {
+                    $websiteId = $storeData[StoreConfig::KEY_WEBSITE_ID];
                     if (is_numeric($websiteId)) {
                         $websiteIds[] = (int)$websiteId;
                     }
@@ -328,17 +330,17 @@ class StoreWebsite
      */
     private function initStoreArray()
     {
-        $table = $this->_db->getTableName('store');
+        $table = $this->db->getTableName('store');
         $query = "SELECT `store_id`, `code`, `website_id` FROM `$table`";
 
-        $results = $this->_db->select($query);
+        $results = $this->db->select($query);
         foreach ($results as $result) {
-            if (isset($result['website_id'])) {
-                $websiteId = $result['website_id'];
+            if (isset($result[StoreConfig::KEY_WEBSITE_ID])) {
+                $websiteId = $result[StoreConfig::KEY_WEBSITE_ID];
                 if (is_numeric($websiteId)) {
-                    $this->_stores[$result['store_id']]               = [];
-                    $this->_stores[$result['store_id']]['code']       = (string)$result['code'];
-                    $this->_stores[$result['store_id']]['website_id'] = (int)$websiteId;
+                    $this->stores[$result[Store::STORE_ID]]                              = [];
+                    $this->stores[$result[Store::STORE_ID]][StoreConfig::KEY_CODE]       = (string)$result[StoreConfig::KEY_CODE];
+                    $this->stores[$result[Store::STORE_ID]][StoreConfig::KEY_WEBSITE_ID] = (int)$websiteId;
                 }
             }
         }
@@ -351,17 +353,17 @@ class StoreWebsite
      */
     private function initWebsiteArray()
     {
-        $table = $this->_db->getTableName('store_website');
+        $table = $this->db->getTableName('store_website');
         $query = "SELECT `website_id`, `code` FROM `$table`";
 
-        $results = $this->_db->select($query);
+        $results = $this->db->select($query);
         foreach ($results as $result) {
-            if (isset($result['code']) && isset($result['website_id'])) {
-                $code      = $result['code'];
-                $websiteId = $result['website_id'];
+            if (isset($result[StoreConfig::KEY_CODE]) && isset($result[StoreConfig::KEY_WEBSITE_ID])) {
+                $code      = $result[StoreConfig::KEY_CODE];
+                $websiteId = $result[StoreConfig::KEY_WEBSITE_ID];
 
                 if (is_numeric($websiteId)) {
-                    $this->_websites[$code] = (int)$websiteId;
+                    $this->websites[$code] = (int)$websiteId;
                 }
             }
         }
@@ -377,6 +379,6 @@ class StoreWebsite
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('StoreWebsiteHelper - ' . $message, $extra);
+        $this->logger->info('StoreWebsiteHelper - ' . $message, $extra);
     }
 }

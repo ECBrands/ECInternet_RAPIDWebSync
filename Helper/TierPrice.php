@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Helper;
 
+use Magento\Customer\Api\Data\GroupInterface;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use Exception;
 
@@ -15,6 +16,8 @@ use Exception;
  */
 class TierPrice
 {
+    const ALL_GROUPS_KEY           = 'ALL_GROUPS';
+
     const PRICE_SCOPE_GLOBAL       = 0;
 
     const TIER_PRICES_KEY          = 'tier_prices';
@@ -121,18 +124,28 @@ class TierPrice
                 if (isset($productTierPrice['customer_group_id'])) {
                     $customerGroupCode = (string)$productTierPrice['customer_group_id'];
                     if ($customerGroupCode !== '') {
-                        /** @var int|null $customerGroupId */
-                        $customerGroupId = $this->getCustomerGroupId($customerGroupCode);
+                        // First check for ALL_GROUPS
+                        if ($customerGroupCode == self::ALL_GROUPS_KEY) {
+                            $customerGroupId = \Magento\Customer\Api\Data\GroupInterface::CUST_GROUP_ALL;
+                        } else {
+                            /** @var int|null $customerGroupId */
+                            $customerGroupId = $this->getCustomerGroupId($customerGroupCode);
 
-                        // Create one if we can't find existing one
-                        if ($customerGroupId === null) {
-                            $customerGroupId = $this->createCustomerGroup($customerGroupCode);
+                            // Create one if we can't find existing one
+                            if ($customerGroupId === null) {
+                                $customerGroupId = $this->createCustomerGroup($customerGroupCode);
+                            }
                         }
                     }
                 }
 
                 // Set the rest of TierPrice values
-                $allGroups = $customerGroupId === null ? 1 : 0;
+                if ($customerGroupId === null || $customerGroupId == GroupInterface::CUST_GROUP_ALL) {
+                    $allGroups = 1;
+                } else {
+                    $allGroups = 0;
+                }
+
                 $qty       = $productTierPrice['qty'];
                 $price     = $productTierPrice['price'];
 
@@ -141,7 +154,7 @@ class TierPrice
                     $customerGroupId = 0;
                 }
 
-                // We are guaranteed to have at least 1 (either list from IMan, or default of [0]
+                // We are guaranteed to have at least 1 (either list from IMan, or default of [0])
                 foreach ($websiteIds as $websiteId) {
                     // If we don't have CustomerGroup, create on-the-fly
                     if ($customerGroupId == null) {
@@ -176,9 +189,9 @@ class TierPrice
      *
      * @return int|null
      */
-    private function getCustomerGroupId($customerGroupCode)
+    private function getCustomerGroupId(string $customerGroupCode)
     {
-        $this->log('getCustomerGroupId', ['customerGroupCode' => $customerGroupCode]);
+        $this->log('getCustomerGroupId()', ['customerGroupCode' => $customerGroupCode]);
 
         $customerGroups = $this->getCustomerGroups();
 

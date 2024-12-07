@@ -98,19 +98,15 @@ class Rewrite
             // Handle base target path
             $this->upsertProductBaseRewrite($urlKey);
 
-            $this->log('| Clearing existing category-product rewrites...');
-
-            // Clear existing category product rewrites
-            // If setting is enabled, they need to be cleared out to make room for new ones
-            // If setting is disabled, they shouldn't exist anyway
-            $this->clearCategoryProductRewrites($entityId);
-
             if ($this->shouldGenerateCategoryProductRewrites()) {
-                $this->log('| Generating category-product rewrites...');
+                $this->log('| Generating Category Product Rewrites');
 
                 // Handle category-specific target path
                 $categoryIds = $this->getCategoryIds($entityId);
                 $this->log('| CategoryIds:', $categoryIds);
+
+                // Clear existing category product rewrites
+                $this->clearCategoryProductRewrites($entityId);
 
                 foreach ($categoryIds as $categoryId) {
                     if (!in_array($categoryId, [1, 2])) {
@@ -118,7 +114,7 @@ class Rewrite
                     }
                 }
             } else {
-                $this->log('| NOT generating category-product rewrites');
+                $this->log('| NOT Generating Category Product Rewrites');
             }
         }
 

@@ -56,7 +56,7 @@
 	</route>
 
 	<!-- Indexer -->
-	<route url="/V1/ecinternet/reindex" method="GET">
+	<route url="/V1/ecinternet/reindex" method="POST">
 		<service class="ECInternet\RAPIDWebSync\Api\BatchproductsInterface" method="reindex" />
 		<resources>
 			<resource ref="Magento_Catalog::products" />
