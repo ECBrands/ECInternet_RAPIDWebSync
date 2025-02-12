@@ -573,7 +573,6 @@ class Batchproducts implements BatchproductsInterface
         return $tables;
     }
 
-
     ////////////////////////////////////////////////////////////////////////////////
     ///
     /// INPUT PROCESSING

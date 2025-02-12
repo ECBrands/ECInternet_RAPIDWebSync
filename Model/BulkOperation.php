@@ -20,17 +20,17 @@ use Exception;
  */
 class BulkOperation implements BulkOperationInterface
 {
-    const RESPONSE_FIELD_SKU     = 'sku';
+    private const RESPONSE_FIELD_SKU     = 'sku';
 
-    const RESPONSE_FIELD_ID      = 'id';
+    private const RESPONSE_FIELD_ID      = 'id';
 
-    const RESPONSE_FIELD_NEW     = 'new';
+    private const RESPONSE_FIELD_NEW     = 'new';
 
-    const RESPONSE_FIELD_WARNING = 'warning';
+    private const RESPONSE_FIELD_WARNING = 'warning';
 
-    const RESPONSE_FIELD_ERROR   = 'error';
+    private const RESPONSE_FIELD_ERROR   = 'error';
 
-    const RESPONSE_FIELD_TRACE   = 'trace';
+    private const RESPONSE_FIELD_TRACE   = 'trace';
 
     /**
      * @var \Magento\Catalog\Api\ProductRepositoryInterface
