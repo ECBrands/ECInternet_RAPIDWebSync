@@ -220,7 +220,6 @@ class Import
         $this->setNewProductDefaults($product);
         $this->handleTaxClassId($product);
 
-
         // Creates master product record and adds to local dictionary of Sku/product_id
         $this->createProductRecord($product, $this->_sku);
 

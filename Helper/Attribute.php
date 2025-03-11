@@ -468,131 +468,135 @@ class Attribute
             'value'         => $value
         ]);
 
+        $attributeInfo = $this->getCatalogProductAttributeInfoByCode($attributeCode);
+
         // Make sure the attribute is in our system
-        if ($attributeInfo = $this->getCatalogProductAttributeInfoByCode($attributeCode)) {
-            $attributeId            = (int)$attributeInfo[AttributeInterface::ATTRIBUTE_ID];
-            $attributeBackendType   = (string)$attributeInfo[AttributeInterface::BACKEND_TYPE];
-            $attributeFrontendInput = (string)$attributeInfo[AttributeInterface::FRONTEND_INPUT];
-            $attributeSourceModel   = (string)$attributeInfo[AttributeInterface::SOURCE_MODEL];
-            $attributeScope         = (int)$attributeInfo[CatalogAttribute::KEY_IS_GLOBAL];
+        if (!$attributeInfo) {
+            return;
+        }
 
-            // We only handle a subset of attribute types
-            if (!$this->isValidAttributeType($attributeBackendType)) {
-                $this->log('upsertProductAttribute()', ['invalidAttributeType' => $attributeBackendType]);
+        $attributeId            = (int)$attributeInfo[AttributeInterface::ATTRIBUTE_ID];
+        $attributeBackendType   = (string)$attributeInfo[AttributeInterface::BACKEND_TYPE];
+        $attributeFrontendInput = (string)$attributeInfo[AttributeInterface::FRONTEND_INPUT];
+        $attributeSourceModel   = (string)$attributeInfo[AttributeInterface::SOURCE_MODEL];
+        $attributeScope         = (int)$attributeInfo[CatalogAttribute::KEY_IS_GLOBAL];
 
-                return;
+        // We only handle a subset of attribute types
+        if (!$this->isValidAttributeType($attributeBackendType)) {
+            $this->log('upsertProductAttribute()', ['invalidAttributeType' => $attributeBackendType]);
+
+            return;
+        }
+
+        // Handle delete
+        if ($value === '__DELETE__') {
+            /** @var int[] $storeIds */
+            $storeIds = $this->_storeWebsiteHelper->getStoreIdsForProduct($product);
+            foreach ($storeIds as $storeId) {
+                $this->deleteProductAttributeValue($productId, $storeId, $attributeInfo);
             }
 
-            // Handle delete
-            if ($value === '__DELETE__') {
-                /** @var int[] $storeIds */
-                $storeIds = $this->_storeWebsiteHelper->getStoreIdsForProduct($product);
-                foreach ($storeIds as $storeId) {
-                    $this->deleteProductAttributeValue($productId, $storeId, $attributeInfo);
-                }
+            return;
+        }
 
-                return;
-            }
+        // If attribute type is select or multiselect, then we need to query the system
+        if ($attributeFrontendInput === 'select') {
+            if (empty($attributeSourceModel) || $attributeSourceModel === Table::class) {
+                /** @var int|null $existingOptionId */
+                $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
+                if ($existingOptionId) {
+                    $value = $existingOptionId;
+                } else {
+                    if ($this->_helper->allowNewAttributeValues()) {
+                        // Cache new option_id value for writing to catalog_product_entity_*
+                        $newOptionId = $this->addAttributeOptionRecord($attributeId);
+                        $this->addAttributeOptionValueRecord($newOptionId, $value);
 
-            // If attribute type is select or multiselect, then we need to query the system
-            if ($attributeFrontendInput === 'select') {
-                if (empty($attributeSourceModel) || $attributeSourceModel === Table::class) {
-                    /** @var int|null $existingOptionId */
-                    $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
-                    if ($existingOptionId) {
-                        $value = $existingOptionId;
+                        // We write the option_id to catalog_product_entity_int
+                        $value = $newOptionId;
                     } else {
-                        if ($this->_helper->allowNewAttributeValues()) {
-                            // Cache new option_id value for writing to catalog_product_entity_*
-                            $newOptionId = $this->addAttributeOptionRecord($attributeId);
-                            $this->addAttributeOptionValueRecord($newOptionId, $value);
+                        $this->log('upsertProductAttribute() - Not allowing new attribute values.');
 
-                            // We write the option_id to catalog_product_entity_int
-                            $value = $newOptionId;
-                        } else {
-                            $this->log('upsertProductAttribute() - Not allowing new attribute values.');
+                        switch ($this->_helper->getIllegalNewAttributeAction()) {
+                            case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
+                                break;
 
-                            switch ($this->_helper->getIllegalNewAttributeAction()) {
-                                case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
-                                    break;
-
-                                case IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE:
-                                case IllegalNewAttributeActionOption::ACTION_SKIP_BATCH_VALUE:
-                                    throw new IllegalNewAttributeOptionException(__("Attempted to add new attribute value '$value'."));
-                            }
-
-                            return;
+                            case IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE:
+                            case IllegalNewAttributeActionOption::ACTION_SKIP_BATCH_VALUE:
+                                throw new IllegalNewAttributeOptionException(__("Attempted to add new attribute value '$value'."));
                         }
+
+                        return;
+                    }
+                }
+            } else {
+                $optionId = $this->getAttributeSourceOptionId($attributeCode, $value);
+                $this->log('upsertProductAttribute()', [
+                    'attributeCode' => $attributeCode,
+                    'value'         => $value,
+                    'optionId'      => $optionId
+                ]);
+
+                if ($optionId !== null) {
+                    $value = $optionId;
+                } else {
+                    throw new LocalizedException(__('Unable to find option key for attribute ' . $attributeCode . ' and value ' . $value));
+                }
+            }
+        } elseif ($attributeFrontendInput === 'multiselect') {
+            $optionIds = [];
+
+            $values = $this->_helper->commaSeparatedListToTrimmedArray((string)$value);
+            foreach ($values as $value) {
+                $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
+                if ($existingOptionId) {
+                    // Don't add if it's already in array (in case someone accidentally puts same Option twice)
+                    if (!in_array($existingOptionId, $optionIds)) {
+                        $optionIds[] = $existingOptionId;
+                    } else {
+                        $this->log("Value `$value` already in Multi-Select value list");
                     }
                 } else {
-                    $optionId = $this->getAttributeSourceOptionId($attributeCode, $value);
-                    $this->log('upsertProductAttribute()', [
-                        'attributeCode' => $attributeCode,
-                        'value'         => $value,
-                        'optionId'      => $optionId
-                    ]);
+                    if ($this->_helper->allowNewAttributeValues()) {
+                        // Cache new option_id value for writing to catalog_product_entity_*
+                        $newOptionId = $this->addAttributeOptionRecord($attributeId);
+                        $this->addAttributeOptionValueRecord($newOptionId, $value);
 
-                    if ($optionId !== null) {
-                        $value = $optionId;
+                        // We write the option_ids to catalog_product_entity_varchar
+                        $optionIds[] = $newOptionId;
                     } else {
-                        throw new LocalizedException(__('Unable to find option key for attribute ' . $attributeCode . ' and value ' . $value));
+                        $this->log('upsertProductAttribute() - Not allowing new attribute values.');
+
+                        switch ($this->_helper->getIllegalNewAttributeAction()) {
+                            case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
+                                break;
+
+                            case IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE:
+                            case IllegalNewAttributeActionOption::ACTION_SKIP_BATCH_VALUE:
+                                throw new IllegalNewAttributeOptionException(__("Attempted to add new attribute value '$value'."));
+                        }
+
+                        return;
                     }
                 }
-            } elseif ($attributeFrontendInput === 'multiselect') {
-                $optionIds = [];
-
-                $values = $this->_helper->commaSeparatedListToTrimmedArray((string)$value);
-                foreach ($values as $value) {
-                    $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
-                    if ($existingOptionId) {
-                        // Don't add if it's already in array (in case someone accidentally puts same Option twice)
-                        if (!in_array($existingOptionId, $optionIds)) {
-                            $optionIds[] = $existingOptionId;
-                        } else {
-                            $this->log("Value `$value` already in Multi-Select value list");
-                        }
-                    } else {
-                        if ($this->_helper->allowNewAttributeValues()) {
-                            // Cache new option_id value for writing to catalog_product_entity_*
-                            $newOptionId = $this->addAttributeOptionRecord($attributeId);
-                            $this->addAttributeOptionValueRecord($newOptionId, $value);
-
-                            // We write the option_ids to catalog_product_entity_varchar
-                            $optionIds[] = $newOptionId;
-                        } else {
-                            $this->log('upsertProductAttribute() - Not allowing new attribute values.');
-
-                            switch ($this->_helper->getIllegalNewAttributeAction()) {
-                                case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
-                                    break;
-
-                                case IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE:
-                                case IllegalNewAttributeActionOption::ACTION_SKIP_BATCH_VALUE:
-                                    throw new IllegalNewAttributeOptionException(__("Attempted to add new attribute value '$value'."));
-                            }
-
-                            return;
-                        }
-                    }
-                }
-
-                $value = implode(',', $optionIds);
             }
 
-            /** @var int[] $storeIds */
-            $storeIds = isset($product['store'])
-                ? $this->_storeWebsiteHelper->getStoreIdsForProduct($product, $attributeScope)
-                : [0];
+            $value = implode(',', $optionIds);
+        }
 
-            // TODO: Add handling for deleting from ALL stores when not singleStore.
-            if ($this->_dbHelper->isSingleStore()) {
-                // Delete from all but 0
-                $this->deleteProductAttributeValueExclude($productId, 0, $attributeInfo);
-            }
+        /** @var int[] $storeIds */
+        $storeIds = isset($product['store'])
+            ? $this->_storeWebsiteHelper->getStoreIdsForProduct($product, $attributeScope)
+            : [0];
 
-            foreach ($storeIds as $storeId) {
-                $this->upsertProductAttributeValue($attributeId, $storeId, $productId, $value, $attributeBackendType);
-            }
+        // TODO: Add handling for deleting from ALL stores when not singleStore.
+        if ($this->_dbHelper->isSingleStore()) {
+            // Delete from all but 0
+            $this->deleteProductAttributeValueExclude($productId, 0, $attributeInfo);
+        }
+
+        foreach ($storeIds as $storeId) {
+            $this->upsertProductAttributeValue($attributeId, $storeId, $productId, $value, $attributeBackendType);
         }
     }
 
@@ -654,9 +658,9 @@ class Attribute
     /**
      * Update product attribute value
      *
-     * @param int    $attributeId
-     * @param int    $storeId
      * @param int    $productId
+     * @param int    $storeId
+     * @param int    $attributeId
      * @param string $attributeType
      * @param mixed  $value
      *
@@ -948,9 +952,9 @@ class Attribute
     /**
      * Delete record from 'catalog_product_entity_*'
      *
-     * @param array $attributeInfo
-     * @param int   $storeId
      * @param int   $productId
+     * @param int   $storeId
+     * @param array $attributeInfo
      *
      * @return void
      */
@@ -976,9 +980,9 @@ class Attribute
     /**
      * Delete product attribute value in all stores except one
      *
-     * @param array $attributeInfo
-     * @param int   $storeId
      * @param int   $productId
+     * @param int   $storeId
+     * @param array $attributeInfo
      *
      * @return void
      */

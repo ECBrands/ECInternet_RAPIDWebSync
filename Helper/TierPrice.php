@@ -126,7 +126,7 @@ class TierPrice
                     if ($customerGroupCode !== '') {
                         // First check for ALL_GROUPS
                         if ($customerGroupCode == self::ALL_GROUPS_KEY) {
-                            $customerGroupId = \Magento\Customer\Api\Data\GroupInterface::CUST_GROUP_ALL;
+                            $customerGroupId = GroupInterface::CUST_GROUP_ALL;
                         } else {
                             /** @var int|null $customerGroupId */
                             $customerGroupId = $this->getCustomerGroupId($customerGroupCode);

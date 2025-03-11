@@ -38,7 +38,7 @@ use Exception;
  */
 class Download extends Action implements HttpGetActionInterface
 {
-    const FILE_NAME = 'ProductExport.csv';
+    private const FILE_NAME = 'ProductExport.csv';
 
     /**
      * @var \Magento\Framework\View\Result\PageFactory
