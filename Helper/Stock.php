@@ -127,30 +127,35 @@ class Stock extends AbstractHelper
     }
 
     /**
+     * Conditionally set 'manage_stock' and 'use_config_manage_stock'
+     * Conditionally set 'is_in_stock'
+     *
      * @param array $product
      */
     private function setStockColumns(array &$product)
     {
-        if (isset($product['qty'])) {
-            // Conditionally auto-set manage_stock
-            if ($this->_helper->shouldAutomaticallySetManageStock()) {
-                // If 'manage_stock' is not mapped, set it to true, since we're obviously managing stock.
-                if (!isset($product['manage_stock'])) {
-                    $product['manage_stock']            = 1;
-                    $product['use_config_manage_stock'] = 0;
-                }
+        if (!isset($product['qty'])) {
+            return;
+        }
+
+        // Conditionally auto-set manage_stock
+        if ($this->_helper->shouldAutomaticallySetManageStock()) {
+            // If 'manage_stock' is not mapped, set it to true, since we're obviously managing stock.
+            if (!isset($product['manage_stock'])) {
+                $product['manage_stock']            = 1;
+                $product['use_config_manage_stock'] = 0;
             }
+        }
 
-            // Conditionally auto-set is_in_stock
-            if ($this->_helper->shouldAutomaticallySetIsInStock()) {
-                // If 'is_in_stock' is not mapped,
-                if (!isset($product['is_in_stock'])) {
-                    // Default to 0 if not set
-                    $minQty = $product['min_qty'] ?? 0;
+        // Conditionally auto-set is_in_stock
+        if ($this->_helper->shouldAutomaticallySetIsInStock()) {
+            // If 'is_in_stock' is not mapped,
+            if (!isset($product['is_in_stock'])) {
+                // Default to 0 if not set
+                $minQty = $product['min_qty'] ?? 0;
 
-                    // Set 'is_in_stock' based on incoming 'qty' compared to the `min_qty`
-                    $product['is_in_stock'] = ($product['qty'] > $minQty) ? 1 : 0;
-                }
+                // Set 'is_in_stock' based on incoming 'qty' compared to the `min_qty`
+                $product['is_in_stock'] = ($product['qty'] > $minQty) ? 1 : 0;
             }
         }
     }
