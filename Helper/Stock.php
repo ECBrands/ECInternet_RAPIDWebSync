@@ -310,35 +310,39 @@ class Stock extends AbstractHelper
     {
         $this->info('upsertInventorySourceItem()');
 
-        if (isset($product['qty'])) {
-            // Cache it
-            $qty = $product['qty'];
-
-            if (is_numeric($qty)) {
-                if ($this->_dbHelper->doesTableExist($this->_dbHelper->getTableName('inventory_source_item'))) {
-                    // Use 'source_code' if passed in, else use default ('default')
-                    $sourceCode = $product['source_code'] ?? self::DEFAULT_SOURCE_CODE;
-
-                    $this->upsertInventorySourceItemRecord($sourceCode, $this->_sku, (int)$qty);
-                } else {
-                    $this->info("upsertInventorySourceItem() - Table 'inventory_source_item' missing");
-                }
-            } else {
-                $this->info('upsertInventorySourceItem() - Qty is not numeric');
-            }
+        if (!isset($product['qty'])) {
+            return;
         }
+
+        // Cache it
+        $qty = $product['qty'];
+
+        // Qty must be numeric
+        if (!is_numeric($qty)) {
+            $this->info('upsertInventorySourceItem() - Qty is not numeric');
+            return;
+        }
+
+        // Check if table exists
+        if (!$this->_dbHelper->doesTableExist($this->_dbHelper->getTableName('inventory_source_item'))) {
+            $this->info("upsertInventorySourceItem() - Table 'inventory_source_item' missing");
+            return;
+        }
+
+        // Use 'source_code' if passed in, else use default ('default')
+        $sourceCode  = $product['source_code'] ?? self::DEFAULT_SOURCE_CODE;
+        $stockStatus = $product['is_in_stock'] ?? 0;
+
+        $this->upsertInventorySourceItemRecord($sourceCode, $this->_sku, (int)$qty, $stockStatus);
     }
 
-    private function upsertInventorySourceItemRecord(string $sourceCode, string $sku, int $qty)
+    private function upsertInventorySourceItemRecord(string $sourceCode, string $sku, int $qty, int $status = 0)
     {
         $this->info('upsertInventorySourceItemRecord()', [
             'sourceCode' => $sourceCode,
             'sku'        => $sku,
             'qty'        => $qty,
         ]);
-
-        // Set status based on qty
-        $status = $qty > 0 ? 1 : 0;
 
         $table = $this->_dbHelper->getTableName('inventory_source_item');
         $query = "INSERT INTO `$table` (`source_code`, `sku`, `quantity`, `status`)
