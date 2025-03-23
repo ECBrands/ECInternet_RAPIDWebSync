@@ -18,6 +18,7 @@ use ECInternet\RAPIDWebSync\Helper\Attribute as AttributeHelper;
 use ECInternet\RAPIDWebSync\Helper\Import as ImportHelper;
 use ECInternet\RAPIDWebSync\Helper\Indexer as IndexerHelper;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
 use Exception;
 
@@ -72,6 +73,11 @@ class Batchproducts implements BatchproductsInterface
     private $_logger;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
      * @var string
      */
     private $_input;
@@ -88,6 +94,7 @@ class Batchproducts implements BatchproductsInterface
      * @param \ECInternet\RAPIDWebSync\Helper\Indexer             $indexerHelper
      * @param \ECInternet\RAPIDWebSync\Model\LogFactory           $logFactory
      * @param \ECInternet\RAPIDWebSync\Logger\Logger              $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config               $config
      */
     public function __construct(
         ProductImage $productImage,
@@ -98,7 +105,8 @@ class Batchproducts implements BatchproductsInterface
         ImportHelper $importHelper,
         IndexerHelper $indexerHelper,
         LogFactory $logFactory,
-        Logger $logger
+        Logger $logger,
+        Config $config
     ) {
         $this->_productImage    = $productImage;
         $this->_fileDriver      = $fileDriver;
@@ -109,6 +117,7 @@ class Batchproducts implements BatchproductsInterface
         $this->indexerHelper    = $indexerHelper;
         $this->_logFactory      = $logFactory;
         $this->_logger          = $logger;
+        $this->config           = $config;
     }
 
     /**
@@ -182,7 +191,7 @@ class Batchproducts implements BatchproductsInterface
                         $productOutCount++;
                     } catch (Exception $e) {
                         // If this was from attempting to add new attribute option, and we're skipping product, simply log it and move only next product
-                        if ($e instanceof IllegalNewAttributeOptionException && $this->_helper->getIllegalNewAttributeAction() == IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE) {
+                        if ($e instanceof IllegalNewAttributeOptionException && $this->config->getIllegalNewAttributeAction() == IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE) {
                             $this->log('add() - Attempted to add new attribute option.');
 
                             continue;
@@ -270,7 +279,7 @@ class Batchproducts implements BatchproductsInterface
                         $productCountOut++;
                     } catch (Exception $e) {
                         // If this was from attempting to add new attribute option, and we're skipping product, simply log it and move only next product
-                        if ($e instanceof IllegalNewAttributeOptionException && $this->_helper->getIllegalNewAttributeAction() == IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE) {
+                        if ($e instanceof IllegalNewAttributeOptionException && $this->config->getIllegalNewAttributeAction() == IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE) {
                             $this->log('update() - Attempted to add new attribute option.');
 
                             continue;
