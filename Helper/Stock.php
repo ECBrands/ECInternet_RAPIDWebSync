@@ -336,7 +336,11 @@ class Stock extends AbstractHelper
 
         // Use 'source_code' if passed in, else use default ('default')
         $sourceCode  = $product['source_code'] ?? self::DEFAULT_SOURCE_CODE;
-        $stockStatus = $product['is_in_stock'] ?? 0;
+
+        // Check if 'is_in_stock' is set and numeric
+        $stockStatus = isset($product['is_in_stock']) && is_numeric($product['is_in_stock'])
+            ? (int)$product['is_in_stock']
+            : 0;
 
         $this->upsertInventorySourceItemRecord($sourceCode, $this->_sku, (int)$qty, $stockStatus);
     }
