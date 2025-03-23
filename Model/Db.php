@@ -1,0 +1,237 @@
+<?php
+/**
+ * Copyright (C) EC Brands Corporation - All Rights Reserved
+ * Contact Licensing@ECInternet.com for use guidelines
+ */
+declare(strict_types=1);
+
+namespace ECInternet\RAPIDWebSync\Model;
+
+use Magento\Framework\App\ResourceConnection;
+use ECInternet\RAPIDWebSync\Logger\Logger;
+
+class Db
+{
+    /**
+     * @var \Magento\Framework\App\ResourceConnection
+     */
+    private $resourceConnection;
+
+    /**
+     * @var \Magento\Framework\DB\Adapter\AdapterInterface
+     */
+    private $connection;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     */
+    private $logger;
+
+    /**
+     * Db constructor.
+     *
+     * @param \Magento\Framework\App\ResourceConnection $resourceConnection
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger    $logger
+     */
+    public function __construct(
+        ResourceConnection $resourceConnection,
+        Logger $logger
+    ) {
+        $this->resourceConnection = $resourceConnection;
+        $this->connection         = $resourceConnection->getConnection();
+        $this->logger             = $logger;
+    }
+
+    /**
+     * Begin new DB transaction
+     */
+    public function beginTransaction()
+    {
+        $this->connection->beginTransaction();
+    }
+
+    /**
+     * Commit DB transaction
+     */
+    public function commit()
+    {
+        $this->connection->commit();
+    }
+
+    /**
+     * Roll-back DB transaction
+     */
+    public function rollBack()
+    {
+        $this->connection->rollBack();
+    }
+
+    /**
+     * Get resource table name, validated by db adapter.
+     *
+     * @param string $tableName
+     *
+     * @return string
+     */
+    public function getTableName(string $tableName)
+    {
+        return $this->resourceConnection->getTableName($tableName);
+    }
+
+    /**
+     * Checks if table exists
+     *
+     * @param string $tableName
+     *
+     * @return bool
+     */
+    public function doesTableExist(string $tableName)
+    {
+        return $this->connection->isTableExists($tableName);
+    }
+
+    /**
+     * Get string array of table column names
+     *
+     * @param string $tableName
+     *
+     * @return string[]
+     */
+    public function getTableColumns(string $tableName)
+    {
+        $columns = [];
+
+        $table = $this->getTableName($tableName);
+        $query = "DESCRIBE $table";
+
+        $results = $this->select($query);
+        foreach ($results as $result) {
+            $columns[] = $result['Field'];
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Gets table rows
+     *
+     * @param string $query
+     * @param array  $params
+     *
+     * @return array
+     */
+    public function select(string $query, array $params = [])
+    {
+        return $this->connection->fetchAll($query, $params);
+    }
+
+    /**
+     * Gets the value of a particular field from the first query result
+     *
+     * @param string $query
+     * @param array  $params
+     * @param string $column
+     *
+     * @return mixed|null
+     */
+    public function selectOne(string $query, array $params, string $column)
+    {
+        // fetchRow() returns the first row
+        if ($record = $this->fetchRow($query, $params)) {
+            if (isset($record[$column])) {
+                return $record[$column];
+            }
+        }
+
+        return null;
+    }
+
+    public function fetchRow(string $query, array $params = [])
+    {
+        return $this->connection->fetchRow($query, $params);
+    }
+
+    /**
+     * @param \Magento\Framework\DB\Select $query
+     *
+     * @return array
+     */
+    public function fetchCol(\Magento\Framework\DB\Select $query)
+    {
+        return $this->connection->fetchCol($query);
+    }
+
+    /**
+     * Inserts table rows
+     *
+     * @param string $query
+     * @param array  $params
+     *
+     * @return int
+     */
+    public function insert(string $query, array $params = [])
+    {
+        // Send INSERT query
+        $this->connection->query($query, $params);
+
+        return (int)$this->connection->lastInsertId();
+    }
+
+    /**
+     * Updates table rows
+     *
+     * @param string $query
+     * @param array  $params
+     *
+     * @return \Zend_Db_Statement_Interface|null
+     */
+    public function update(string $query, array $params = [])
+    {
+        try {
+            $result = $this->connection->query($query, $params);
+            $this->log('update()', ['rowCount' => $result->rowCount()]);
+
+            return $result;
+        } catch (\Zend_Db_Statement_Exception $e) {
+            $this->log('update()', ['error' => $e->getMessage()]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Deletes table rows
+     *
+     * @param string $query
+     * @param array  $params
+     *
+     * @return \Zend_Db_Statement_Interface
+     */
+    public function delete(string $query, array $params = [])
+    {
+        return $this->connection->query($query, $params);
+    }
+
+    /**
+     * Execute an SQL query
+     *
+     * @param string $query
+     *
+     * @return \Zend_Db_Statement_Interface
+     */
+    public function execute(string $query)
+    {
+        return $this->connection->query($query);
+    }
+
+    /**
+     * Write to extension log
+     *
+     * @param string $message
+     * @param array  $extra
+     */
+    private function log(string $message, array $extra = [])
+    {
+        $this->logger->info('Model/Db - ' . $message, $extra);
+    }
+}
