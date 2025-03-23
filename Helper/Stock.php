@@ -342,6 +342,7 @@ class Stock extends AbstractHelper
             'sourceCode' => $sourceCode,
             'sku'        => $sku,
             'qty'        => $qty,
+            'status'     => $status
         ]);
 
         $table = $this->_dbHelper->getTableName('inventory_source_item');
