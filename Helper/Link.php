@@ -15,7 +15,7 @@ use ECInternet\RAPIDWebSync\Logger\Logger;
  */
 class Link
 {
-    const KEY_RELATED = 'related_products';
+    private const KEY_RELATED = 'related_products';
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
