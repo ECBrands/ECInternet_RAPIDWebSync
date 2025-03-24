@@ -451,7 +451,7 @@ class Batchproducts implements BatchproductsInterface
         $this->log('reindex()');
 
         // If flag is disabled, log it and leave.
-        if (!$this->_helper->isPostImportReindexEnabled()) {
+        if (!$this->config->isPostImportReindexEnabled()) {
             $this->log('NOTE: Post-import reindex is disabled.');
 
             return;
@@ -551,7 +551,7 @@ class Batchproducts implements BatchproductsInterface
         $this->log('clearImageCache()');
 
         // If flag is disabled, log it and leave.
-        if (!$this->_helper->shouldClearImageCache()) {
+        if (!$this->config->shouldClearImageCache()) {
             $this->log('NOTE: Post-import image cache clear is disabled.');
 
             return;
@@ -575,7 +575,7 @@ class Batchproducts implements BatchproductsInterface
 
         $tables = [];
 
-        if ($reindexTableList = $this->_helper->getReindexTableList()) {
+        if ($reindexTableList = $this->config->getReindexTableList()) {
             $tables = explode(',', $reindexTableList);
         }
 
