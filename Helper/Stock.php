@@ -7,22 +7,22 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Helper;
 
-use Magento\Framework\App\Helper\AbstractHelper;
-use Magento\Framework\App\Helper\Context;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
+use ECInternet\RAPIDWebSync\Model\Db;
 
 /**
  * Stock Helper
  */
-class Stock extends AbstractHelper
+class Stock
 {
-    const DEFAULT_STOCK_ID     = 1;
+    private const DEFAULT_STOCK_ID     = 1;
 
-    const DEFAULT_STOCK_STATUS = 1;
+    private const DEFAULT_STOCK_STATUS = 1;
 
-    const DEFAULT_STOCK_QTY    = 0;
+    private const DEFAULT_STOCK_QTY    = 0;
 
-    const DEFAULT_SOURCE_CODE  = 'default';
+    private const DEFAULT_SOURCE_CODE  = 'default';
 
     private $_stockItemColumns = ['item_id', 'product_id', 'stock_id', 'qty', 'min_qty', 'use_config_min_qty',
                                   'is_qty_decimal', 'backorders', 'use_config_backorders', 'min_sale_qty',
@@ -33,49 +33,53 @@ class Stock extends AbstractHelper
                                   'is_decimal_divided', 'website_id'];
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
-     */
-    protected $_logger;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
      */
-    private $_helper;
+    private $helper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
+     * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_dbHelper;
+    private $logger;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
 
     /**
      * @var string
      */
-    private $_sku;
+    private $sku;
 
     /**
      * @var int
      */
-    private $_entityId;
+    private $entityId;
 
     /**
      * Stock constructor.
      *
-     * @param \Magento\Framework\App\Helper\Context  $context
      * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db     $dbHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config  $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db      $db
      */
     public function __construct(
-        Context $context,
         Data $helper,
-        Db $dbHelper,
-        Logger $logger
+        Logger $logger,
+        Config $config,
+        Db $db
     ) {
-        parent::__construct($context);
-
-        $this->_helper   = $helper;
-        $this->_dbHelper = $dbHelper;
-        $this->_logger   = $logger;
+        $this->helper   = $helper;
+        $this->logger   = $logger;
+        $this->config   = $config;
+        $this->db       = $db;
     }
 
     /**
@@ -90,8 +94,8 @@ class Stock extends AbstractHelper
         $this->info("| ProductId: [$entityId]");
 
         // Cache sku and product_id
-        $this->_sku      = $sku;
-        $this->_entityId = $entityId;
+        $this->sku      = $sku;
+        $this->entityId = $entityId;
 
         // Intersect product columns with columns in stock_item table,
         // and drop out if we don't have any columns to process
@@ -139,7 +143,7 @@ class Stock extends AbstractHelper
         }
 
         // Conditionally auto-set manage_stock
-        if ($this->_helper->shouldAutomaticallySetManageStock()) {
+        if ($this->config->shouldAutomaticallySetManageStock()) {
             // If 'manage_stock' is not mapped, set it to true, since we're obviously managing stock.
             if (!isset($product['manage_stock'])) {
                 $product['manage_stock']            = 1;
@@ -148,7 +152,7 @@ class Stock extends AbstractHelper
         }
 
         // Conditionally auto-set is_in_stock
-        if ($this->_helper->shouldAutomaticallySetIsInStock()) {
+        if ($this->config->shouldAutomaticallySetIsInStock()) {
             // If 'is_in_stock' is not mapped,
             if (!isset($product['is_in_stock'])) {
                 // Default to 0 if not set
@@ -184,11 +188,11 @@ class Stock extends AbstractHelper
     {
         $this->info('upsertStockItemRecord()', ['stock_id' => $stockId]);
 
-        $table = $this->_dbHelper->getTableName('cataloginventory_stock_item');
+        $table = $this->db->getTableName('cataloginventory_stock_item');
         $query = "INSERT IGNORE INTO `$table` (`product_id`, `stock_id`) VALUES (?, ?)";
-        $binds = [$this->_entityId, $stockId];
+        $binds = [$this->entityId, $stockId];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -208,14 +212,14 @@ class Stock extends AbstractHelper
         // Create update string from 'stock_item' columns in $product
         /** @var string[] $productStockItemColumns */
         $productStockItemColumns         = array_intersect(array_keys($product), $this->_stockItemColumns);
-        $productStockItemValues          = $this->_helper->filterKeyValueArray($product, $productStockItemColumns);
-        $productStockItemKeyValuesString = $this->_helper->arrayToCommaSeparatedUpdateString($productStockItemValues);
+        $productStockItemValues          = $this->helper->filterKeyValueArray($product, $productStockItemColumns);
+        $productStockItemKeyValuesString = $this->helper->arrayToCommaSeparatedUpdateString($productStockItemValues);
 
-        $table = $this->_dbHelper->getTableName('cataloginventory_stock_item');
+        $table = $this->db->getTableName('cataloginventory_stock_item');
         $query = "UPDATE `$table` SET $productStockItemKeyValuesString WHERE `product_id` = ? AND `stock_id` = ?";
-        $binds = array_merge(array_values($productStockItemValues), [$this->_entityId, self::DEFAULT_STOCK_ID]);
+        $binds = array_merge(array_values($productStockItemValues), [$this->entityId, self::DEFAULT_STOCK_ID]);
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     /**
@@ -245,11 +249,11 @@ class Stock extends AbstractHelper
     {
         $this->info('clearStockStatusRecords()');
 
-        $table = $this->_dbHelper->getTableName('cataloginventory_stock_status');
+        $table = $this->db->getTableName('cataloginventory_stock_status');
         $query = "DELETE FROM `$table` WHERE `product_id` = ?";
-        $binds = [$this->_entityId];
+        $binds = [$this->entityId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -271,12 +275,12 @@ class Stock extends AbstractHelper
             'stockStatus' => $stockStatus
         ]);
 
-        $table = $this->_dbHelper->getTableName('cataloginventory_stock_status');
+        $table = $this->db->getTableName('cataloginventory_stock_status');
         $query = "INSERT INTO `$table` (`product_id`, `website_id`, `stock_id`, `qty`, `stock_status`)
                   VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE stock_status=VALUES(`stock_status`), qty=VALUES(`qty`)";
-        $binds = [$this->_entityId, $websiteId, $stockId, $qty, $stockStatus];
+        $binds = [$this->entityId, $websiteId, $stockId, $qty, $stockStatus];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -294,11 +298,11 @@ class Stock extends AbstractHelper
     {
         $this->info('getStockWebsiteId()', ['stockId' => $stockId]);
 
-        $table = $this->_dbHelper->getTableName('cataloginventory_stock');
+        $table = $this->db->getTableName('cataloginventory_stock');
         $query = "SELECT `website_id` FROM `$table` WHERE `stock_id` = ?";
         $binds = [$stockId];
 
-        $websiteId = $this->_dbHelper->selectOne($query, $binds, 'website_id');
+        $websiteId = $this->db->selectOne($query, $binds, 'website_id');
         if (is_numeric($websiteId)) {
             return (int)$websiteId;
         }
@@ -329,7 +333,7 @@ class Stock extends AbstractHelper
         }
 
         // Check if table exists
-        if (!$this->_dbHelper->doesTableExist($this->_dbHelper->getTableName('inventory_source_item'))) {
+        if (!$this->db->doesTableExist($this->db->getTableName('inventory_source_item'))) {
             $this->info("upsertInventorySourceItem() - Table 'inventory_source_item' missing");
             return;
         }
@@ -342,7 +346,7 @@ class Stock extends AbstractHelper
             ? (int)$product['is_in_stock']
             : 0;
 
-        $this->upsertInventorySourceItemRecord($sourceCode, $this->_sku, (int)$qty, $stockStatus);
+        $this->upsertInventorySourceItemRecord($sourceCode, $this->sku, (int)$qty, $stockStatus);
     }
 
     private function upsertInventorySourceItemRecord(string $sourceCode, string $sku, int $qty, int $status = 0)
@@ -354,12 +358,12 @@ class Stock extends AbstractHelper
             'status'     => $status
         ]);
 
-        $table = $this->_dbHelper->getTableName('inventory_source_item');
+        $table = $this->db->getTableName('inventory_source_item');
         $query = "INSERT INTO `$table` (`source_code`, `sku`, `quantity`, `status`)
                   VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE quantity=VALUES(`quantity`), status=VALUES(`status`)";
         $binds = [$sourceCode, $sku, $qty, $status];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -372,6 +376,6 @@ class Stock extends AbstractHelper
      */
     private function info(string $message, array $extra = [])
     {
-        $this->_logger->info('StockHelper - ' . $message, $extra);
+        $this->logger->info('StockHelper - ' . $message, $extra);
     }
 }

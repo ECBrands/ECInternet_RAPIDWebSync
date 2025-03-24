@@ -9,6 +9,7 @@ namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Catalog\Model\Product\Link as ProductLink;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
 
 /**
  * Link helper
@@ -18,35 +19,35 @@ class Link
     private const KEY_RELATED = 'related_products';
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $_helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\Db
      */
-    private $_dbHelper;
+    private $dbHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
 
     /**
      * Link constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Db     $dbHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config  $config
      */
     public function __construct(
-        Data $helper,
         Db $dbHelper,
-        Logger $logger
+        Logger $logger,
+        Config $config
     ) {
-        $this->_helper   = $helper;
-        $this->_dbHelper = $dbHelper;
-        $this->_logger   = $logger;
+        $this->dbHelper = $dbHelper;
+        $this->logger   = $logger;
+        $this->config   = $config;
     }
 
     /**
@@ -76,7 +77,7 @@ class Link
                     $this->deleteLinks($entityId);
                 } else {
                     // Get import mode from settings. 1 -> Addition, 2 -> Replacement
-                    $importMode = $this->_helper->getRelatedProductsImportMode();
+                    $importMode = $this->getImportMode();
                     $this->info('processProduct()', [
                         'importMode' => $importMode === 1 ? 'Addition' : 'Replacement'
                     ]);
@@ -184,7 +185,7 @@ class Link
     {
         $this->info('getProductId()', ['sku' => $sku]);
 
-        return $this->_dbHelper->getProductId($sku);
+        return $this->dbHelper->getProductId($sku);
     }
 
     /**
@@ -198,7 +199,7 @@ class Link
     {
         $this->info('getProductSku()', ['productId' => $productId]);
 
-        return $this->_dbHelper->getProductSku($productId);
+        return $this->dbHelper->getProductSku($productId);
     }
 
     /**
@@ -228,7 +229,7 @@ class Link
             'linkTypeId' => $linkTypeId
         ]);
 
-        return $this->_dbHelper->getLinkedProductIds($productId, $linkTypeId);
+        return $this->dbHelper->getLinkedProductIds($productId, $linkTypeId);
     }
 
     /**
@@ -270,11 +271,11 @@ class Link
             'linkTypeId'      => $linkTypeId
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_link');
+        $table = $this->dbHelper->getTableName('catalog_product_link');
         $query = "INSERT IGNORE INTO `$table` (`product_id`, `linked_product_id`, `link_type_id`) VALUES (?,?,?)";
         $binds = [$productId, $linkedProductId, $linkTypeId];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->dbHelper->insert($query, $binds);
     }
 
     /**
@@ -296,11 +297,11 @@ class Link
 
         $productIdsString = implode(',', $productIds);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_link');
+        $table = $this->dbHelper->getTableName('catalog_product_link');
         $query = "DELETE FROM `$table` WHERE `product_id` = ? AND `link_type_id` = ? AND `linked_product_id` NOT IN (?)";
         $binds = [$productId, $linkTypeId, $productIdsString];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->dbHelper->delete($query, $binds);
     }
 
     /**
@@ -314,11 +315,11 @@ class Link
     {
         $this->info('deleteLinks()', ['productId' => $productId]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_link');
+        $table = $this->dbHelper->getTableName('catalog_product_link');
         $query = "DELETE FROM `$table` WHERE `product_id` = ?";
         $binds = [$productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->dbHelper->delete($query, $binds);
     }
 
     ////////////////////////////////////////////////////
@@ -334,7 +335,7 @@ class Link
      */
     protected function getImportMode()
     {
-        return $this->_helper->getRelatedProductsImportMode();
+        return $this->config->getRelatedProductsImportMode();
     }
 
     ////////////////////////////////////////////////////
@@ -353,6 +354,6 @@ class Link
      */
     private function info(string $message, array $extra = [])
     {
-        $this->_logger->info('LinkHelper - ' . $message, $extra);
+        $this->logger->info('LinkHelper - ' . $message, $extra);
     }
 }

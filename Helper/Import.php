@@ -9,6 +9,7 @@ namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Framework\Exception\IntegrationException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
 use DateTime;
 use DateInterval;
 use Exception;
@@ -19,11 +20,6 @@ use Exception;
 class Import
 {
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $_helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\Attribute
      */
     private $_attributeHelper;
@@ -32,6 +28,11 @@ class Import
      * @var \ECInternet\RAPIDWebSync\Helper\Category
      */
     private $_categoryHelper;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Helper\Data
+     */
+    private $_helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Configurable
@@ -77,6 +78,11 @@ class Import
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
     private $_logger;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
 
     /**
      * Array for holding sku-entity_id records
@@ -127,6 +133,7 @@ class Import
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Helper\TierPrice    $tierPriceHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
      */
     public function __construct(
         Data $helper,
@@ -140,7 +147,8 @@ class Import
         Stock $stockHelper,
         StoreWebsite $storeWebsiteHelper,
         TierPrice $tierPriceHelper,
-        Logger $logger
+        Logger $logger,
+        Config $config
     ) {
         $this->_helper             = $helper;
         $this->_attributeHelper    = $attributeHelper;
@@ -154,6 +162,7 @@ class Import
         $this->_storeWebsiteHelper = $storeWebsiteHelper;
         $this->_tierPriceHelper    = $tierPriceHelper;
         $this->_logger             = $logger;
+        $this->config              = $config;
 
         // Build SKU array so we can test for existing / new products
         $this->initSkuArray();
@@ -597,14 +606,14 @@ class Import
     {
         $this->log('setNewProductDefaults()');
 
-        $product['attribute_set_id'] = $product['attribute_set_id'] ?? $this->_helper->getDefaultAttributeSetId();
-        $product['type_id']          = $product['type_id']          ?? $this->_helper->getDefaultType();
-        $product['status']           = $product['status']           ?? $this->_helper->getDefaultStatus();
-        $product['visibility']       = $product['visibility']       ?? $this->_helper->getDefaultVisibility();
+        $product['attribute_set_id'] = $product['attribute_set_id'] ?? $this->config->getDefaultAttributeSetId();
+        $product['type_id']          = $product['type_id']          ?? $this->config->getDefaultType();
+        $product['status']           = $product['status']           ?? $this->config->getDefaultStatus();
+        $product['visibility']       = $product['visibility']       ?? $this->config->getDefaultVisibility();
         // TODO: Add tax_class default value
         $product['weight']           = $product['weight']           ?? 1;
 
-        $newsToDateSetting = $this->_helper->getDefaultNewsToDateDays();
+        $newsToDateSetting = $this->config->getDefaultNewsToDateDays();
         if (is_numeric($newsToDateSetting) && $newsToDateSetting > 0) {
             if (empty($product['news_from_date']) && empty($product['news_to_date'])) {
                 $dateTime = new DateTime();
@@ -728,7 +737,7 @@ class Import
         }
 
         // Else return the default
-        return $this->_helper->getDefaultAttributeSetId();
+        return $this->config->getDefaultAttributeSetId();
     }
 
     /**

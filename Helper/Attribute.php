@@ -20,6 +20,7 @@ use Magento\Framework\Exception\State\InitException;
 use Magento\Framework\Phrase;
 use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
 use Exception;
 
@@ -67,6 +68,11 @@ class Attribute
     private $_logger;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
      * @var string
      */
     private $_productIdColumn;
@@ -94,19 +100,22 @@ class Attribute
      * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
      */
     public function __construct(
         EavConfig $eavConfig,
         Data $helper,
         Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        Logger $logger,
+        Config $config
     ) {
         $this->_eavConfig          = $eavConfig;
         $this->_helper             = $helper;
         $this->_dbHelper           = $dbHelper;
         $this->_storeWebsiteHelper = $storeWebsiteHelper;
         $this->_logger             = $logger;
+        $this->config              = $config;
     }
 
     /**
@@ -507,7 +516,7 @@ class Attribute
                 if ($existingOptionId) {
                     $value = $existingOptionId;
                 } else {
-                    if ($this->_helper->allowNewAttributeValues()) {
+                    if ($this->config->allowNewAttributeValues()) {
                         // Cache new option_id value for writing to catalog_product_entity_*
                         $newOptionId = $this->addAttributeOptionRecord($attributeId);
                         $this->addAttributeOptionValueRecord($newOptionId, $value);
@@ -517,7 +526,7 @@ class Attribute
                     } else {
                         $this->log('upsertProductAttribute() - Not allowing new attribute values.');
 
-                        switch ($this->_helper->getIllegalNewAttributeAction()) {
+                        switch ($this->config->getIllegalNewAttributeAction()) {
                             case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
                                 break;
 
@@ -557,7 +566,7 @@ class Attribute
                         $this->log("Value `$value` already in Multi-Select value list");
                     }
                 } else {
-                    if ($this->_helper->allowNewAttributeValues()) {
+                    if ($this->config->allowNewAttributeValues()) {
                         // Cache new option_id value for writing to catalog_product_entity_*
                         $newOptionId = $this->addAttributeOptionRecord($attributeId);
                         $this->addAttributeOptionValueRecord($newOptionId, $value);
@@ -567,7 +576,7 @@ class Attribute
                     } else {
                         $this->log('upsertProductAttribute() - Not allowing new attribute values.');
 
-                        switch ($this->_helper->getIllegalNewAttributeAction()) {
+                        switch ($this->config->getIllegalNewAttributeAction()) {
                             case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
                                 break;
 

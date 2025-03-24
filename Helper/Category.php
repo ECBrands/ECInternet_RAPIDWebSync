@@ -9,6 +9,7 @@ namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Framework\Exception\InputException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
 use Exception;
 
 /**
@@ -52,6 +53,11 @@ class Category
     private $logger;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
      * @var string
      */
     private $productIdColumn;
@@ -86,19 +92,22 @@ class Category
      * @param \ECInternet\RAPIDWebSync\Helper\Rewrite      $rewriteHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
      */
     public function __construct(
         Data $helper,
         Db $dbHelper,
         Rewrite $rewriteHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        Logger $logger,
+        Config $config
     ) {
         $this->helper             = $helper;
         $this->dbHelper           = $dbHelper;
         $this->rewriteHelper      = $rewriteHelper;
         $this->storeWebsiteHelper = $storeWebsiteHelper;
         $this->logger             = $logger;
+        $this->config             = $config;
 
         $this->initializeCategories();
         $this->initializeCategoryInfo();
@@ -821,52 +830,52 @@ class Category
         $productCategoryIds = (string)$product['category_ids'];
         $this->log('buildCategoryData()', ['category_ids' => $productCategoryIds]);
 
-        if ($productCategoryIds != '') {
-            $categoryData = [];
+        if ($productCategoryIds == '') {
+            return null;
+        }
 
-            /** @var string[] $categoryIds */
-            $categoryIds = $this->helper->commaSeparatedListToTrimmedArray($productCategoryIds);
-            $this->log('buildCategoryData()', ['categoryIdsCount' => count($categoryIds)]);
+        $categoryData = [];
 
-            // Find positive category assignments
-            foreach ($categoryIds as $categoryDefinition) {
-                if ($categoryDefinition) {
-                    if ($a = explode('::', $categoryDefinition)) {
-                        if (isset($a[0])) {
-                            $categoryId = $a[0];
-                            if (is_numeric($categoryId)) {
-                                // Cast to int
-                                $categoryId = (int)$categoryId;
+        /** @var string[] $categoryIds */
+        $categoryIds = $this->helper->commaSeparatedListToTrimmedArray($productCategoryIds);
+        $this->log('buildCategoryData()', ['categoryIdsCount' => count($categoryIds)]);
 
-                                /** @var int $categoryId */
-                                if (!in_array($categoryId, [1, 2])) {
-                                    if (count($a) > 1) {
-                                        if (is_numeric($a[1])) {
-                                            $categoryPosition = (int)$a[1];
-                                        } else {
-                                            $categoryPosition = 0;
-                                        }
+        // Find positive category assignments
+        foreach ($categoryIds as $categoryDefinition) {
+            if ($categoryDefinition) {
+                if ($a = explode('::', $categoryDefinition)) {
+                    if (isset($a[0])) {
+                        $categoryId = $a[0];
+                        if (is_numeric($categoryId)) {
+                            // Cast to int
+                            $categoryId = (int)$categoryId;
+
+                            /** @var int $categoryId */
+                            if (!in_array($categoryId, [1, 2])) {
+                                if (count($a) > 1) {
+                                    if (is_numeric($a[1])) {
+                                        $categoryPosition = (int)$a[1];
                                     } else {
                                         $categoryPosition = 0;
                                     }
-
-                                    $this->log('buildCategoryData()', [
-                                        'categoryId'       => $categoryId,
-                                        'categoryPosition' => $categoryPosition
-                                    ]);
-
-                                    $categoryData[$categoryId] = $categoryPosition;
+                                } else {
+                                    $categoryPosition = 0;
                                 }
+
+                                $this->log('buildCategoryData()', [
+                                    'categoryId'       => $categoryId,
+                                    'categoryPosition' => $categoryPosition
+                                ]);
+
+                                $categoryData[$categoryId] = $categoryPosition;
                             }
                         }
                     }
                 }
             }
-
-            return $categoryData;
         }
 
-        return null;
+        return $categoryData;
     }
 
     /**
@@ -918,8 +927,14 @@ class Category
      *
      * @return int|null
      */
-    private function addCategoryRecord(int $attributeSetId, int $parentId, int $position, int $level, string $path = '', int $childrenCount = 0)
-    {
+    private function addCategoryRecord(
+        int $attributeSetId,
+        int $parentId,
+        int $position,
+        int $level,
+        string $path = '',
+        int $childrenCount = 0
+    ) {
         $this->log('addCategoryRecord()', [
             'attributeSetId' => $attributeSetId,
             'parentId'       => $parentId,
@@ -1053,7 +1068,7 @@ class Category
      */
     private function assignProductsToLastCategoryOnly()
     {
-        return $this->helper->getCategoryAssignToLastCategoryOnly();
+        return $this->config->getCategoryAssignToLastCategoryOnly();
     }
 
     /**
@@ -1061,7 +1076,7 @@ class Category
      */
     private function shouldResetCategories()
     {
-        return $this->helper->getCategoryMode() == self::CATEGORY_MODE_REPLACEMENT;
+        return $this->config->getCategoryMode() == self::CATEGORY_MODE_REPLACEMENT;
     }
 
     /**
@@ -1069,7 +1084,7 @@ class Category
      */
     private function getCategoryTreeSeparator()
     {
-        return $this->helper->getCategoryTreeDelimeter();
+        return $this->config->getCategoryTreeDelimeter();
     }
 
     /**
@@ -1077,7 +1092,7 @@ class Category
      */
     private function getCategoryStringDelimeter()
     {
-        return $this->helper->getCategoryDelimeter();
+        return $this->config->getCategoryDelimeter();
     }
 
     /**

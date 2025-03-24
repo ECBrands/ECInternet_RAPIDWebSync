@@ -12,6 +12,7 @@ use Magento\Framework\Exception\StateException;
 use Magento\Framework\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Driver\File;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
 use Exception;
 
 /**
@@ -63,6 +64,11 @@ class Image
     private $_logger;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
      * @var string
      */
     private $_lastProcessedImage = '';
@@ -77,6 +83,7 @@ class Image
      * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
      */
     public function __construct(
         DirectoryList $directoryList,
@@ -85,7 +92,8 @@ class Image
         Attribute $attributeHelper,
         Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        Logger $logger,
+        Config $config
     ) {
         $this->_directoryList      = $directoryList;
         $this->_fileDriver         = $fileDriver;
@@ -94,6 +102,7 @@ class Image
         $this->_dbHelper           = $dbHelper;
         $this->_storeWebsiteHelper = $storeWebsiteHelper;
         $this->_logger             = $logger;
+        $this->config              = $config;
 
         $this->initializeProductIdColumn();
     }
@@ -932,7 +941,7 @@ class Image
      */
     protected function getImageDelimeter()
     {
-        return $this->_helper->getMediaGalleryDelimeter();
+        return $this->config->getMediaGalleryDelimeter();
     }
 
     /**
@@ -967,7 +976,7 @@ class Image
      */
     protected function getImageSearchPath()
     {
-        return $this->_helper->getImageSearchPath();
+        return $this->config->getImageSearchPath();
     }
 
     ////////////////////////////////////////////////////
@@ -982,7 +991,7 @@ class Image
      * @param string $message
      * @param array  $extra
      */
-    private function warn($message, $extra = [])
+    private function warn(string $message, array $extra = [])
     {
         $this->_logger->warning("ImageHelper - $message", $extra);
     }
@@ -995,7 +1004,7 @@ class Image
      *
      * @return void
      */
-    private function info($message, $extra = [])
+    private function info(string $message, array $extra = [])
     {
         $this->_logger->info("ImageHelper - $message", $extra);
     }

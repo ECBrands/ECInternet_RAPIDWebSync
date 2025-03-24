@@ -26,9 +26,9 @@ use Magento\Framework\Filesystem;
 use Magento\Framework\Filesystem\Io\File;
 use Magento\Framework\View\Result\PageFactory;
 use ECInternet\RAPIDWebSync\Helper\Configurable as ConfigurableHelper;
-use ECInternet\RAPIDWebSync\Helper\Data;
 use ECInternet\RAPIDWebSync\Helper\Link;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
 use Exception;
 
 /**
@@ -86,11 +86,6 @@ class Download extends Action implements HttpGetActionInterface
     private $_directory;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\Link
      */
     private $_link;
@@ -99,6 +94,11 @@ class Download extends Action implements HttpGetActionInterface
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
     private $_logger;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
 
     /**
      * Index constructor.
@@ -113,9 +113,9 @@ class Download extends Action implements HttpGetActionInterface
      * @param \Magento\Framework\App\Response\Http\FileFactory                         $fileFactory
      * @param \Magento\Framework\Filesystem                                            $filesystem
      * @param \Magento\Framework\Filesystem\Io\File                                    $file
-     * @param \ECInternet\RAPIDWebSync\Helper\Data                                     $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Link                                     $link
      * @param \ECInternet\RAPIDWebSync\Logger\Logger                                   $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config                                    $config
      *
      * @throws \Magento\Framework\Exception\FileSystemException
      */
@@ -130,9 +130,9 @@ class Download extends Action implements HttpGetActionInterface
         FileFactory $fileFactory,
         Filesystem $filesystem,
         File $file,
-        Data $helper,
         Link $link,
-        Logger $logger
+        Logger $logger,
+        Config $config
     ) {
         parent::__construct($context);
 
@@ -145,9 +145,9 @@ class Download extends Action implements HttpGetActionInterface
         $this->_fileFactory                       = $fileFactory;
         $this->_file                              = $file;
         $this->_directory                         = $filesystem->getDirectoryWrite(DirectoryList::VAR_DIR);
-        $this->helper                             = $helper;
         $this->_link                              = $link;
         $this->_logger                            = $logger;
+        $this->config                             = $config;
     }
 
     /**
@@ -445,14 +445,14 @@ class Download extends Action implements HttpGetActionInterface
                 }
 
                 // Build string for this category path
-                $categoryString = implode($this->helper->getCategoryTreeDelimeter(), $categoryNames);
+                $categoryString = implode($this->config->getCategoryTreeDelimeter(), $categoryNames);
 
                 // Add to our array
                 $categoryOutput[] = $categoryString;
             }
         }
 
-        return implode($this->helper->getCategoryDelimeter(), $categoryOutput);
+        return implode($this->config->getCategoryDelimeter(), $categoryOutput);
     }
 
     /**
@@ -499,7 +499,7 @@ class Download extends Action implements HttpGetActionInterface
             }
         }
 
-        return implode($this->helper->getMediaGalleryDelimeter(), $output);
+        return implode($this->config->getMediaGalleryDelimeter(), $output);
     }
 
     /**
