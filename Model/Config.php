@@ -242,6 +242,7 @@ class Config
      */
     public function isImageSearchCaseInsensitive()
     {
+        //TODO: Where did this go?
         return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_IMAGES_CASE_INSENSITIVE_SEARCH);
     }
 
