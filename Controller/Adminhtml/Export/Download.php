@@ -280,10 +280,10 @@ class Download extends Action implements HttpGetActionInterface
 
                 // Handle 'select'
                 if ($frontendInput == 'select') {
-                    $optionText = $attribute->getSource()->getOptionText($productAttributeValue);
-                    $this->log('execute()', ['optionText' => $optionText]);
-
-                    $productData[$attributeCode] = $optionText;
+                    if ($optionText = $this->getOptionText($attribute, $productAttributeValue)) {
+                        $this->log('execute()', ['optionText' => $optionText]);
+                        $productData[$attributeCode] = $optionText;
+                    }
                     continue;
                 }
 
@@ -381,6 +381,27 @@ class Download extends Action implements HttpGetActionInterface
             // Explicitly exclude a few
             $attribute->getAttributeCode() != 'tier_price' &&
             $attribute->getAttributeCode() != 'quantity_and_stock_status';
+    }
+
+    /**
+     * @param Attribute $attribute
+     * @param mixed     $attributeValue
+     *
+     * @return string
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    private function getOptionText(Attribute $attribute, mixed $attributeValue)
+    {
+        $optionText = $attribute->getSource()->getOptionText($attributeValue);
+        if (is_array($optionText)) {
+            foreach ($optionText as $optionTextItem) {
+                if (is_string($optionTextItem)) {
+                    return $optionTextItem;
+                }
+            }
+        }
+
+        return '';
     }
 
     /**
