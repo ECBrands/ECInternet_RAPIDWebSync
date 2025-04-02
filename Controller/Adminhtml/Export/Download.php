@@ -183,7 +183,7 @@ class Download extends Action implements HttpGetActionInterface
         /** @var string[] $columns */
         $columns = [];
 
-        /** @var \Magento\Eav\Model\Attribute[] $attributes */
+        /** @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute[] $attributes */
         $attributes = [];
 
         /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $productAttributes */
