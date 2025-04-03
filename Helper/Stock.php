@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Helper;
 
+use Magento\Framework\Module\Manager as ModuleManager;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
@@ -31,6 +32,11 @@ class Stock
                                   'use_config_manage_stock', 'stock_status_changed_auto', 'use_config_qty_increments',
                                   'qty_increments', 'use_config_enable_qty_inc', 'enable_qty_increments',
                                   'is_decimal_divided', 'website_id'];
+
+    /**
+     * @var \Magento\Framework\Module\Manager
+     */
+    private $moduleManager;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
@@ -65,21 +71,24 @@ class Stock
     /**
      * Stock constructor.
      *
+     * @param \Magento\Framework\Module\Manager      $moduleManager
      * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
      * @param \ECInternet\RAPIDWebSync\Model\Config  $config
      * @param \ECInternet\RAPIDWebSync\Model\Db      $db
      */
     public function __construct(
+        ModuleManager $moduleManager,
         Data $helper,
         Logger $logger,
         Config $config,
         Db $db
     ) {
-        $this->helper   = $helper;
-        $this->logger   = $logger;
-        $this->config   = $config;
-        $this->db       = $db;
+        $this->moduleManager = $moduleManager;
+        $this->helper        = $helper;
+        $this->logger        = $logger;
+        $this->config        = $config;
+        $this->db            = $db;
     }
 
     /**
@@ -171,7 +180,7 @@ class Stock
      */
     private function handleMultiSourceInventory()
     {
-        return $this->_moduleManager->isEnabled('Magento_Inventory');
+        return $this->moduleManager->isEnabled('Magento_Inventory');
     }
 
     /**
