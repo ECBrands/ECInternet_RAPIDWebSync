@@ -280,10 +280,7 @@ class Download extends Action implements HttpGetActionInterface
 
                 // Handle 'select'
                 if ($frontendInput == 'select') {
-                    if ($optionText = $this->getOptionText($attribute, $productAttributeValue)) {
-                        $this->log('execute()', ['optionText' => $optionText]);
-                        $productData[$attributeCode] = $optionText;
-                    }
+                    $productData[$attributeCode] = $this->getOptionText($attribute, $productAttributeValue);
                     continue;
                 }
 
