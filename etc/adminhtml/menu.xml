@@ -4,6 +4,7 @@
 	<menu>
 		<add id="ECInternet_RAPIDWebSync::menu"
 		     title="RAPID Web Sync"
+		     translate="title"
 		     module="ECInternet_RAPIDWebSync"
 		     sortOrder="200"
 		     parent="ECInternet_Base::base"
@@ -12,6 +13,7 @@
 
 		<add id="ECInternet_RAPIDWebSync::settings"
 		     title="Settings"
+		     translate="title"
 		     module="ECInternet_RAPIDWebSync"
 		     sortOrder="1"
 		     parent="ECInternet_RAPIDWebSync::menu"
@@ -21,6 +23,7 @@
 
 		<add id="ECInternet_RAPIDWebSync::log"
 		     title="Sync Log"
+		     translate="title"
 		     module="ECInternet_RAPIDWebSync"
 		     sortOrder="2"
 		     parent="ECInternet_RAPIDWebSync::menu"
@@ -30,6 +33,7 @@
 
 		<add id="ECInternet_RAPIDWebSync::export"
 		     title="Product Data Export"
+		     translate="title"
 		     module="ECInternet_RAPIDWebSync"
 		     sortOrder="3"
 		     parent="ECInternet_RAPIDWebSync::menu"

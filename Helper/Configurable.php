@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Helper;
 
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
@@ -44,7 +44,7 @@ class Configurable
     private $_storeWebsiteHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -55,14 +55,14 @@ class Configurable
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \Psr\Log\LoggerInterface                     $logger
      */
     public function __construct(
         Data $helper,
         Attribute $attributeHelper,
         Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_helper             = $helper;
         $this->_attributeHelper    = $attributeHelper;

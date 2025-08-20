@@ -9,7 +9,7 @@ namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\StateException;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
@@ -17,11 +17,11 @@ use Exception;
  */
 class Rewrite
 {
-    const KEY                   = 'url_key';
+    public const KEY                   = 'url_key';
 
-    const REWRITE_TYPE_CATEGORY = 'category';
+    public const REWRITE_TYPE_CATEGORY = 'category';
 
-    const REWRITE_TYPE_PRODUCT  = 'product';
+    public const REWRITE_TYPE_PRODUCT  = 'product';
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
@@ -34,7 +34,7 @@ class Rewrite
     private $_dbHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -51,16 +51,16 @@ class Rewrite
     /**
      * Rewrite constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db     $dbHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
+     * @param \ECInternet\RAPIDWebSync\Helper\Data $helper
+     * @param \ECInternet\RAPIDWebSync\Helper\Db   $dbHelper
+     * @param \Psr\Log\LoggerInterface             $logger
      *
      * @throws \Exception
      */
     public function __construct(
         Data $helper,
         Db $dbHelper,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_helper   = $helper;
         $this->_dbHelper = $dbHelper;
@@ -409,7 +409,7 @@ class Rewrite
      * @return void
      * @throws Exception
      */
-    private function upsertUrlRewriteRecord(string $entityType, int $entityId, string $requestPath, string $targetPath, int $storeId = 1, string $metadata = null)
+    private function upsertUrlRewriteRecord(string $entityType, int $entityId, string $requestPath, string $targetPath, int $storeId = 1, ?string $metadata = null)
     {
         $this->log('upsertUrlRewriteRecord()', [
             'entityType'  => $entityType,
@@ -558,7 +558,7 @@ class Rewrite
      *
      * @return void
      */
-    private function insertUrlRewriteRecord(string $entityType, int $entityId, string $requestPath, string $targetPath, int $storeId = 1, string $metadata = null)
+    private function insertUrlRewriteRecord(string $entityType, int $entityId, string $requestPath, string $targetPath, int $storeId = 1, ?string $metadata = null)
     {
         $this->log('insertUrlRewriteRecord()', [
             'entityType'  => $entityType,
@@ -590,7 +590,7 @@ class Rewrite
      *
      * @return void
      */
-    private function updateUrlRewriteRecord(int $urlRewriteId, string $requestPath, string $targetPath, string $metadata = null)
+    private function updateUrlRewriteRecord(int $urlRewriteId, string $requestPath, string $targetPath, ?string $metadata = null)
     {
         $this->log('updateUrlRewriteRecord()', [
             'urlRewriteId' => $urlRewriteId,

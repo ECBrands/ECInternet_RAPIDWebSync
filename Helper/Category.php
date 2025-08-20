@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Framework\Exception\InputException;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
@@ -18,13 +18,13 @@ use Exception;
  */
 class Category
 {
-    const KEY                       = 'categories';
+    public const KEY                       = 'categories';
 
-    const DEFAULT_ROOT_PATH_KEY     = '%RP:base%';
+    public const DEFAULT_ROOT_PATH_KEY     = '%RP:base%';
 
-    const CATEGORY_MODE_ADDITION    = 1;
+    public const CATEGORY_MODE_ADDITION    = 1;
 
-    const CATEGORY_MODE_REPLACEMENT = 2;
+    public const CATEGORY_MODE_REPLACEMENT = 2;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
@@ -47,7 +47,7 @@ class Category
     private $_storeWebsiteHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -85,14 +85,14 @@ class Category
      * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Rewrite      $rewriteHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \Psr\Log\LoggerInterface                     $logger
      */
     public function __construct(
         Data $helper,
         Db $dbHelper,
         Rewrite $rewriteHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_helper             = $helper;
         $this->_dbHelper           = $dbHelper;
@@ -192,7 +192,7 @@ class Category
      */
     private function getCategoryData()
     {
-        if ($this->_categoryInfos == null) {
+        if ($this->_categoryInfos === null) {
             $this->initializeCategoryInfo();
         }
 
@@ -206,7 +206,7 @@ class Category
      */
     private function getProductIdColumn()
     {
-        if ($this->_productIdColumn == null) {
+        if ($this->_productIdColumn === null) {
             $this->_productIdColumn = $this->_helper->getProductIdColumn();
         }
 
@@ -305,7 +305,7 @@ class Category
      *
      * @return object
      */
-    private function getCategoryAttributeInfos($attributeCode)
+    private function getCategoryAttributeInfos(string $attributeCode)
     {
         $table = $this->_dbHelper->getTableName('eav_attribute');
         $query = "SELECT * FROM `$table` WHERE `entity_type_id` = 3 AND `attribute_code` = ?";
@@ -381,7 +381,7 @@ class Category
         // Check for existing category, and return its ID if found
         // If we return then WE DON'T UPDATE CATEGORY ATTRIBUTES
         $categoryId = $this->getExistingCategory($parentPaths, $categoryAttributes);
-        if ($categoryId != null) {
+        if ($categoryId !== null) {
             $this->log('getCategoryId() - Existing ID found:', [$categoryId]);
 
             return $categoryId;
@@ -587,7 +587,7 @@ class Category
                 : '';
 
             $optionsPart  = count($options)
-                ? '::' . join('::', $options)
+                ? '::' . implode('::', $options)
                 : '';
 
             $categoryParts[] = $a[0] . $optionsPart . $translationOptionPart;
@@ -1030,7 +1030,7 @@ class Category
      *
      * @return void
      */
-    private function upsertCategoryAttributeValue($attributeId, $storeId, $categoryId, $value, $attributeType)
+    private function upsertCategoryAttributeValue(int $attributeId, int $storeId, int $categoryId, $value, $attributeType)
     {
         $this->log('upsertCategoryAttributeValue()', [$attributeId, $storeId, $categoryId, $value, $attributeType]);
 

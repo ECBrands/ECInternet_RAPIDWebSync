@@ -10,69 +10,69 @@ namespace ECInternet\RAPIDWebSync\Helper;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\App\ProductMetadataInterface;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 
 /**
  * Helper
  */
 class Data extends AbstractHelper
 {
-    const CONFIG_PATH_ENABLED                                 = 'rapid_web_sync/general/enable';
+    public const CONFIG_PATH_ENABLED                                 = 'rapid_web_sync/general/enable';
 
-    const CONFIG_PATH_ENABLE_SPEED_LOGGING                    = 'rapid_web_sync/general/speed_logging';
+    public const CONFIG_PATH_ENABLE_SPEED_LOGGING                    = 'rapid_web_sync/general/speed_logging';
 
-    const CONFIG_PATH_DEFAULT_ATTRIBUTE_SET                   = 'rapid_web_sync/defaults/attribute_set_id';
+    public const CONFIG_PATH_DEFAULT_ATTRIBUTE_SET                   = 'rapid_web_sync/defaults/attribute_set_id';
 
-    const CONFIG_PATH_DEFAULT_TYPE                            = 'rapid_web_sync/defaults/type';
+    public const CONFIG_PATH_DEFAULT_TYPE                            = 'rapid_web_sync/defaults/type';
 
-    const CONFIG_PATH_DEFAULT_STATUS                          = 'rapid_web_sync/defaults/status';
+    public const CONFIG_PATH_DEFAULT_STATUS                          = 'rapid_web_sync/defaults/status';
 
-    const CONFIG_PATH_DEFAULT_VISIBILITY                      = 'rapid_web_sync/defaults/visibility';
+    public const CONFIG_PATH_DEFAULT_VISIBILITY                      = 'rapid_web_sync/defaults/visibility';
 
-    const CONFIG_PATH_DEFAULT_TAX_CLASS                       = 'rapid_web_sync/defaults/tax_class';
+    public const CONFIG_PATH_DEFAULT_TAX_CLASS                       = 'rapid_web_sync/defaults/tax_class';
 
-    const CONFIG_PATH_DEFAULT_NEWS_TO_DATE                    = 'rapid_web_sync/defaults/news_to_date';
+    public const CONFIG_PATH_DEFAULT_NEWS_TO_DATE                    = 'rapid_web_sync/defaults/news_to_date';
 
-    const CONFIG_PATH_ATTRIBUTES_ALLOW_NEW_VALUES             = 'rapid_web_sync/attributes/allow_new_values';
+    public const CONFIG_PATH_ATTRIBUTES_ALLOW_NEW_VALUES             = 'rapid_web_sync/attributes/allow_new_values';
 
-    const CONFIG_PATH_ATTRIBUTES_ILLEGAL_NEW_ATTRIBUTE_ACTION = 'rapid_web_sync/attributes/illegal_new_attribute_action';
+    public const CONFIG_PATH_ATTRIBUTES_ILLEGAL_NEW_ATTRIBUTE_ACTION = 'rapid_web_sync/attributes/illegal_new_attribute_action';
 
-    const CONFIG_PATH_PRICING_MODE                            = 'rapid_web_sync/pricing/mode';
+    public const CONFIG_PATH_PRICING_MODE                            = 'rapid_web_sync/pricing/mode';
 
-    const CONFIG_PATH_CATEGORIES_MODE                         = 'rapid_web_sync/categories/mode';
+    public const CONFIG_PATH_CATEGORIES_MODE                         = 'rapid_web_sync/categories/mode';
 
-    const CONFIG_PATH_CATEGORIES_LASTONLY                     = 'rapid_web_sync/categories/lastonly';
+    public const CONFIG_PATH_CATEGORIES_LASTONLY                     = 'rapid_web_sync/categories/lastonly';
 
-    const CONFIG_PATH_CATEGORIES_CATEGORY_DELIMETER           = 'rapid_web_sync/categories/category_delimeter';
+    public const CONFIG_PATH_CATEGORIES_CATEGORY_DELIMETER           = 'rapid_web_sync/categories/category_delimeter';
 
-    const CONFIG_PATH_CATEGORIES_CATEGORY_TREE_DELIMETER      = 'rapid_web_sync/categories/category_tree_delimeter';
+    public const CONFIG_PATH_CATEGORIES_CATEGORY_TREE_DELIMETER      = 'rapid_web_sync/categories/category_tree_delimeter';
 
-    const CONFIG_PATH_CATEGORIES_URLENDING                    = 'rapid_web_sync/categories/urlending';
+    public const CONFIG_PATH_CATEGORIES_URLENDING                    = 'rapid_web_sync/categories/urlending';
 
-    const CONFIG_PATH_IMAGES_SOURCE_FOLDER                    = 'rapid_web_sync/images/source_directory';
+    public const CONFIG_PATH_IMAGES_SOURCE_FOLDER                    = 'rapid_web_sync/images/source_directory';
 
-    const CONFIG_PATH_IMAGES_CASE_INSENSITIVE_SEARCH          = 'rapid_web_sync/images/case_insensitive_search';
+    public const CONFIG_PATH_IMAGES_CASE_INSENSITIVE_SEARCH          = 'rapid_web_sync/images/case_insensitive_search';
 
-    const CONFIG_PATH_IMAGES_MEDIA_GALLERY_DELIMETER          = 'rapid_web_sync/images/media_gallery_delimeter';
+    public const CONFIG_PATH_IMAGES_MEDIA_GALLERY_DELIMETER          = 'rapid_web_sync/images/media_gallery_delimeter';
 
-    const CONFIG_PATH_INVENTORY_AUTO_SET_MANAGE_STOCK         = 'rapid_web_sync/inventory/auto_set_manage_stock';
+    public const CONFIG_PATH_INVENTORY_AUTO_SET_MANAGE_STOCK         = 'rapid_web_sync/inventory/auto_set_manage_stock';
 
-    const CONFIG_PATH_INVENTORY_AUTO_SET_IS_IN_STOCK          = 'rapid_web_sync/inventory/auto_set_is_in_stock';
+    public const CONFIG_PATH_INVENTORY_AUTO_SET_IS_IN_STOCK          = 'rapid_web_sync/inventory/auto_set_is_in_stock';
 
-    const CONFIG_PATH_RELATED_PRODUCTS_MODE                   = 'rapid_web_sync/related_products/mode';
+    public const CONFIG_PATH_RELATED_PRODUCTS_MODE                   = 'rapid_web_sync/related_products/mode';
 
-    const CONFIG_PATH_POST_IMPORT_REINDEX                     = 'rapid_web_sync/post_import/reindex_enable';
+    public const CONFIG_PATH_POST_IMPORT_REINDEX                     = 'rapid_web_sync/post_import/reindex_enable';
 
-    const CONFIG_PATH_POST_IMPORT_REINDEX_LIST                = 'rapid_web_sync/post_import/reindex_list';
+    public const CONFIG_PATH_POST_IMPORT_REINDEX_LIST                = 'rapid_web_sync/post_import/reindex_list';
 
-    const CONFIG_PATH_POST_IMPORT_CLEAR_IMAGE_CACHE           = 'rapid_web_sync/post_import/clear_image_cache';
+    public const CONFIG_PATH_POST_IMPORT_CLEAR_IMAGE_CACHE           = 'rapid_web_sync/post_import/clear_image_cache';
 
-    const CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES       = 'catalog/seo/generate_category_product_rewrites';
+    public const CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES       = 'catalog/seo/generate_category_product_rewrites';
 
-    const COMMUNITY_EDITION_VALUE                             = 'Community';
+    public const COMMUNITY_EDITION_VALUE                             = 'Community';
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     protected $_logger;
 
@@ -86,12 +86,12 @@ class Data extends AbstractHelper
      *
      * @param \Magento\Framework\App\Helper\Context           $context
      * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger          $logger
+     * @param \Psr\Log\LoggerInterface                        $logger
      */
     public function __construct(
         Context $context,
         ProductMetadataInterface $productMetadata,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         parent::__construct($context);
 
@@ -417,7 +417,7 @@ class Data extends AbstractHelper
      *
      * @return string
      */
-    public function arrayToCommaSeparatedValueString($array)
+    public function arrayToCommaSeparatedValueString(array $array)
     {
         return substr(str_repeat('?,', count($array)), 0, -1);
     }

@@ -18,7 +18,7 @@ use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
 use ECInternet\RAPIDWebSync\Helper\Data as Helper;
 use ECInternet\RAPIDWebSync\Helper\Attribute as AttributeHelper;
 use ECInternet\RAPIDWebSync\Helper\Import as ImportHelper;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
 use Exception;
 
@@ -73,7 +73,7 @@ class Batchproducts implements BatchproductsInterface
     private $_logFactory;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -94,7 +94,7 @@ class Batchproducts implements BatchproductsInterface
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute           $attributeHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Import              $importHelper
      * @param \ECInternet\RAPIDWebSync\Model\LogFactory           $logFactory
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger              $logger
+     * @param \Psr\Log\LoggerInterface                            $logger
      */
     public function __construct(
         ProductImage $productImage,
@@ -106,7 +106,7 @@ class Batchproducts implements BatchproductsInterface
         AttributeHelper $attributeHelper,
         ImportHelper $importHelper,
         LogFactory $logFactory,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_productImage             = $productImage;
         $this->_fileDriver               = $fileDriver;
@@ -172,7 +172,7 @@ class Batchproducts implements BatchproductsInterface
             }
 
             if (!empty($errors)) {
-                $response['error'] = join('  ', $errors);
+                $response['error'] = implode('  ', $errors);
             } else {
                 // Cache sku
                 $sku = (string)$product['sku'];
@@ -461,7 +461,7 @@ class Batchproducts implements BatchproductsInterface
         $tablesToIndexCount = count($tablesToIndex);
         $this->log("reindex() - Found [$tablesToIndexCount] tables to re-index.");
 
-        if ($tablesToIndexCount == 0) {
+        if ($tablesToIndexCount === 0) {
             $this->log('NOTE: No tables set to reindex.');
 
             return;

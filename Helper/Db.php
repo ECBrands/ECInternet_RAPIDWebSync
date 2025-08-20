@@ -10,17 +10,17 @@ namespace ECInternet\RAPIDWebSync\Helper;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\App\ResourceConnection;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 
 /**
  * Db Helper
  */
 class Db extends AbstractHelper
 {
-    const CONFIG_PATH_ENABLE_QUERY_LOGGING = 'rapid_web_sync/general/query_logging';
+    private const CONFIG_PATH_ENABLE_QUERY_LOGGING = 'rapid_web_sync/general/query_logging';
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     protected $_logger;
 
@@ -39,12 +39,12 @@ class Db extends AbstractHelper
      *
      * @param \Magento\Framework\App\Helper\Context     $context
      * @param \Magento\Framework\App\ResourceConnection $resourceConnection
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger    $logger
+     * @param \Psr\Log\LoggerInterface                  $logger
      */
     public function __construct(
         Context $context,
         ResourceConnection $resourceConnection,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         parent::__construct($context);
 

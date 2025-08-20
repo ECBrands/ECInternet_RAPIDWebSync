@@ -8,14 +8,14 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Catalog\Model\Product\Link as ProductLink;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 
 /**
  * Link helper
  */
 class Link
 {
-    const KEY_RELATED = 'related_products';
+    public const KEY_RELATED = 'related_products';
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
@@ -28,21 +28,21 @@ class Link
     private $_dbHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
     /**
      * Link constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db     $dbHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
+     * @param \ECInternet\RAPIDWebSync\Helper\Data $helper
+     * @param \ECInternet\RAPIDWebSync\Helper\Db   $dbHelper
+     * @param \Psr\Log\LoggerInterface             $logger
      */
     public function __construct(
         Data $helper,
         Db $dbHelper,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_helper   = $helper;
         $this->_dbHelper = $dbHelper;

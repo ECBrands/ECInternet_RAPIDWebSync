@@ -10,7 +10,7 @@ namespace ECInternet\RAPIDWebSync\Helper;
 use Magento\Framework\Exception\InputException;
 use Magento\Store\Model\Data\StoreConfig;
 use Magento\Store\Model\Store;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
@@ -18,11 +18,11 @@ use Exception;
  */
 class StoreWebsite
 {
-    const ADMIN_STORECODE = 'admin';
+    public const ADMIN_STORECODE = 'admin';
 
-    const FIELD_STORE     = 'store';
+    public const FIELD_STORE     = 'store';
 
-    const FIELD_WEBSITES  = 'websites';
+    public const FIELD_WEBSITES  = 'websites';
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
@@ -35,7 +35,7 @@ class StoreWebsite
     private $db;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
@@ -50,14 +50,14 @@ class StoreWebsite
     private $websites = [];
 
     /**
-     * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db     $db
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
+     * @param \ECInternet\RAPIDWebSync\Helper\Data $helper
+     * @param \ECInternet\RAPIDWebSync\Helper\Db   $db
+     * @param \Psr\Log\LoggerInterface             $logger
      */
     public function __construct(
         Data $helper,
         Db $db,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->helper = $helper;
         $this->db     = $db;
@@ -272,7 +272,7 @@ class StoreWebsite
         // Use this value as our key when we iterate through website_ids
         $key = (string)$product[self::FIELD_STORE];
 
-        if (trim($key) != static::ADMIN_STORECODE) {
+        if (trim($key) !== static::ADMIN_STORECODE) {
             $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($key);
             foreach ($storeCodes as $storeCode) {
                 $websiteIds[] = $this->getWebsiteIdsForStoreCode($storeCode);

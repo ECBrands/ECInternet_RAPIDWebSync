@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Framework\Exception\IntegrationException;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use DateTime;
 use DateInterval;
 use Exception;
@@ -74,7 +74,7 @@ class Import
     private $_tierPriceHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -126,7 +126,7 @@ class Import
      * @param \ECInternet\RAPIDWebSync\Helper\Stock        $stockHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Helper\TierPrice    $tierPriceHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \Psr\Log\LoggerInterface                     $logger
      */
     public function __construct(
         Data $helper,
@@ -140,7 +140,7 @@ class Import
         Stock $stockHelper,
         StoreWebsite $storeWebsiteHelper,
         TierPrice $tierPriceHelper,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_helper             = $helper;
         $this->_attributeHelper    = $attributeHelper;
@@ -180,7 +180,7 @@ class Import
      */
     public function doesProductExist(string $sku)
     {
-        return $this->getProductIdForSku($sku) != null;
+        return $this->getProductIdForSku($sku) !== null;
     }
 
     /**
@@ -561,8 +561,8 @@ class Import
      */
     private function getEntityIdSkuArray()
     {
-        if ($this->_skuEntityIdArray == null ||
-            count($this->_skuEntityIdArray) == 0 ||
+        if ($this->_skuEntityIdArray === null ||
+            count($this->_skuEntityIdArray) === 0 ||
             $this->_refreshEntityIdArray === true
         ) {
             $this->initSkuArray();

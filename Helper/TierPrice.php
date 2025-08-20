@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Helper;
 
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
@@ -15,13 +15,13 @@ use Exception;
  */
 class TierPrice
 {
-    const PRICE_SCOPE_GLOBAL       = 0;
+    public const PRICE_SCOPE_GLOBAL       = 0;
 
-    const TIER_PRICES_KEY          = 'tier_prices';
+    public const TIER_PRICES_KEY          = 'tier_prices';
 
-    const PRICING_MODE_ADDITION    = 1;
+    public const PRICING_MODE_ADDITION    = 1;
 
-    const PRICING_MODE_REPLACEMENT = 2;
+    public const PRICING_MODE_REPLACEMENT = 2;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
@@ -39,7 +39,7 @@ class TierPrice
     private $_storeWebsiteHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -54,13 +54,13 @@ class TierPrice
      * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \Psr\Log\LoggerInterface                     $logger
      */
     public function __construct(
         Data $helper,
         Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_helper             = $helper;
         $this->_dbHelper           = $dbHelper;

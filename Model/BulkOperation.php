@@ -12,7 +12,7 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use ECInternet\RAPIDWebSync\Api\BulkOperationInterface;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
@@ -20,17 +20,17 @@ use Exception;
  */
 class BulkOperation implements BulkOperationInterface
 {
-    const RESPONSE_FIELD_SKU     = 'sku';
+    public const RESPONSE_FIELD_SKU     = 'sku';
 
-    const RESPONSE_FIELD_ID      = 'id';
+    public const RESPONSE_FIELD_ID      = 'id';
 
-    const RESPONSE_FIELD_NEW     = 'new';
+    public const RESPONSE_FIELD_NEW     = 'new';
 
-    const RESPONSE_FIELD_WARNING = 'warning';
+    public const RESPONSE_FIELD_WARNING = 'warning';
 
-    const RESPONSE_FIELD_ERROR   = 'error';
+    public const RESPONSE_FIELD_ERROR   = 'error';
 
-    const RESPONSE_FIELD_TRACE   = 'trace';
+    public const RESPONSE_FIELD_TRACE   = 'trace';
 
     /**
      * @var \Magento\Catalog\Api\ProductRepositoryInterface
@@ -38,7 +38,7 @@ class BulkOperation implements BulkOperationInterface
     private $productRepository;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
@@ -53,11 +53,11 @@ class BulkOperation implements BulkOperationInterface
      * BulkOperation constructor.
      *
      * @param \Magento\Catalog\Api\ProductRepositoryInterface $productRepository
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger          $logger
+     * @param \Psr\Log\LoggerInterface                        $logger
      */
     public function __construct(
         ProductRepositoryInterface $productRepository,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->productRepository = $productRepository;
         $this->logger            = $logger;

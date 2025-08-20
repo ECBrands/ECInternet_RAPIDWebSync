@@ -28,7 +28,7 @@ use Magento\Framework\View\Result\PageFactory;
 use ECInternet\RAPIDWebSync\Helper\Configurable as ConfigurableHelper;
 use ECInternet\RAPIDWebSync\Helper\Data;
 use ECInternet\RAPIDWebSync\Helper\Link;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
@@ -38,7 +38,7 @@ use Exception;
  */
 class Download extends Action implements HttpGetActionInterface
 {
-    const FILE_NAME = 'ProductExport.csv';
+    private const FILE_NAME = 'ProductExport.csv';
 
     /**
      * @var \Magento\Framework\View\Result\PageFactory
@@ -96,7 +96,7 @@ class Download extends Action implements HttpGetActionInterface
     private $_link;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -115,7 +115,7 @@ class Download extends Action implements HttpGetActionInterface
      * @param \Magento\Framework\Filesystem\Io\File                                    $file
      * @param \ECInternet\RAPIDWebSync\Helper\Data                                     $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Link                                     $link
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger                                   $logger
+     * @param \Psr\Log\LoggerInterface                                                 $logger
      *
      * @throws \Magento\Framework\Exception\FileSystemException
      */
@@ -132,7 +132,7 @@ class Download extends Action implements HttpGetActionInterface
         File $file,
         Data $helper,
         Link $link,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         parent::__construct($context);
 
@@ -267,7 +267,7 @@ class Download extends Action implements HttpGetActionInterface
             foreach ($attributes as $attribute) {
                 // Cache for readability
                 $attributeCode         = $attribute->getAttributeCode();
-                $frontendInput         = $attribute->getFrontendInput();
+                $frontendInput         = (string)$attribute->getFrontendInput();
                 $productAttributeValue = $product->getData($attributeCode);
 
                 $this->log('execute()', ['key' => $attributeCode, 'value' => $productAttributeValue]);
@@ -279,7 +279,7 @@ class Download extends Action implements HttpGetActionInterface
                 }
 
                 // Handle 'select'
-                if ($frontendInput == 'select') {
+                if ($frontendInput === 'select') {
                     $optionText = $attribute->getSource()->getOptionText($productAttributeValue);
                     $this->log('execute()', ['optionText' => $optionText]);
 
@@ -288,7 +288,7 @@ class Download extends Action implements HttpGetActionInterface
                 }
 
                 // Handle 'multiselect'
-                if ($frontendInput == 'multiselect') {
+                if ($frontendInput === 'multiselect') {
                     $productData[$attributeCode] = $this->implodeMultiselectValues($attribute, $productAttributeValue);
                     continue;
                 }
@@ -370,17 +370,17 @@ class Download extends Action implements HttpGetActionInterface
     ) {
         return
             // Static attributes are stored in the main table of an entity
-            $attribute->getBackendType() != 'static' &&
+            (string)$attribute->getBackendType() !== 'static' &&
 
             // Must display on frontend and not be image-like
             $attribute->getFrontendInput() &&
-            $attribute->getFrontendInput() != 'gallery' &&
-            $attribute->getFrontendInput() != 'media_image' &&
+            (string)$attribute->getFrontendInput() !== 'gallery' &&
+            (string)$attribute->getFrontendInput() !== 'media_image' &&
             $attribute->getDefaultFrontendLabel() &&
 
             // Explicitly exclude a few
-            $attribute->getAttributeCode() != 'tier_price' &&
-            $attribute->getAttributeCode() != 'quantity_and_stock_status';
+            (string)$attribute->getAttributeCode() !== 'tier_price' &&
+            (string)$attribute->getAttributeCode() !== 'quantity_and_stock_status';
     }
 
     /**
@@ -465,7 +465,7 @@ class Download extends Action implements HttpGetActionInterface
      */
     private function buildImageString(
         Product $product,
-        $attributeCode
+        string $attributeCode
     ) {
         if ($product->hasData($attributeCode)) {
             $attributeValue = $product->getData($attributeCode);
@@ -578,9 +578,10 @@ class Download extends Action implements HttpGetActionInterface
 
         if (count($parentIds) > 0) {
             $productId = $parentIds[0];
-
-            if ($parentProduct = $this->getProduct($productId)) {
-                return $parentProduct->getSku();
+            if (is_numeric($productId)) {
+                if ($parentProduct = $this->getProduct((int)$productId)) {
+                    return $parentProduct->getSku();
+                }
             }
         }
 
@@ -594,7 +595,7 @@ class Download extends Action implements HttpGetActionInterface
      *
      * @return \Magento\Catalog\Api\Data\ProductInterface|null
      */
-    private function getProduct($entityId)
+    private function getProduct(int $entityId)
     {
         try {
             return $this->_productRepository->getById($entityId);

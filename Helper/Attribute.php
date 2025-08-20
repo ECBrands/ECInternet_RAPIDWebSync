@@ -19,7 +19,7 @@ use Magento\Framework\Exception\StateException;
 use Magento\Framework\Exception\State\InitException;
 use Magento\Framework\Phrase;
 use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
 use Exception;
 
@@ -62,7 +62,7 @@ class Attribute
     private $_storeWebsiteHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -93,14 +93,14 @@ class Attribute
      * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \Psr\Log\LoggerInterface                     $logger
      */
     public function __construct(
         EavConfig $eavConfig,
         Data $helper,
         Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_eavConfig          = $eavConfig;
         $this->_helper             = $helper;
@@ -334,7 +334,7 @@ class Attribute
             throw new InitException(__("Unable to lookup 'entity_type_id' for 'entity_type_code' = 'catalog_product'"));
         }
 
-        if (count($results) != 1) {
+        if (count($results) !== 1) {
             throw new StateException(
                 __('Found ' . count($results) . " results when looking for 'catalog_product' 'entity_type_id'.")
             );
@@ -449,8 +449,6 @@ class Attribute
      */
     private function upsertProductAttribute(array $product, int $productId, string $attributeCode)
     {
-
-
         // We handle image attributes separately
         if ($this->isImageAttribute($attributeCode)) {
             return;
@@ -656,9 +654,9 @@ class Attribute
     /**
      * Update product attribute value
      *
-     * @param int    $attributeId
-     * @param int    $storeId
      * @param int    $productId
+     * @param int    $storeId
+     * @param int    $attributeId
      * @param string $attributeType
      * @param mixed  $value
      *
@@ -902,7 +900,7 @@ class Attribute
      *
      * @return int
      */
-    private function addAttributeOptionRecord(int $attributeId, int $sortOrder = null)
+    private function addAttributeOptionRecord(int $attributeId, ?int $sortOrder = null)
     {
         $this->log('addAttributeOptionRecord()', ['attributeId' => $attributeId, 'sortOrder' => $sortOrder]);
 
@@ -950,9 +948,9 @@ class Attribute
     /**
      * Delete record from 'catalog_product_entity_*'
      *
-     * @param array $attributeInfo
-     * @param int   $storeId
      * @param int   $productId
+     * @param int   $storeId
+     * @param array $attributeInfo
      *
      * @return void
      */
@@ -978,9 +976,9 @@ class Attribute
     /**
      * Delete product attribute value in all stores except one
      *
-     * @param array $attributeInfo
-     * @param int   $storeId
      * @param int   $productId
+     * @param int   $storeId
+     * @param array $attributeInfo
      *
      * @return void
      */

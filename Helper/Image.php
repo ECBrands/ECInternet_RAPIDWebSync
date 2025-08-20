@@ -11,7 +11,7 @@ use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\StateException;
 use Magento\Framework\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Driver\File;
-use ECInternet\RAPIDWebSync\Logger\Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
@@ -58,7 +58,7 @@ class Image
     private $_storeWebsiteHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $_logger;
 
@@ -76,7 +76,7 @@ class Image
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \Psr\Log\LoggerInterface                     $logger
      */
     public function __construct(
         DirectoryList $directoryList,
@@ -85,7 +85,7 @@ class Image
         Attribute $attributeHelper,
         Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        LoggerInterface $logger
     ) {
         $this->_directoryList      = $directoryList;
         $this->_fileDriver         = $fileDriver;
@@ -470,7 +470,7 @@ class Image
     {
         $this->info('copyImageFile()', ['file' => $imageFile]);
 
-        if ($imageFile == '__NULL__' || $imageFile == null) {
+        if ($imageFile === '__NULL__' || $imageFile === null) {
             return false;
         }
 
