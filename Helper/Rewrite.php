@@ -17,11 +17,11 @@ use Exception;
  */
 class Rewrite
 {
-    const KEY                   = 'url_key';
+    private const KEY                   = 'url_key';
 
-    const REWRITE_TYPE_CATEGORY = 'category';
+    private const REWRITE_TYPE_CATEGORY = 'category';
 
-    const REWRITE_TYPE_PRODUCT  = 'product';
+    private const REWRITE_TYPE_PRODUCT  = 'product';
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data

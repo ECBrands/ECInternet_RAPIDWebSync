@@ -9,33 +9,33 @@ namespace ECInternet\RAPIDWebSync\Api\Data;
 
 interface LogInterface
 {
-    const COLUMN_ID             = 'entity_id';
+    public const COLUMN_ID             = 'entity_id';
 
-    const COLUMN_CREATED_AT     = 'created_at';
+    public const COLUMN_CREATED_AT     = 'created_at';
 
-    const COLUMN_UPDATED_AT     = 'updated_at';
+    public const COLUMN_UPDATED_AT     = 'updated_at';
 
-    const COLUMN_SYNC_OPERATION = 'sync_operation';
+    public const COLUMN_SYNC_OPERATION = 'sync_operation';
 
-    const COLUMN_TRANSFORM_ID   = 'transform_id';
+    public const COLUMN_TRANSFORM_ID   = 'transform_id';
 
-    const COLUMN_JOB_ID         = 'job_id';
+    public const COLUMN_JOB_ID         = 'job_id';
 
-    const COLUMN_DURATION       = 'duration_ms';
+    public const COLUMN_DURATION       = 'duration_ms';
 
-    const COLUMN_COUNT_IN       = 'count_in';
+    public const COLUMN_COUNT_IN       = 'count_in';
 
-    const COLUMN_COUNT_OUT      = 'count_out';
+    public const COLUMN_COUNT_OUT      = 'count_out';
 
-    const COLUMN_WARNING_COUNT  = 'warning_count';
+    public const COLUMN_WARNING_COUNT  = 'warning_count';
 
-    const COLUMN_ERROR_COUNT    = 'error_count';
+    public const COLUMN_ERROR_COUNT    = 'error_count';
 
-    const SYNC_OPERATION_INSERT = 1;
+    public const SYNC_OPERATION_INSERT = 1;
 
-    const SYNC_OPERATION_UPDATE = 2;
+    public const SYNC_OPERATION_UPDATE = 2;
 
-    const SYNC_OPERATION_UPSERT = 3;
+    public const SYNC_OPERATION_UPSERT = 3;
 
     /**
      * Get ID

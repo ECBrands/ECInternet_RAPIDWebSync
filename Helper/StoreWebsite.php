@@ -15,14 +15,16 @@ use Exception;
 
 /**
  * Store / Website helper
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class StoreWebsite
 {
-    const ADMIN_STORECODE = 'admin';
+    private const ADMIN_STORECODE = 'admin';
 
-    const FIELD_STORE     = 'store';
+    private const FIELD_STORE     = 'store';
 
-    const FIELD_WEBSITES  = 'websites';
+    private const FIELD_WEBSITES  = 'websites';
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
