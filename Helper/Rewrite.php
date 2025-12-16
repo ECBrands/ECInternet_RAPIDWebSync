@@ -484,22 +484,20 @@ class Rewrite
             if ($requestPathUrlRewriteId === null) {
                 $this->log("upsertUrlRewriteRecord() - RequestPath [$requestPathWithSuffix] is not already mapped");
                 $this->updateUrlRewriteRecord($urlRewriteId, $requestPathWithSuffix, $targetPath, $metadata);
-
                 return;
-            } else {
-                // Requested requestPath is already in use
-                $this->log("upsertUrlRewriteRecord() - RequestPath [$requestPathWithSuffix] is already in use by Url Rewrite [$requestPathUrlRewriteId]");
             }
+
+            // Requested requestPath is already in use
+            $this->log("upsertUrlRewriteRecord() - RequestPath [$requestPathWithSuffix] is already in use by Url Rewrite [$requestPathUrlRewriteId]");
 
             // It MAY be in use by our incoming value
-            if ($requestPathUrlRewriteId == $urlRewriteId) {
+            if ($requestPathUrlRewriteId === $urlRewriteId) {
                 $this->log('upsertUrlRewriteRecord() - RequestPath rewrite and product rewrite are the same, updating rewrite...');
                 $this->updateUrlRewriteRecord($urlRewriteId, $requestPathWithSuffix, $targetPath, $metadata);
-
                 return;
-            } else {
-                $this->log("upsertUrlRewriteRecord() - RequestPath rewrite ($requestPathUrlRewriteId) and product rewrite ($urlRewriteId) are not the same");
             }
+
+            $this->log("upsertUrlRewriteRecord() - RequestPath rewrite ($requestPathUrlRewriteId) and product rewrite ($urlRewriteId) are not the same");
 
             throw new LocalizedException(
                 __("Unable to update url rewrite - RequestPath [$requestPathWithSuffix] is already in use by URL Rewrite [$requestPathUrlRewriteId]")
@@ -512,11 +510,10 @@ class Rewrite
         if ($requestPathUrlRewriteId === null) {
             $this->log("upsertUrlRewriteRecord() - RequestPath [$requestPathWithSuffix] is not already in use.");
             $this->insertUrlRewriteRecord($entityType, $entityId, $requestPathWithSuffix, $targetPath, $storeId, $metadata);
-
             return;
-        } else {
-            $this->log("upsertUrlRewriteRecord() - RequestPath [$requestPathWithSuffix] is already in use by Url Rewrite [$requestPathUrlRewriteId]");
         }
+
+        $this->log("upsertUrlRewriteRecord() - RequestPath [$requestPathWithSuffix] is already in use by Url Rewrite [$requestPathUrlRewriteId]");
 
         throw new LocalizedException(
             __("Unable to create url rewrite - RequestPath [$requestPathWithSuffix] is already in use by Url Rewrite [$requestPathUrlRewriteId]")
@@ -566,8 +563,14 @@ class Rewrite
      *
      * @return void
      */
-    private function insertUrlRewriteRecord(string $entityType, int $entityId, string $requestPath, string $targetPath, int $storeId = 1, string $metadata = null)
-    {
+    private function insertUrlRewriteRecord(
+        string $entityType,
+        int $entityId,
+        string $requestPath,
+        string $targetPath,
+        int $storeId = 1,
+        ?string $metadata = null
+    ) {
         $this->log('insertUrlRewriteRecord()', [
             'entityType'  => $entityType,
             'entityId'    => $entityId,
@@ -598,8 +601,12 @@ class Rewrite
      *
      * @return void
      */
-    private function updateUrlRewriteRecord(int $urlRewriteId, string $requestPath, string $targetPath, string $metadata = null)
-    {
+    private function updateUrlRewriteRecord(
+        int $urlRewriteId,
+        string $requestPath,
+        string $targetPath,
+        ?string $metadata = null
+    ) {
         $this->log('updateUrlRewriteRecord()', [
             'urlRewriteId' => $urlRewriteId,
             'requestPath'  => $requestPath,

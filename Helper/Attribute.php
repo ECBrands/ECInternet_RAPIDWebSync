@@ -499,7 +499,6 @@ class Attribute
         // We only handle a subset of attribute types
         if (!$this->isValidAttributeType($attributeBackendType)) {
             $this->log('upsertProductAttribute()', ['invalidAttributeType' => $attributeBackendType]);
-
             return;
         }
 
@@ -654,14 +653,19 @@ class Attribute
      *
      * @return void
      */
-    private function insertProductAttributeValue(int $attributeId, int $storeId, int $productId, $value, string $attributeType)
-    {
+    private function insertProductAttributeValue(
+        int $attributeId,
+        int $storeId,
+        int $productId,
+        mixed $value,
+        string $attributeType
+    ) {
         $this->log('insertProductAttributeValue()', [
-            'attribute_id'   => $attributeId,
-            'store_id'       => $storeId,
-            'product_id'     => $productId,
-            'value'          => $value,
-            'attribute_type' => $attributeType]);
+            'attributeId'   => $attributeId,
+            'storeId'       => $storeId,
+            'productId'     => $productId,
+            'value'         => $value,
+            'attributeType' => $attributeType]);
 
         $table = $this->db->getTableName('catalog_product_entity_' . $attributeType);
         $query = "INSERT INTO `$table` (`attribute_id`,`store_id`,`{$this->getProductIdColumn()}`,`value`) VALUES (?,?,?,?)";
@@ -681,8 +685,13 @@ class Attribute
      *
      * @return void
      */
-    private function updateProductAttributeValue(int $productId, int $storeId, int $attributeId, string $attributeType, $value)
-    {
+    private function updateProductAttributeValue(
+        int $productId,
+        int $storeId,
+        int $attributeId,
+        string $attributeType,
+        mixed $value
+    ) {
         $this->log('updateProductAttributeValue()', [
             'productId'     => $productId,
             'storeId'       => $storeId,
@@ -770,7 +779,7 @@ class Attribute
      *
      * @return int|null
      */
-    private function getAttributeOptionId(string $attributeCode, $attributeOptionValue)
+    private function getAttributeOptionId(string $attributeCode, mixed $attributeOptionValue)
     {
         $this->log('getAttributeOptionId()', [
             'attribute_code' => $attributeCode,
@@ -802,29 +811,35 @@ class Attribute
         return (int)$this->db->selectOne($query, $binds, 'option_id');
     }
 
+    /**
+     * @param string $attributeCode
+     * @param string $value
+     *
+     * @return mixed|null
+     */
     private function getAttributeSourceOptionId(string $attributeCode, string $value)
     {
-        //$this->log('getAttributeSourceOptionId()', ['attributeCode' => $attributeCode, 'value' => $value]);
-
-        if ($attribute = $this->getAttribute($attributeCode)) {
-            if ($attribute->usesSource()) {
-                return $this->getOptionId($attribute, $value);
-            } else {
-                $this->log('getAttributeSourceOptionId()', [
-                    'attributeCode' => $attributeCode,
-                    'value'         => $value,
-                    'error'         => 'Attribute does not use source model.'
-                ]);
-            }
-        } else {
+        /** @var \Magento\Eav\Model\Entity\Attribute\AbstractAttribute $attribute */
+        $attribute = $this->getAttribute($attributeCode);
+        if (!$attribute) {
             $this->log('getAttributeSourceOptionId()', [
                 'attributeCode' => $attributeCode,
                 'value'         => $value,
                 'error'         => 'getAttribute() failed for attributeCode'
             ]);
+            return null;
         }
 
-        return null;
+        if (!$attribute->usesSource()) {
+            $this->log('getAttributeSourceOptionId()', [
+                'attributeCode' => $attributeCode,
+                'value'         => $value,
+                'error'         => 'Attribute does not use source model.'
+            ]);
+            return null;
+        }
+
+        return $this->getOptionId($attribute, $value);
     }
 
     /**

@@ -14,17 +14,17 @@ use Magento\Framework\Data\OptionSourceInterface;
  */
 class IllegalNewAttributeActionOption implements OptionSourceInterface
 {
-    const ACTION_IGNORE_VALUE       = 1;
+    public const ACTION_IGNORE_VALUE       = 1;
 
-    const ACTION_IGNORE_LABEL       = 'Ignore (Warning)';
+    public const ACTION_IGNORE_LABEL       = 'Ignore (Warning)';
 
-    const ACTION_SKIP_PRODUCT_VALUE = 2;
+    public const ACTION_SKIP_PRODUCT_VALUE = 2;
 
-    const ACTION_SKIP_PRODUCT_LABEL = 'Skip product (Error)';
+    public const ACTION_SKIP_PRODUCT_LABEL = 'Skip product (Error)';
 
-    const ACTION_SKIP_BATCH_VALUE   = 3;
+    public const ACTION_SKIP_BATCH_VALUE   = 3;
 
-    const ACTION_SKIP_BATCH_LABEL   = 'Skip entire batch (Error)';
+    public const ACTION_SKIP_BATCH_LABEL   = 'Skip entire batch (Error)';
 
     /**
      * @inheritDoc
