@@ -118,9 +118,9 @@ class Image
      */
     public function processProduct(array $product, string $sku, int $productId)
     {
-        $this->info('| -- Start Product Image Processor --');
-        $this->info("| Sku: [$sku]");
-        $this->info("| ProductId: [$productId]");
+        $this->log('| -- Start Product Image Processor --');
+        $this->log("| Sku: [$sku]");
+        $this->log("| ProductId: [$productId]");
 
         // Cache product's store_ids
         $storeIds = $this->_storeWebsiteHelper->getStoreIdsForProduct($product);
@@ -130,23 +130,22 @@ class Image
             $labelColumn = $baseImageAttributeCode . '_label';
             // Test for case when image is not specified, but label is
             if (isset($product[$labelColumn]) && !isset($product[$baseImageAttributeCode])) {
-                $this->info("processProduct() - UNEXPECTED: Column '$labelColumn'' was set, but column '$baseImageAttributeCode' was not.");
+                $this->log("processProduct() - UNEXPECTED: Column '$labelColumn'' was set, but column '$baseImageAttributeCode' was not.");
 
                 // Force label update
-                $imageAttributeInfo = $this->getAttributeInfo($baseImageAttributeCode);
-                if ($imageAttributeInfo) {
-                    $this->updateImageLabel($imageAttributeInfo, $productId, $storeIds, $product[$labelColumn]);
+                if ($imageAttributeInfo = $this->getAttributeInfo($baseImageAttributeCode)) {
+                    $this->updateImageLabel($imageAttributeInfo, $productId, $storeIds, (string)$product[$labelColumn]);
                 }
             }
         }
 
         // Handle base image attributes
         foreach ($this->_baseImageAttributeCodes as $baseImageAttributeCode) {
-            $this->info("processProduct() - Check base image attribute '$baseImageAttributeCode'...");
+            $this->log("processProduct() - Check base image attribute '$baseImageAttributeCode'...");
 
             if (isset($product[$baseImageAttributeCode])) {
                 $baseImageAttributeCodeValue = (string)$product[$baseImageAttributeCode];
-                $this->info('processProduct()', ['baseImageAttributeCodeValue' => $baseImageAttributeCodeValue]);
+                $this->log('processProduct()', ['baseImageAttributeCodeValue' => $baseImageAttributeCodeValue]);
 
                 if ($attributeInfo = $this->getAttributeInfo($baseImageAttributeCode)) {
                     if ($baseImageAttributeCodeValue === '__DELETE__') {
@@ -164,7 +163,7 @@ class Image
                         );
 
                         if (!$setImageAttribute) {
-                            $this->warn("processProduct() - Unable to set base image attribute '$baseImageAttributeCode'.");
+                            $this->log("processProduct() - Unable to set base image attribute '$baseImageAttributeCode'.");
                         }
                     }
                 }
@@ -172,10 +171,10 @@ class Image
         }
 
         // Handle 'media_gallery'
-        $this->info("processProduct() - Check image attribute 'media_gallery'...");
+        $this->log("processProduct() - Check image attribute 'media_gallery'...");
         if (isset($product['media_gallery'])) {
             $mediaGallery = (string)$product['media_gallery'];
-            $this->info('processProduct()', ['mediaGallery' => $mediaGallery]);
+            $this->log('processProduct()', ['mediaGallery' => $mediaGallery]);
 
             if ($mediaGalleryAttributeInfo = $this->getAttributeInfo('media_gallery')) {
                 $setMediaGalleryAttribute = $this->handleVarcharAttribute(
@@ -187,12 +186,12 @@ class Image
                 );
 
                 if (!$setMediaGalleryAttribute) {
-                    $this->warn("processProduct() - Unable to set image attribute 'media_gallery'.");
+                    $this->log("processProduct() - Unable to set image attribute 'media_gallery'.");
                 }
             }
         }
 
-        $this->info('| -- End Product Image Processor --' . PHP_EOL);
+        $this->log('| -- End Product Image Processor --' . PHP_EOL);
     }
 
     /**
@@ -206,28 +205,28 @@ class Image
     /**
      * Adds image to product image gallery only if not already exists
      *
-     * @param int         $productId
-     *                    product id to test image existence in gallery
-     * @param int         $storeId
-     * @param string      $imageName
-     *                    image file name (relative to /products/media in magento dir)
-     * @param array       $targetStoreIds
-     * @param string|null $imageLabel
-     * @param bool        $isExcluded
-     * @param int|null    $refId
+     * @param int      $productId       ProductId to test image existence in gallery
+     * @param int      $storeId
+     * @param string   $imageName       Image file name (relative to /products/media in magento dir)
+     * @param int[]    $targetStoreIds
+     * @param string   $imageLabel
+     * @param bool     $isExcluded
+     * @param int|null $refId
+     *
+     * @return void
      *
      * @throws \Exception
      */
     private function addImageToGallery(
-        $productId,
-        $storeId,
-        $imageName,
-        $targetStoreIds,
-        $imageLabel = '',
-        $isExcluded = false,
-        $refId = null
+        int $productId,
+        int $storeId,
+        string $imageName,
+        array $targetStoreIds,
+        string $imageLabel = '',
+        bool $isExcluded = false,
+        ?int $refId = null
     ) {
-        $this->info('addImageToGallery()', [
+        $this->log('addImageToGallery()', [
             'productId'      => $productId,
             'storeId'        => $storeId,
             'image'          => $imageName,
@@ -238,20 +237,25 @@ class Image
         ]);
 
         $mediaGalleryAttributeInfo = $this->getAttributeInfo('media_gallery');
+        if ($mediaGalleryAttributeInfo === null) {
+            $this->log('addImageToGallery() - Unable to get image attribute info');
+            return;
+        }
+        
         $mediaGalleryAttributeId = $mediaGalleryAttributeInfo['attribute_id'];
-        $this->info('addImageToGallery()', ['mediaGalleryAttributeId' => $mediaGalleryAttributeId]);
+        $this->log('addImageToGallery()', ['mediaGalleryAttributeId' => $mediaGalleryAttributeId]);
 
         $mediaGalleryValueId = $this->getMediaGalleryValueId($mediaGalleryAttributeId, $imageName);
-        $this->info('addImageToGallery()', ['mediaGalleryValueId' => $mediaGalleryValueId]);
+        $this->log('addImageToGallery()', ['mediaGalleryValueId' => $mediaGalleryValueId]);
 
-        if ($mediaGalleryValueId == null) {
-            $this->info('addImageToGallery() - mediaGalleryValudId is null.  Add new record...');
+        if ($mediaGalleryValueId === null) {
+            $this->log('addImageToGallery() - mediaGalleryValudId is null.  Add new record...');
             $mediaGalleryValueId = $this->addMediaGalleryRecord($mediaGalleryAttributeId, $imageName);
-            $this->info('addImageToGallery() - MediaGallery record created.', ['mediaGalleryValueId' => $mediaGalleryValueId]);
+            $this->log('addImageToGallery() - MediaGallery record created.', ['mediaGalleryValueId' => $mediaGalleryValueId]);
         }
 
         $maxPosition = $this->getMaxPosition($productId, $storeId);
-        $this->info('addImageToGallery()', [
+        $this->log('addImageToGallery()', [
             'productId'   => $productId,
             'storeId'     => $storeId,
             'maxPosition' => $maxPosition
@@ -282,7 +286,7 @@ class Image
      */
     private function getMaxPosition($productId, $storeId)
     {
-        $this->info('getMaxPosition()', ['productId' => $productId, 'storeId' => $storeId]);
+        $this->log('getMaxPosition()', ['productId' => $productId, 'storeId' => $storeId]);
 
         $mediaGallery      = $this->db->getTableName('catalog_product_entity_media_gallery');
         $mediaGalleryValue = $this->db->getTableName('catalog_product_entity_media_gallery_value');
@@ -310,9 +314,14 @@ class Image
      * @return void
      * @throws \Exception
      */
-    private function handleImageTypeAttribute(int $productId, array &$productData, int $storeId, string $attributeCode, string $value)
-    {
-        $this->info('handleImageTypeAttribute()', [
+    private function handleImageTypeAttribute(
+        int $productId,
+        array &$productData,
+        int $storeId,
+        string $attributeCode,
+        string $value
+    ) {
+        $this->log('handleImageTypeAttribute()', [
             'productId'     => $productId,
             'storeId'       => $storeId,
             'attributeCode' => $attributeCode,
@@ -321,9 +330,9 @@ class Image
 
         try {
             $imageFile = $this->copyImageFile($value);
-            $this->info('handleImageTypeAttribute()', ['imageFile' => $imageFile]);
+            $this->log('handleImageTypeAttribute()', ['imageFile' => $imageFile]);
         } catch (Exception $e) {
-            $this->info("handleImageTypeAttribute() - Unable to copyImageFile($value) - {$e->getMessage()}");
+            $this->log("handleImageTypeAttribute() - Unable to copyImageFile($value) - {$e->getMessage()}");
             throw $e;
         }
 
@@ -339,20 +348,18 @@ class Image
                 $productData['store'] = self::STORE_VIEW_ADMIN;
             }
 
-            if ($this->db->isSingleStore()) {
-                $targetStoreIds = $this->_storeWebsiteHelper->getStoreIds();
-            } else {
-                $targetStoreIds = $this->_storeWebsiteHelper->getStoreIdsForStoreScope($productData['store']);
-            }
+            $targetStoreIds = ($this->db->isSingleStore())
+                ? $this->_storeWebsiteHelper->getStoreIds()
+                : $this->_storeWebsiteHelper->getStoreIdsForStoreScope((string)$productData['store']);
 
             if (count($targetStoreIds)) {
-                $this->info('handleImageTypeAttribute()', ['targetStoreIds' => $targetStoreIds]);
+                $this->log('handleImageTypeAttribute()', ['targetStoreIds' => $targetStoreIds]);
 
                 $attributeDescription = $this->getAttributeInfo($attributeCode);
-                $this->addImageToGallery($productId, $storeId, $imageFile, $targetStoreIds, $label, 0, $attributeDescription['attribute_id']);
+                $this->addImageToGallery($productId, $storeId, $imageFile, $targetStoreIds, $label, false, $attributeDescription['attribute_id']);
                 $this->_attributeHelper->upsertProductAttributeValue($attributeDescription['attribute_id'], $storeId, $productId, $imageFile, $attributeDescription['backend_type']);
             } else {
-                $this->warn('handleImageTypeAttribute() - No target StoreIds.');
+                $this->log('handleImageTypeAttribute() - No target StoreIds.');
             }
         }
     }
@@ -370,9 +377,15 @@ class Image
      * @return bool
      * @throws Exception
      */
-    private function handleVarcharAttribute(int $productId, array &$productData, string $attributeCode, array $attributeDescription, string $value, int $storeId = 0)
-    {
-        $this->info('handleVarcharAttribute()', [
+    private function handleVarcharAttribute(
+        int $productId,
+        array &$productData,
+        string $attributeCode,
+        array $attributeDescription,
+        string $value,
+        int $storeId = 0
+    ) {
+        $this->log('handleVarcharAttribute()', [
             'productId'     => $productId,
             'storeId'       => $storeId,
             'attributeCode' => $attributeCode,
@@ -420,9 +433,14 @@ class Image
      * @return void
      * @throws \Exception
      */
-    private function handleGalleryTypeAttribute(int $productId, array $productData, int $storeId, string $attributeCode, string $value)
-    {
-        $this->info('handleGalleryTypeAttribute()', [
+    private function handleGalleryTypeAttribute(
+        int $productId,
+        array $productData,
+        int $storeId,
+        string $attributeCode,
+        string $value
+    ) {
+        $this->log('handleGalleryTypeAttribute()', [
             'productId'     => $productId,
             'storeId'       => $storeId,
             'attributeCode' => $attributeCode,
@@ -477,36 +495,35 @@ class Image
      * @return string|false
      * @throws Exception
      */
-    private function copyImageFile($imageFile)
+    private function copyImageFile(string $imageFile)
     {
-        $this->info('copyImageFile()', ['file' => $imageFile]);
+        $this->log('copyImageFile()', ['file' => $imageFile]);
 
-        if ($imageFile == '__NULL__' || $imageFile == null) {
+        if ($imageFile === '__NULL__' || $imageFile === '') {
             return false;
         }
 
         $sourceImageFile = $this->findImageFile($imageFile);
         if ($sourceImageFile === null) {
-            $this->warn("copyImageFile() - Image file [$imageFile] cannot be found in images path.");
+            $this->log("copyImageFile() - Image file [$imageFile] cannot be found in images path.");
 
             return false;
         }
 
-        $this->info("copyImageFile() - Image file [$imageFile] found in images path.");
+        $this->log("copyImageFile() - Image file [$imageFile] found in images path.");
 
         if (!$this->_fileDriver->isExists($sourceImageFile)) {
-            $this->warn("copyImageFile() - Image file [$imageFile] does not exist at [$sourceImageFile].");
-
+            $this->log("copyImageFile() - Image file [$imageFile] does not exist at [$sourceImageFile].");
             return false;
         }
 
-        $this->info("copyImageFile() - Image file [$imageFile] exists at [$sourceImageFile].");
+        $this->log("copyImageFile() - Image file [$imageFile] exists at [$sourceImageFile].");
 
         $imageFile = $sourceImageFile;
-        $this->info('copyImageFile()', ['sourceImage' => $sourceImageFile]);
+        $this->log('copyImageFile()', ['sourceImage' => $sourceImageFile]);
 
         $bImgFile = $this->getTargetName($imageFile);
-        $this->info('copyImageFile()', ['targetName' => $bImgFile]);
+        $this->log('copyImageFile()', ['targetName' => $bImgFile]);
 
         // Source file exists
         $character1 = $bImgFile[0] === '.' ? '_' : $bImgFile[0];
@@ -514,52 +531,52 @@ class Image
 
         // Magento image value (relative to media catalog product)
         $imagePath = "/$character1/$character2/$bImgFile";
-        $this->info('copyImageFile()', ['imagePath' => $imagePath]);
+        $this->log('copyImageFile()', ['imagePath' => $imagePath]);
 
         // Target directory
         $media = $this->getMediaPath();
         $targetDirectory = "$media/catalog/product/$character1/$character2";
-        $this->info('copyImageFile()', ['targetDirectory' => $targetDirectory]);
+        $this->log('copyImageFile()', ['targetDirectory' => $targetDirectory]);
 
         // Test for existence
         $targetPath = "$targetDirectory/$bImgFile";
-        $this->info('copyImageFile()', ['targetPath' => $targetPath]);
+        $this->log('copyImageFile()', ['targetPath' => $targetPath]);
 
         // Check the last image we processed so we can grab that quickly
         if ($imagePath == $this->_lastProcessedImage) {
-            $this->info('copyImageFile() - The current image file was also the last one processed - Using that.', [$imagePath]);
+            $this->log('copyImageFile() - The current image file was also the last one processed - Using that.', [$imagePath]);
 
             return $imagePath;
         }
 
         // Create target directory if it does not exist
         if (!$this->_fileDriver->isExists($targetPath)) {
-            $this->info("copyImageFile() - Target path [$targetPath] does not exist.");
+            $this->log("copyImageFile() - Target path [$targetPath] does not exist.");
 
             // Try to recursively create target directory
             if (!$this->_fileDriver->isExists($targetDirectory)) {
-                $this->info("copyImageFile() - Target directory [$targetDirectory] does not exist.");
+                $this->log("copyImageFile() - Target directory [$targetDirectory] does not exist.");
 
                 $this->_fileDriver->createDirectory($targetDirectory);
-                $this->info("copyImageFile() - Target directory [$targetDirectory] created.");
+                $this->log("copyImageFile() - Target directory [$targetDirectory] created.");
             }
         }
 
         // Copy image
-        $this->info("copyImageFile() - Attempting to copy imageFile [$imageFile] to targetPath [$targetPath]...");
+        $this->log("copyImageFile() - Attempting to copy imageFile [$imageFile] to targetPath [$targetPath]...");
         $this->_fileDriver->copy($imageFile, $targetPath);
-        $this->info("copyImageFile() - Image file [$imageFile] copied to target path [$targetPath].");
+        $this->log("copyImageFile() - Image file [$imageFile] copied to target path [$targetPath].");
 
         // TODO: Fix to use correct filename.
         // Let's CHMOD this thing to 0664:
 
         //TODO: Test against changePermissionsRecursively()
         try {
-            $this->info("copyImageFile() - Attempting to chmod fullPath [$targetPath]...");
+            $this->log("copyImageFile() - Attempting to chmod fullPath [$targetPath]...");
             $this->_fileDriver->changePermissions($targetPath, octdec('755'));
-            $this->info("copyImageFile() - Full path [$targetPath] chmod'ed to 755.");
+            $this->log("copyImageFile() - Full path [$targetPath] chmod'ed to 755.");
         } catch (Exception $e) {
-            $this->warn("copyImageFile() - Failed to CHMOD file [$targetPath].", [$e->getMessage()]);
+            $this->log("copyImageFile() - Failed to CHMOD file [$targetPath].", [$e->getMessage()]);
 
             return false;
         }
@@ -576,48 +593,46 @@ class Image
      *
      * @return string|null
      */
-    public function findImageFile($filename)
+    public function findImageFile(string $filename)
     {
-        $this->info('findImageFile()', ['file' => $filename]);
+        $this->log('findImageFile()', ['filename' => $filename]);
 
         // Do not try to find remote image
         if ($this->isRemotePath($filename)) {
-            $this->info('findImageFile() - Incoming value is a remote path - Unhandled.');
-
+            $this->log('findImageFile() - Incoming value is a remote path - Unhandled.');
             return $filename;
         }
 
         // If existing, return it directly
         $realPath = $this->_fileDriver->getRealPath($filename);
-        $this->info('findImageFile()', ['realPath' => $realPath]);
+        $this->log('findImageFile()', ['realPath' => $realPath]);
         if ($realPath) {
-            $this->info('findImageFile() - Image file already exists on server.');
-
+            $this->log('findImageFile() - Image file already exists on server.');
             return $filename;
         }
 
         // Aggregate list of directories to scan for image files
         $scanDirectories = explode(':', $this->getImageSearchPath());
         $scanDirectoriesCount = count($scanDirectories);
-        $this->info("findImageFile() - Found [$scanDirectoriesCount] directories to scan:", $scanDirectories);
+        $this->log("findImageFile() - Found [$scanDirectoriesCount] directories to scan:", $scanDirectories);
 
         // Iterate over image source directories.
         // Try to resolve file name based on input value and current source directory
         for ($i = 0; $i < $scanDirectoriesCount; $i++) {
             $scanDirectory = $scanDirectories[$i];
-            $this->info("findImageFile() - Scanning directory: [$scanDirectory] for image: [$filename]...");
+            $this->log("findImageFile() - Scanning directory: [$scanDirectory] for image: [$filename]...");
 
             // ScanDirectory is relative
             $magentoDirectory = $this->getMagentoDirectory();
-            if ($scanDirectory[0] != '/') {
+            if ($scanDirectory[0] !== '/') {
                 $scanDirectory = $magentoDirectory . '/' . $scanDirectory;
             }
 
             $imageFile = $this->getAbsolutePath($filename, $scanDirectory);
-            $this->info('findImageFile()', ['absolutePath' => $imageFile]);
-            if ($imageFile) {
-                $this->info("findImageFile() - Image found at [$imageFile]...");
+            $this->log('findImageFile()', ['absolutePath' => $imageFile]);
 
+            if ($imageFile) {
+                $this->log("findImageFile() - Image found at [$imageFile]...");
                 return $imageFile;
             }
         }
@@ -630,12 +645,16 @@ class Image
      *
      * @param array  $attributeInfo
      * @param int    $productId
-     * @param array  $storeIds
+     * @param int[]  $storeIds
      * @param string $label
      */
-    private function updateImageLabel($attributeInfo, $productId, $storeIds, $label)
-    {
-        $this->info('updateImageLabel()', [
+    private function updateImageLabel(
+        array $attributeInfo,
+        int $productId,
+        array $storeIds,
+        string $label
+    ) {
+        $this->log('updateImageLabel()', [
             'attributeId' => $attributeInfo['attribute_id'],
             'productId'   => $productId,
             'storeIds'    => $storeIds,
@@ -670,13 +689,13 @@ class Image
      *
      * @return bool
      */
-    private function getExclude(&$val, $default = true)
+    private function getExclude(string &$val, $default = true)
     {
         $exclude = $default;
 
         // If the first character is a +/-, test it and then strip it
-        if ($val[0] == '+' || $val[0] == '-') {
-            $exclude = $val[0] == '-';
+        if ($val[0] === '+' || $val[0] === '-') {
+            $exclude = $val[0] === '-';
             $val = substr($val, 1);
         }
 
@@ -688,7 +707,7 @@ class Image
      *
      * @return bool
      */
-    private function isRemotePath($path)
+    private function isRemotePath(string $path)
     {
         $parsedUrl = parse_url($path);
 
@@ -703,45 +722,45 @@ class Image
      * @param string $fileName
      * @param string $basePath
      *
-     * @return bool|string
+     * @return false|string
      */
-    private function getAbsolutePath($fileName, $basePath = '')
+    private function getAbsolutePath(string $fileName, string $basePath = '')
     {
-        $this->info('getAbsolutePath()', [
+        $this->log('getAbsolutePath()', [
             'fileName' => $fileName,
             'basePath' => $basePath
         ]);
 
         // Ensure basePath is set
-        if ($basePath == '') {
+        if ($basePath === '') {
             $basePath = $this->_fileDriver->getParentDirectory($this->_fileDriver->getParentDirectory(__FILE__));
         }
 
         // Build image path
         $imagePath = $basePath . '/' . $fileName;
-        $this->info('getAbsolutePath()', ['imagePath' => $imagePath]);
+        $this->log('getAbsolutePath()', ['imagePath' => $imagePath]);
 
         // Clean image path
         /** @var string $cleanedImagePath */
         $cleanedImagePath = str_replace('//', '/', $imagePath);
-        $this->info('getAbsolutePath()', ['cleanedImagePath' => $cleanedImagePath]);
+        $this->log('getAbsolutePath()', ['cleanedImagePath' => $cleanedImagePath]);
 
         if (!$this->isRemotePath($cleanedImagePath)) {
-            $this->info("getAbsolutePath() -  Attempting to call 'realpath()' on [$cleanedImagePath]...");
+            $this->log("getAbsolutePath() -  Attempting to call 'realpath()' on [$cleanedImagePath]...");
             $absolutePath = $this->_fileDriver->getRealPath($cleanedImagePath);
         } else {
-            $this->info("getAbsolutePath() - Attempting to breakup path [$cleanedImagePath]...");
+            $this->log("getAbsolutePath() - Attempting to breakup path [$cleanedImagePath]...");
             $absolutePath = $this->getRealPath($cleanedImagePath);
         }
 
-        $this->info("getAbsolutePath() - Returning path [$absolutePath]");
+        $this->log("getAbsolutePath() - Returning path [$absolutePath]");
 
         return $absolutePath;
     }
 
     private function getRealPath(string $imagePath)
     {
-        $this->info('getRealPath()', ['imagePath' => $imagePath]);
+        $this->log('getRealPath()', ['imagePath' => $imagePath]);
 
         $pathParts = explode('/', $imagePath);
         $outParts  = [];
@@ -751,9 +770,9 @@ class Image
             // Cache
             $pathPart = $pathParts[$i];
 
-            if ($pathPart == '..') {
+            if ($pathPart === '..') {
                 array_pop($outParts);
-            } elseif ($pathPart != '.') {
+            } elseif ($pathPart !== '.') {
                 $outParts[] = $pathPart;
             }
         }
@@ -790,7 +809,7 @@ class Image
      */
     private function addMediaGalleryRecord($attributeId, $value)
     {
-        $this->info('addMediaGalleryRecord()', [
+        $this->log('addMediaGalleryRecord()', [
             'attributeId' => $attributeId,
             'value'       => $value
         ]);
@@ -812,7 +831,7 @@ class Image
      */
     private function getMediaGalleryValueId($attributeId, $value)
     {
-        $this->info('getMediaGalleryValueId()', [
+        $this->log('getMediaGalleryValueId()', [
             'attributeId' => $attributeId,
             'value'       => $value
         ]);
@@ -840,7 +859,7 @@ class Image
      */
     private function getMediaGalleryValueValueId($valueId, $storeId)
     {
-        $this->info('getMediaGalleryValueValueId()', [
+        $this->log('getMediaGalleryValueValueId()', [
             'valueId' => $valueId,
             'storeId' => $storeId
         ]);
@@ -865,7 +884,7 @@ class Image
      */
     private function addMediaGalleryValueRecord($valueId, $storeId, $productId, $label, $position)
     {
-        $this->info('addMediaGalleryValueRecord()', [
+        $this->log('addMediaGalleryValueRecord()', [
             'valueId'   => $valueId,
             'storeId'   => $storeId,
             'productId' => $productId,
@@ -891,7 +910,7 @@ class Image
      */
     private function updateMediaGalleryValueRecord($valueId, $storeId, $label)
     {
-        $this->info('updateMediaGalleryValueRecord()', [
+        $this->log('updateMediaGalleryValueRecord()', [
             'valueId'  => $valueId,
             'storeId'  => $storeId,
             'label'    => $label
@@ -920,7 +939,7 @@ class Image
      */
     private function addMediaGalleryValueToEntityRecord($valueId, $productId)
     {
-        $this->info('addMediaGalleryValueToEntityRecord()', [
+        $this->log('addMediaGalleryValueToEntityRecord()', [
             'valueId'   => $valueId,
             'productId' => $productId
         ]);
@@ -966,7 +985,7 @@ class Image
         try {
             return $this->_directoryList->getPath('media');
         } catch (FileSystemException $e) {
-            $this->info('getMediaPath()', ['EXCEPTION' => $e->getMessage()]);
+            $this->log('getMediaPath()', ['EXCEPTION' => $e->getMessage()]);
             throw $e;
         }
     }
@@ -981,23 +1000,6 @@ class Image
         return $this->config->getImageSearchPath();
     }
 
-    ////////////////////////////////////////////////////
-    ///
-    /// LOGGING
-    ///
-    ////////////////////////////////////////////////////
-
-    /**
-     * Adds a log record at the WARNING level
-     *
-     * @param string $message
-     * @param array  $extra
-     */
-    private function warn(string $message, array $extra = [])
-    {
-        $this->_logger->warning("ImageHelper - $message", $extra);
-    }
-
     /**
      * Adds a log record at the INFO level
      *
@@ -1006,7 +1008,7 @@ class Image
      *
      * @return void
      */
-    private function info(string $message, array $extra = [])
+    private function log(string $message, array $extra = [])
     {
         $this->_logger->info("ImageHelper - $message", $extra);
     }

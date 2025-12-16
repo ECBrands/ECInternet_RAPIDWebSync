@@ -454,11 +454,17 @@ class Download extends Action implements HttpGetActionInterface
             if ($categoryPath = $productCategory->getPath()) {
                 $categoryPathIds = explode('/', $categoryPath);
 
+                /** @var string[] $categoryNames */
                 $categoryNames = [];
                 foreach ($categoryPathIds as $categoryPathId) {
-                    // Skip root categories
-                    if (!in_array($categoryPathId, [1, 2])) {
-                        $categoryNames[] = $this->getCategoryName($categoryPathId);
+                    if (is_numeric($categoryPathId)) {
+                        // Cast to int
+                        $categoryPathId = (int)$categoryPathId;
+
+                        // Skip root categories
+                        if (!in_array($categoryPathId, [1, 2])) {
+                            $categoryNames[] = $this->getCategoryName($categoryPathId);
+                        }
                     }
                 }
 
@@ -483,10 +489,10 @@ class Download extends Action implements HttpGetActionInterface
      */
     private function buildImageString(
         Product $product,
-        $attributeCode
+        string $attributeCode
     ) {
         if ($product->hasData($attributeCode)) {
-            $attributeValue = $product->getData($attributeCode);
+            $attributeValue = (string)$product->getData($attributeCode);
 
             return $this->stripImageString($attributeValue);
         }
@@ -511,7 +517,7 @@ class Download extends Action implements HttpGetActionInterface
 
         foreach ($mediaGalleryImages as $mediaGalleryImage) {
             if (isset($mediaGalleryImage['path'])) {
-                if ($strippedImageString = $this->baseName($mediaGalleryImage['path'])) {
+                if ($strippedImageString = $this->baseName((string)$mediaGalleryImage['path'])) {
                     $output[] = $strippedImageString;
                 }
             }
@@ -596,9 +602,10 @@ class Download extends Action implements HttpGetActionInterface
 
         if (count($parentIds) > 0) {
             $productId = $parentIds[0];
-
-            if ($parentProduct = $this->getProduct($productId)) {
-                return $parentProduct->getSku();
+            if (is_numeric($productId)) {
+                if ($parentProduct = $this->getProduct((int)$productId)) {
+                    return $parentProduct->getSku();
+                }
             }
         }
 
@@ -646,7 +653,7 @@ class Download extends Action implements HttpGetActionInterface
      *
      * @return string
      */
-    private function stripImageString($imagePath)
+    private function stripImageString(string $imagePath)
     {
         // 4 characters for folders, 4 characters for file extension and dot
         if (strlen($imagePath) > 8) {
@@ -663,7 +670,7 @@ class Download extends Action implements HttpGetActionInterface
      *
      * @return string
      */
-    private function baseName($path)
+    private function baseName(string $path)
     {
         /** @var \Magento\Framework\Filesystem\Io\File $fileInfo */
         $fileInfo = $this->_file->getPathInfo($path);

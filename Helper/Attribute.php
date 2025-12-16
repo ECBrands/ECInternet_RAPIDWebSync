@@ -252,8 +252,13 @@ class Attribute
      *
      * @return void
      */
-    public function upsertProductAttributeValue(int $attributeId, int $storeId, int $productId, $value, string $attributeType)
-    {
+    public function upsertProductAttributeValue(
+        int $attributeId,
+        int $storeId,
+        int $productId,
+        mixed $value,
+        string $attributeType
+    ) {
         $this->log('upsertProductAttributeValue()', [
             'attributeId'   => $attributeId,
             'storeId'       => $storeId,

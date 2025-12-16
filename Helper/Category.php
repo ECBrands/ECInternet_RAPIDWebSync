@@ -1048,8 +1048,13 @@ class Category
      *
      * @return void
      */
-    private function upsertCategoryAttributeValue($attributeId, $storeId, $categoryId, $value, $attributeType)
-    {
+    private function upsertCategoryAttributeValue(
+        int $attributeId,
+        int $storeId,
+        int $categoryId,
+        mixed $value,
+        string $attributeType
+    ) {
         $this->log('upsertCategoryAttributeValue()', [$attributeId, $storeId, $categoryId, $value, $attributeType]);
 
         $table = $this->db->getTableName('catalog_category_entity_' . $attributeType);

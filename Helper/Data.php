@@ -111,7 +111,7 @@ class Data extends AbstractHelper
      *
      * @return string
      */
-    public function arrayToCommaSeparatedValueString($array)
+    public function arrayToCommaSeparatedValueString(array $array)
     {
         return substr(str_repeat('?,', count($array)), 0, -1);
     }
