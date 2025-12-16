@@ -79,7 +79,7 @@ class StoreWebsite
     {
         $storeIds = [];
 
-        foreach ($this->stores as $storeId => $storeData) {
+        foreach (array_keys($this->stores) as $storeId) {
             $storeIds[] = $storeId;
         }
 
