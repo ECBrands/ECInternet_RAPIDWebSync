@@ -203,8 +203,6 @@ class Import
     {
         $this->log('addProduct()');
 
-        $startTime = microtime(true);
-
         // Cache product sku
         $this->_sku = (string)$product['sku'];
 
@@ -257,9 +255,6 @@ class Import
             $response['trace'] = $trace;
         }
 
-        $endTime = microtime(true);
-        $this->_helper->logSpeedTest($startTime, $endTime, 'addProduct()');
-
         // Repopulate our array
         //$this->initSkuArray();
 
@@ -274,8 +269,6 @@ class Import
     public function updateProduct(array $product)
     {
         $this->log('updateProduct()');
-
-        $startTime = microtime(true);
 
         // Cache product sku and id
         $this->_sku       = (string)$product['sku'];
@@ -301,9 +294,6 @@ class Import
             $response['error'] = $message;
             $response['trace'] = $trace;
         }
-
-        $endTime = microtime(true);
-        $this->_helper->logSpeedTest($startTime, $endTime, 'updateProduct()');
 
         return $response;
     }

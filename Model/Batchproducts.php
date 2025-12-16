@@ -207,7 +207,6 @@ class Batchproducts implements BatchproductsInterface
         }
 
         $endTime = microtime(true);
-        $this->_helper->logSpeedTest($startTime, $endTime, 'add()');
 
         $log->setDuration((int)($endTime - $startTime));
         $log->setCountOut($productOutCount);
@@ -305,7 +304,6 @@ class Batchproducts implements BatchproductsInterface
         }
 
         $endTime = microtime(true);
-        $this->_helper->logSpeedTest($startTime, $endTime, 'update()');
 
         $log->setDuration((int)($endTime - $startTime));
         $log->setCountOut($productCountOut);
@@ -402,7 +400,6 @@ class Batchproducts implements BatchproductsInterface
 
         // STOP TIMER
         $endTime = microtime(true);
-        $this->_helper->logSpeedTest($startTime, $endTime, 'upsert()');
 
         $log->setDuration((int)($endTime - $startTime));
         $log->setCountOut($productOutCount);
@@ -467,13 +464,10 @@ class Batchproducts implements BatchproductsInterface
             return;
         }
 
-        $startTime = microtime(true);
         foreach ($tablesToIndex as $tableToIndex) {
             $this->log('reindex()', ['tableToIndex' => $tableToIndex]);
 
             if (!empty($tableToIndex)) {
-                $startTimeIndexer = microtime(true);
-
                 /** @var \Magento\Indexer\Model\Indexer $indexer */
                 if ($indexer = $this->indexerHelper->loadIndexerByName($tableToIndex)) {
                     $this->log("reindex() - Re-indexing table [$tableToIndex]...");
@@ -482,14 +476,8 @@ class Batchproducts implements BatchproductsInterface
                 } else {
                     $this->log("reindex() - Could not find table [$tableToIndex]");
                 }
-
-                $endTimeIndexer = microtime(true);
-
-                $this->_helper->logSpeedTest($startTimeIndexer, $endTimeIndexer, "Reindexed table [$tableToIndex].");
             }
         }
-        $endTime = microtime(true);
-        $this->_helper->logSpeedTest($startTime, $endTime, 'reindex()');
     }
 
     /**
@@ -596,9 +584,8 @@ class Batchproducts implements BatchproductsInterface
      */
     private function getProductsFromInput()
     {
-        $startTime = microtime(true);
-
         $products = [];
+
         if ($input = $this->getInput()) {
             if (isset($input['products'])) {
                 foreach ($input['products'] as $product) {
@@ -606,10 +593,6 @@ class Batchproducts implements BatchproductsInterface
                 }
             }
         }
-
-        $endTime = microtime(true);
-
-        $this->_helper->logSpeedTest($startTime, $endTime, 'getProductsFromInput()');
 
         return $products;
     }
@@ -622,8 +605,6 @@ class Batchproducts implements BatchproductsInterface
      */
     private function getSettingsFromInput()
     {
-        $startTime = microtime(true);
-
         $settings = [];
 
         if ($input = $this->getInput()) {
@@ -631,10 +612,6 @@ class Batchproducts implements BatchproductsInterface
                 $settings = $input['settings'];
             }
         }
-
-        $endTime = microtime(true);
-
-        $this->_helper->logSpeedTest($startTime, $endTime, 'getSettingsFromInput()');
 
         return $settings;
     }
@@ -648,14 +625,10 @@ class Batchproducts implements BatchproductsInterface
     private function getInput()
     {
         if (!$this->_input) {
-            $startTime = time();
             $contents  = $this->_fileDriver->fileGetContents('php://input');
             $this->log("| JSON INPUT: [$contents]");
             $this->log('|');
             $this->_input = json_decode($contents, true);
-            $endTime      = time();
-
-            $this->_helper->logSpeedTest($startTime, $endTime, 'getInput()');
         }
 
         return $this->_input;
