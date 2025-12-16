@@ -338,10 +338,7 @@ class Image
 
         // If copy was successful, add to gallery
         if ($imageFile !== false) {
-            $label = null;
-            if (isset($productData[$attributeCode . '_label'])) {
-                $label = $productData[$attributeCode . '_label'];
-            }
+            $label = $productData[$attributeCode . '_label'] ?? null;
 
             // Default `store` value to "admin" if not set
             if (!isset($productData['store'])) {
@@ -506,7 +503,6 @@ class Image
         $sourceImageFile = $this->findImageFile($imageFile);
         if ($sourceImageFile === null) {
             $this->log("copyImageFile() - Image file [$imageFile] cannot be found in images path.");
-
             return false;
         }
 
@@ -545,7 +541,6 @@ class Image
         // Check the last image we processed so we can grab that quickly
         if ($imagePath == $this->_lastProcessedImage) {
             $this->log('copyImageFile() - The current image file was also the last one processed - Using that.', [$imagePath]);
-
             return $imagePath;
         }
 
@@ -577,10 +572,10 @@ class Image
             $this->log("copyImageFile() - Full path [$targetPath] chmod'ed to 755.");
         } catch (Exception $e) {
             $this->log("copyImageFile() - Failed to CHMOD file [$targetPath].", [$e->getMessage()]);
-
             return false;
         }
 
+        // Update cache
         $this->_lastProcessedImage = $imagePath;
 
         return $imagePath;

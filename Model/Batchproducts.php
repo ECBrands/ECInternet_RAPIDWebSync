@@ -171,7 +171,7 @@ class Batchproducts implements BatchproductsInterface
             }
 
             if (!empty($errors)) {
-                $response['error'] = join('  ', $errors);
+                $response['error'] = implode('  ', $errors);
             } else {
                 // Cache sku
                 $sku = (string)$product['sku'];

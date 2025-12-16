@@ -26,6 +26,9 @@ class Log extends AbstractModel implements IdentityInterface, LogInterface
 
     /**
      * @inheritDoc
+     *
+     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+     * @noinspection MagicMethodsValidityInspection
      */
     protected function _construct()
     {
