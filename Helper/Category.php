@@ -17,6 +17,7 @@ use Exception;
  * Category Helper
  *
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class Category
 {
@@ -202,7 +203,7 @@ class Category
      */
     private function getCategoryData()
     {
-        if ($this->categoryInfos == null) {
+        if ($this->categoryInfos === null) {
             $this->initializeCategoryInfo();
         }
 
@@ -216,7 +217,7 @@ class Category
      */
     private function getProductIdColumn()
     {
-        if ($this->productIdColumn == null) {
+        if ($this->productIdColumn === null) {
             $this->productIdColumn = $this->helper->getProductIdColumn();
         }
 
@@ -232,13 +233,13 @@ class Category
     {
         $this->categoryInfos = [
             'varchar' => [
-                'name' => [],
-                'url_key' => [],
-                'url_path' => []
+                'name'            => [],
+                'url_key'         => [],
+                'url_path'        => []
             ],
             'int' => [
-                'is_active' => [],
-                'is_anchor' => [],
+                'is_active'       => [],
+                'is_anchor'       => [],
                 'include_in_menu' => []
             ]
         ];
@@ -315,7 +316,7 @@ class Category
      *
      * @return object
      */
-    private function getCategoryAttributeInfos($attributeCode)
+    private function getCategoryAttributeInfos(string $attributeCode)
     {
         $table = $this->db->getTableName('eav_attribute');
         $query = "SELECT * FROM `$table` WHERE `entity_type_id` = 3 AND `attribute_code` = ?";
@@ -335,9 +336,9 @@ class Category
      * @param array $parentPath         A list of parent categories from root to immediate parent
      * @param array $categoryAttributes Category attributes from getCatAttributeInfos()
      *
-     * @return int                      ID of existing category
+     * @return mixed|null               ID of existing category
      */
-    private function getExistingCategory($parentPath, $categoryAttributes)
+    private function getExistingCategory(array $parentPath, array $categoryAttributes)
     {
         $categoryEntity        = $this->db->getTableName('catalog_category_entity');
         $categoryEntityVarchar = $this->db->getTableName('catalog_category_entity_varchar');
@@ -391,13 +392,12 @@ class Category
         // Check for existing category, and return its ID if found
         // If we return then WE DON'T UPDATE CATEGORY ATTRIBUTES
         $categoryId = $this->getExistingCategory($parentPaths, $categoryAttributes);
-        if ($categoryId != null) {
-            $this->log('getCategoryId() - Existing ID found:', [$categoryId]);
-
-            return $categoryId;
-        } else {
-            $this->log('getCategoryId() - Existing ID not found.');
+        if (is_numeric($categoryId)) {
+            $this->log('getCategoryId() - Found existing categoryId', ['categoryId' => $categoryId]);
+            return (int)$categoryId;
         }
+
+        $this->log('getCategoryId() - Existing ID not found.');
 
         // Otherwise, get new category values from parent & siblings
         $categoryEntity = $this->db->getTableName('catalog_category_entity');
@@ -470,7 +470,7 @@ class Category
      *
      * @return array                            A list of category info
      */
-    private function extractCategoryAttributes(&$categoryDefinitionString)
+    private function extractCategoryAttributes(string &$categoryDefinitionString)
     {
         $this->log('extractCategoryAttributes()', ['categoryDefinitionString' => $categoryDefinitionString]);
 
@@ -479,7 +479,7 @@ class Category
         $categoryAttributeList = [];
 
         // Explode string using TreeSeparator
-        $categoryDefinitions = explode($this->getCategoryTreeSeparator(), $categoryDefinitionString ?? '');
+        $categoryDefinitions = explode($this->getCategoryTreeSeparator(), $categoryDefinitionString);
         foreach ($categoryDefinitions as $categoryDefinition) {
             $parts             = explode('::', $categoryDefinition ?? '');
             $categoryName      = trim($parts[0] ?? '');
@@ -487,7 +487,7 @@ class Category
             $lastPart          = array_pop($parts);
 
             // Check for storename::[defaultname] syntax
-            if ($categoryName !== $lastPart && stripos($lastPart, '[') === 0) {
+            if ($categoryName !== $lastPart && str_starts_with($lastPart, '[')) {
                 $categoryName = trim($lastPart, '[]');
             } else {
                 // If not translation add $last back to array
@@ -544,6 +544,7 @@ class Category
                 break;
             }
         }
+
         $this->log("getCategoryIdsFromDefinition() - Using StoreRootPath [$storeRootPath]");
 
         // Remove explicit root ([Default Root Path]| vs [Default Root Path] |)
@@ -558,11 +559,12 @@ class Category
         $explodedCategoryStringPartsCount = count($explodedCategoryStringParts);
         for ($i = 0; $i < $explodedCategoryStringPartsCount; $i++) {
             $trimmedExplodedCategoryPartsString = trim($explodedCategoryStringParts[$i]);
-            if ($trimmedExplodedCategoryPartsString != '') {
+            if ($trimmedExplodedCategoryPartsString !== '') {
                 $pCategoryParts[] = $trimmedExplodedCategoryPartsString;
             }
         }
 
+        /** @var string[] $categoryParts */
         $categoryParts     = [];
         $categoryPositions = [];
 
@@ -597,7 +599,7 @@ class Category
                 : '';
 
             $optionsPart  = count($options)
-                ? '::' . join('::', $options)
+                ? '::' . implode('::', $options)
                 : '';
 
             $categoryParts[] = $a[0] . $optionsPart . $translationOptionPart;
@@ -623,7 +625,7 @@ class Category
 
         // Iterate on missing levels
         for ($i = 0; $i < $categoryPartsCount; $i++) {
-            if ($categoryParts[$i] == '') {
+            if ($categoryParts[$i] === '') {
                 continue;
             }
 
@@ -831,7 +833,7 @@ class Category
         $productCategoryIds = (string)$product['category_ids'];
         $this->log('buildCategoryData()', ['category_ids' => $productCategoryIds]);
 
-        if ($productCategoryIds == '') {
+        if ($productCategoryIds === '') {
             return null;
         }
 
