@@ -107,8 +107,12 @@
 					<label>Auto set "Manage Stock" when inventory synced</label>
 					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
 				</field>
-				<field id="auto_set_is_in_stock" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+				<field id="auto_set_is_in_stock" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
 					<label>Auto set "Is In Stock" for positive inventory</label>
+					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+				</field>
+				<field id="auto_remove_reservations" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+					<label>Automatically remove reservations for synced products</label>
 					<source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
 				</field>
 			</group>
