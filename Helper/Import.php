@@ -11,12 +11,16 @@ use Magento\Framework\Exception\IntegrationException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Processor\Inventory;
 use DateTime;
 use DateInterval;
 use Exception;
 
 /**
  * Import Helper
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class Import
 {
@@ -56,11 +60,6 @@ class Import
     private $_rewriteHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Stock
-     */
-    private $_stockHelper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
     private $_storeWebsiteHelper;
@@ -84,6 +83,11 @@ class Import
      * @var \ECInternet\RAPIDWebSync\Model\Db
      */
     private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Processor\Inventory
+     */
+    private $inventoryProcessor;
 
     /**
      * Array for holding sku-entity_id records
@@ -129,12 +133,12 @@ class Import
      * @param \ECInternet\RAPIDWebSync\Helper\Image        $imageHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Link         $linkHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Rewrite      $rewriteHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Stock        $stockHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Helper\TierPrice    $tierPriceHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
      * @param \ECInternet\RAPIDWebSync\Model\Config        $config
      * @param \ECInternet\RAPIDWebSync\Model\Db            $db
+     * @param \ECInternet\RAPIDWebSync\Processor\Inventory $inventoryProcessor
      */
     public function __construct(
         Data $helper,
@@ -144,12 +148,12 @@ class Import
         Image $imageHelper,
         Link $linkHelper,
         Rewrite $rewriteHelper,
-        Stock $stockHelper,
         StoreWebsite $storeWebsiteHelper,
         TierPrice $tierPriceHelper,
         Logger $logger,
         Config $config,
-        Db $db
+        Db $db,
+        Inventory $inventoryProcessor,
     ) {
         $this->_helper             = $helper;
         $this->_attributeHelper    = $attributeHelper;
@@ -158,12 +162,12 @@ class Import
         $this->_imageHelper        = $imageHelper;
         $this->_linkHelper         = $linkHelper;
         $this->_rewriteHelper      = $rewriteHelper;
-        $this->_stockHelper        = $stockHelper;
         $this->_storeWebsiteHelper = $storeWebsiteHelper;
         $this->_tierPriceHelper    = $tierPriceHelper;
         $this->_logger             = $logger;
         $this->config              = $config;
         $this->db                  = $db;
+        $this->inventoryProcessor  = $inventoryProcessor;
 
         // Build SKU array so we can test for existing / new products
         $this->initSkuArray();
@@ -386,31 +390,31 @@ class Import
     {
         $this->log('processProduct()', ['isNew' => $isNew ? 'TRUE' : 'FALSE']);
 
-        // HANDLE 'URL_KEY'
+        // 'URL_KEY'
         $this->handleUrlKey($productData, $isNew);
 
-        // HANDLE ATTRIBUTES
+        // ATTRIBUTES
         $this->processAttributes($productData);
 
-        // HANDLE STOCK ITEM COLUMNS
-        $this->processStockItem($productData);
+        // INVENTORY
+        $this->runInventoryProcessor($productData);
 
-        // HANDLE TIER PRICES
+        // TIER PRICES
         $this->processTierPrices($productData);
 
-        // HANDLE CONFIGURABLE COLUMNS
+        // CONFIGURABLE COLUMNS
         $this->processConfigurableProduct($productData, $isNew);
 
-        // HANDLE IMAGE COLUMNS
+        // IMAGE COLUMNS
         $this->processImageFields($productData);
 
-        // HANDLE CATEGORY COLUMN
+        // CATEGORY COLUMN
         $this->processCategories($productData);
 
-        // HANDLE RELATED_PRODUCTS COLUMN
+        // RELATED_PRODUCTS COLUMN
         $this->processLinks($productData);
 
-        // HANDLE URL_REWRITE'S (this should be last)
+        // URL_REWRITE'S (this should be last)
         $this->processRewrites($productData);
     }
 
@@ -428,18 +432,18 @@ class Import
     }
 
     /**
-     * Process StockItem fields of product
+     * Run InventoryProcessor on product data
      *
-     * @param array $product
+     * @param array $productData
      *
      * @return void
      * @throws Exception
      */
-    private function processStockItem(array $product)
+    private function runInventoryProcessor(array $productData)
     {
-        $this->log('processStockItem()');
+        $this->log('runInventoryProcessor()');
 
-        $this->_stockHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->inventoryProcessor->processProductData($productData, $this->_sku, $this->_productId);
     }
 
     /**
@@ -559,8 +563,8 @@ class Import
      */
     private function getEntityIdSkuArray()
     {
-        if ($this->_skuEntityIdArray == null ||
-            count($this->_skuEntityIdArray) == 0 ||
+        if ($this->_skuEntityIdArray === null ||
+            count($this->_skuEntityIdArray) === 0 ||
             $this->_refreshEntityIdArray === true
         ) {
             $this->initSkuArray();
@@ -719,11 +723,11 @@ class Import
             $attributeSetId = $product['attribute_set_id'];
             if (is_numeric($attributeSetId)) {
                 return (int)$attributeSetId;
-            } else {
-                // Check for existing AttributeSet with this name
-                if ($existingAttributeSetId = $this->_attributeHelper->getAttributeSetId((string)$attributeSetId)) {
-                    return $existingAttributeSetId;
-                }
+            }
+
+            // If not numeric, check for existing AttributeSet with this name
+            if ($existingAttributeSetId = $this->_attributeHelper->getAttributeSetId((string)$attributeSetId)) {
+                return $existingAttributeSetId;
             }
         }
 
