@@ -138,6 +138,16 @@ class Config
     }
 
     /**
+     * Get the default tax class id
+     *
+     * @return mixed
+     */
+    public function getDefaultTaxClassId()
+    {
+        return $this->scopeConfig->getValue(self::CONFIG_PATH_DEFAULT_TAX_CLASS);
+    }
+
+    /**
      * Get the default product news_to_date days
      *
      * @return mixed

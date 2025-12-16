@@ -36,32 +36,32 @@ class Attribute
     /**
      * @var string[]
      */
-    private $_validAttributeTypes = ['datetime', 'decimal', 'int', 'text', 'varchar'];
+    private $validAttributeTypes = ['datetime', 'decimal', 'int', 'text', 'varchar'];
 
     /**
      * @var string[]
      */
-    private $_imageAttributes = ['image', 'small_image', 'thumbnail'];
+    private $imageAttributes = ['image', 'small_image', 'thumbnail'];
 
     /**
      * @var \Magento\Eav\Model\Config
      */
-    private $_eavConfig;
+    private $eavConfig;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
      */
-    private $_helper;
+    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
-    private $_storeWebsiteHelper;
+    private $storeWebsiteHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Model\Config
@@ -76,22 +76,22 @@ class Attribute
     /**
      * @var string
      */
-    private $_productIdColumn;
+    private $productIdColumn;
 
     /**
      * @var int
      */
-    private $_catalogProductEntityTypeId;
+    private $catalogProductEntityTypeId;
 
     /**
      * @var array
      */
-    private $_attributeSets;
+    private $attributeSets;
 
     /**
      * @var array
      */
-    private $_attributes;
+    private $attributes;
 
     /**
      * Attribute constructor.
@@ -111,12 +111,12 @@ class Attribute
         Config $config,
         Db $db
     ) {
-        $this->_eavConfig          = $eavConfig;
-        $this->_helper             = $helper;
-        $this->_storeWebsiteHelper = $storeWebsiteHelper;
-        $this->_logger             = $logger;
-        $this->config              = $config;
-        $this->db                  = $db;
+        $this->eavConfig          = $eavConfig;
+        $this->helper             = $helper;
+        $this->storeWebsiteHelper = $storeWebsiteHelper;
+        $this->logger             = $logger;
+        $this->config             = $config;
+        $this->db                 = $db;
     }
 
     /**
@@ -281,11 +281,11 @@ class Attribute
      */
     private function getProductIdColumn()
     {
-        if ($this->_productIdColumn === null) {
-            $this->_productIdColumn = $this->_helper->getProductIdColumn();
+        if ($this->productIdColumn === null) {
+            $this->productIdColumn = $this->helper->getProductIdColumn();
         }
 
-        return $this->_productIdColumn;
+        return $this->productIdColumn;
     }
 
     /**
@@ -296,11 +296,11 @@ class Attribute
      */
     private function getProductEntityTypeId()
     {
-        if ($this->_catalogProductEntityTypeId === null) {
-            $this->_catalogProductEntityTypeId = $this->initializeCatalogProductEntityTypeId();
+        if ($this->catalogProductEntityTypeId === null) {
+            $this->catalogProductEntityTypeId = $this->initializeCatalogProductEntityTypeId();
         }
 
-        return $this->_catalogProductEntityTypeId;
+        return $this->catalogProductEntityTypeId;
     }
 
     /**
@@ -311,11 +311,11 @@ class Attribute
      */
     private function getAttributeSets()
     {
-        if ($this->_attributeSets === null) {
+        if ($this->attributeSets === null) {
             $this->initializeAttributeSets();
         }
 
-        return $this->_attributeSets;
+        return $this->attributeSets;
     }
 
     /**
@@ -326,11 +326,11 @@ class Attribute
      */
     private function getCatalogProductAttributes()
     {
-        if ($this->_attributes === null) {
+        if ($this->attributes === null) {
             $this->initializeCatalogProductAttributes();
         }
 
-        return $this->_attributes;
+        return $this->attributes;
     }
 
     /**
@@ -378,7 +378,7 @@ class Attribute
 
         $results = $this->db->select($query, $binds);
         foreach ($results as $result) {
-            $this->_attributeSets[$result['attribute_set_name']] = (int)$result['attribute_set_id'];
+            $this->attributeSets[$result['attribute_set_name']] = (int)$result['attribute_set_id'];
         }
     }
 
@@ -416,7 +416,7 @@ class Attribute
 
         $results = $this->db->select($query, $binds);
         foreach ($results as $result) {
-            $this->_attributes[$result[AttributeInterface::ATTRIBUTE_CODE]] = [
+            $this->attributes[$result[AttributeInterface::ATTRIBUTE_CODE]] = [
                 AttributeInterface::ATTRIBUTE_ID    => (int)$result[AttributeInterface::ATTRIBUTE_ID],
                 AttributeInterface::BACKEND_TYPE    => (string)$result[AttributeInterface::BACKEND_TYPE],
                 AttributeInterface::FRONTEND_INPUT  => (string)$result[AttributeInterface::FRONTEND_INPUT],
@@ -505,7 +505,7 @@ class Attribute
         // Handle delete
         if ($value === '__DELETE__') {
             /** @var int[] $storeIds */
-            $storeIds = $this->_storeWebsiteHelper->getStoreIdsForProduct($product);
+            $storeIds = $this->storeWebsiteHelper->getStoreIdsForProduct($product);
             foreach ($storeIds as $storeId) {
                 $this->deleteProductAttributeValue($productId, $storeId, $attributeInfo);
             }
@@ -517,8 +517,7 @@ class Attribute
         if ($attributeFrontendInput === 'select') {
             if (empty($attributeSourceModel) || $attributeSourceModel === Table::class) {
                 /** @var int|null $existingOptionId */
-                $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
-                if ($existingOptionId) {
+                if ($existingOptionId = $this->getAttributeOptionId($attributeCode, $value)) {
                     $value = $existingOptionId;
                 } else {
                     if ($this->config->allowNewAttributeValues()) {
@@ -560,7 +559,7 @@ class Attribute
         } elseif ($attributeFrontendInput === 'multiselect') {
             $optionIds = [];
 
-            $values = $this->_helper->commaSeparatedListToTrimmedArray((string)$value);
+            $values = $this->helper->commaSeparatedListToTrimmedArray((string)$value);
             foreach ($values as $value) {
                 $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
                 if ($existingOptionId) {
@@ -600,7 +599,7 @@ class Attribute
 
         /** @var int[] $storeIds */
         $storeIds = isset($product['store'])
-            ? $this->_storeWebsiteHelper->getStoreIdsForProduct($product, $attributeScope)
+            ? $this->storeWebsiteHelper->getStoreIdsForProduct($product, $attributeScope)
             : [0];
 
         // TODO: Add handling for deleting from ALL stores when not singleStore.
@@ -738,7 +737,7 @@ class Attribute
      */
     private function isValidAttributeType(string $attributeType)
     {
-        return in_array($attributeType, $this->_validAttributeTypes);
+        return in_array($attributeType, $this->validAttributeTypes);
     }
 
     /**
@@ -750,7 +749,7 @@ class Attribute
      */
     private function isImageAttribute(string $attributeCode)
     {
-        return in_array($attributeCode, $this->_imageAttributes);
+        return in_array($attributeCode, $this->imageAttributes);
     }
 
     /**
@@ -918,7 +917,7 @@ class Attribute
     private function getAttribute(string $attributeCode)
     {
         try {
-            return $this->_eavConfig->getAttribute(Product::ENTITY, $attributeCode);
+            return $this->eavConfig->getAttribute(Product::ENTITY, $attributeCode);
         } catch (LocalizedException $e) {
             $this->log('getAttribute()', ['attribute' => $attributeCode, 'error' => $e->getMessage()]);
         }
@@ -964,8 +963,11 @@ class Attribute
      *
      * @return void
      */
-    private function addAttributeOptionValueRecord(int $optionId, $value, int $storeId = 0)
-    {
+    private function addAttributeOptionValueRecord(
+        int $optionId,
+        mixed $value,
+        int $storeId = 0
+    ) {
         $this->log('addAttributeOptionValueRecord()', [
             'storeId'  => $storeId,
             'optionId' => $optionId,
@@ -1043,6 +1045,6 @@ class Attribute
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('AttributeHelper - ' . $message, $extra);
+        $this->logger->info('AttributeHelper - ' . $message, $extra);
     }
 }

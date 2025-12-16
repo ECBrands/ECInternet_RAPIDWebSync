@@ -30,12 +30,12 @@ class Rewrite
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
      */
-    private $_helper;
+    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Model\Db
@@ -45,12 +45,12 @@ class Rewrite
     /**
      * @var int
      */
-    private $_categoryUrlPathAttributeId;
+    private $categoryUrlPathAttributeId;
 
     /**
      * @var int
      */
-    private $_entityId;
+    private $entityId;
 
     /**
      * Rewrite constructor.
@@ -66,9 +66,9 @@ class Rewrite
         Logger $logger,
         Db $db
     ) {
-        $this->_helper   = $helper;
-        $this->_logger   = $logger;
-        $this->db        = $db;
+        $this->helper = $helper;
+        $this->logger = $logger;
+        $this->db     = $db;
 
         // Cache the AttributeId for 'url_path'
         $this->initCategoryUrlPathAttributeId();
@@ -90,7 +90,7 @@ class Rewrite
         $this->log("| EntityId: [$entityId]");
 
         // Cache entity_id
-        $this->_entityId = $entityId;
+        $this->entityId = $entityId;
 
         // We can only add a rewrite if we have a 'url_key' value
         // We only have a 'url_key' value on a product update, or a product insert where this field has been mapped.
@@ -142,18 +142,18 @@ class Rewrite
         $this->log('upsertProductBaseRewrite()', ['urlKey' => $urlKey, 'storeId' => $storeId]);
 
         // Confirm we don't have bad data
-        $urlRewrites = $this->getProductBaseUrlRewrites($this->_entityId);
+        $urlRewrites = $this->getProductBaseUrlRewrites($this->entityId);
         if (count($urlRewrites) > 1) {
-            $this->log('upsertProductBaseRewrite() - Found more than one base product rewrite for product', [$this->_entityId]);
+            $this->log('upsertProductBaseRewrite() - Found more than one base product rewrite for product', [$this->entityId]);
 
             // We can try and be more elegant later.  For now, let's truncate and re-populate
-            $this->deleteProductBaseUrlRewriteByProductId($this->_entityId);
+            $this->deleteProductBaseUrlRewriteByProductId($this->entityId);
         }
 
-        $sluggedUrlKey = $this->_helper->slug($urlKey);
-        $targetPath    = $this->buildProductTargetPath($this->_entityId);
+        $sluggedUrlKey = $this->helper->slug($urlKey);
+        $targetPath    = $this->buildProductTargetPath($this->entityId);
 
-        $this->upsertUrlRewriteRecord(self::REWRITE_TYPE_PRODUCT, $this->_entityId, $sluggedUrlKey, $targetPath, $storeId);
+        $this->upsertUrlRewriteRecord(self::REWRITE_TYPE_PRODUCT, $this->entityId, $sluggedUrlKey, $targetPath, $storeId);
     }
 
     /**
@@ -186,7 +186,7 @@ class Rewrite
             return;
         }
 
-        $sluggedUrlKey = $this->_helper->slug($urlKey);
+        $sluggedUrlKey = $this->helper->slug($urlKey);
         if ($sluggedUrlKey === '') {
             $this->log("upsertProductCategoryRewrite() - Unable to create url slug for urlKey $urlKey");
 
@@ -194,10 +194,10 @@ class Rewrite
         }
 
         $sluggedRequestPath = "$categoryUrlPath/$sluggedUrlKey";
-        $targetPath         = $this->buildProductCategoryTargetPath($this->_entityId, $categoryId);
+        $targetPath         = $this->buildProductCategoryTargetPath($this->entityId, $categoryId);
         $metadata           = $this->buildMetadata($categoryId);
 
-        $this->upsertUrlRewriteRecord(self::REWRITE_TYPE_PRODUCT, $this->_entityId, $sluggedRequestPath, $targetPath, $storeId, $metadata);
+        $this->upsertUrlRewriteRecord(self::REWRITE_TYPE_PRODUCT, $this->entityId, $sluggedRequestPath, $targetPath, $storeId, $metadata);
     }
 
     /**
@@ -246,7 +246,7 @@ class Rewrite
             throw new StateException(__("Unable to lookup 'url_path' attribute id"));
         }
 
-        $this->_categoryUrlPathAttributeId = $results[0]['attribute_id'];
+        $this->categoryUrlPathAttributeId = $results[0]['attribute_id'];
     }
 
     /**
@@ -350,11 +350,11 @@ class Rewrite
     {
         $this->log('getCategoryUrlPath()', ['categoryId' => $categoryId, 'storeId' => $storeId]);
 
-        $productIdColumn = $this->_helper->getProductIdColumn();
+        $productIdColumn = $this->helper->getProductIdColumn();
 
         $table = $this->db->getTableName('catalog_category_entity_varchar');
         $query = "SELECT `value` FROM `$table` WHERE `attribute_id` = ? AND `store_id` = ? AND `$productIdColumn` = ?";
-        $binds = [$this->_categoryUrlPathAttributeId, $storeId, $categoryId];
+        $binds = [$this->categoryUrlPathAttributeId, $storeId, $categoryId];
 
         $value = $this->db->selectOne($query, $binds, 'value');
         if ($value !== null) {
@@ -648,7 +648,7 @@ class Rewrite
      */
     private function shouldGenerateCategoryProductRewrites()
     {
-        return $this->_helper->shouldGenerateCatalogProductRewrites();
+        return $this->helper->shouldGenerateCatalogProductRewrites();
     }
 
     private function clearCategoryProductRewrites(int $productId)
@@ -708,6 +708,6 @@ class Rewrite
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('RewriteHelper - ' . $message, $extra);
+        $this->logger->info('RewriteHelper - ' . $message, $extra);
     }
 }

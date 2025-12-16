@@ -38,12 +38,12 @@ class TierPrice
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
-    private $_storeWebsiteHelper;
+    private $storeWebsiteHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Model\Config
@@ -76,9 +76,9 @@ class TierPrice
         Config $config,
         Db $db,
     ) {
-        $this->helper              = $helper;
-        $this->_storeWebsiteHelper = $storeWebsiteHelper;
-        $this->_logger             = $logger;
+        $this->helper             = $helper;
+        $this->storeWebsiteHelper = $storeWebsiteHelper;
+        $this->logger            = $logger;
         $this->config              = $config;
         $this->db                  = $db;
     }
@@ -140,18 +140,18 @@ class TierPrice
         // Iterate over the Product's TierPrices.  Add record for each website.
         foreach ($productTierPrices as $productTierPrice) {
             // Default CustomerGroupId to null which will create a record for 'all_groups'
+
+            /** @var int|null $customerGroupId */
             $customerGroupId   = null;
             $customerGroupCode = null;
 
             // Attempt to parse CustomerGroup from data
             if (isset($productTierPrice['customer_group_id'])) {
-                $customerGroupCode = (string)$productTierPrice['customer_group_id'];
-                if ($customerGroupCode !== '') {
+                if ($customerGroupCode = (string)$productTierPrice['customer_group_id']) {
                     // First check for ALL_GROUPS
-                    if ($customerGroupCode == self::ALL_GROUPS_KEY) {
+                    if ($customerGroupCode === self::ALL_GROUPS_KEY) {
                         $customerGroupId = GroupInterface::CUST_GROUP_ALL;
                     } else {
-                        /** @var int|null $customerGroupId */
                         $customerGroupId = $this->getCustomerGroupId($customerGroupCode);
 
                         // Create one if we can't find existing one
@@ -163,25 +163,35 @@ class TierPrice
             }
 
             // Set the rest of TierPrice values
-            if ($customerGroupId === null || $customerGroupId == GroupInterface::CUST_GROUP_ALL) {
+            if ($customerGroupId === null || $customerGroupId === GroupInterface::CUST_GROUP_ALL) {
                 $allGroups = 1;
             } else {
                 $allGroups = 0;
             }
 
-            $qty   = $productTierPrice['qty'];
-            $price = $productTierPrice['price'];
+            if (!isset($productTierPrice['qty'])) {
+                $this->log('processProduct()', ['"qty" field missing.']);
+                continue;
+            }
+
+            if (!isset($productTierPrice['price'])) {
+                $this->log('processProduct()', ['"price" field missing.']);
+                continue;
+            }
+
+            $qty   = (int)$productTierPrice['qty'];
+            $price = (float)$productTierPrice['price'];
 
             // If we never found a value, set to 0 for 'all_groups'
-            if ($customerGroupId == null) {
+            if ($customerGroupId === null) {
                 $customerGroupId = 0;
             }
 
             // We are guaranteed to have at least 1 (either list from IMan, or default of [0])
             foreach ($websiteIds as $websiteId) {
                 // If we don't have CustomerGroup, create on-the-fly
-                if ($customerGroupId == null) {
-                    if ($customerGroupCode != null) {
+                if ($customerGroupId === null) {
+                    if ($customerGroupCode !== null) {
                         $customerGroupId = $this->createCustomerGroup($customerGroupCode);
                     }
                 }
@@ -199,7 +209,7 @@ class TierPrice
      */
     private function getProductIdColumn()
     {
-        if ($this->_productIdColumn == null) {
+        if ($this->_productIdColumn === null) {
             $this->_productIdColumn = $this->helper->getProductIdColumn();
         }
 
@@ -232,7 +242,7 @@ class TierPrice
      *
      * @return int
      */
-    private function createCustomerGroup($groupName)
+    private function createCustomerGroup(string $groupName)
     {
         $this->log('createCustomerGroup()', ['groupName' => $groupName]);
 
@@ -286,7 +296,7 @@ class TierPrice
 
         if (!$this->db->isSingleStore() && $this->getPriceScope() != self::PRICE_SCOPE_GLOBAL) {
             try {
-                $websiteIds = $this->_storeWebsiteHelper->getWebsiteIdsForProduct($product);
+                $websiteIds = $this->storeWebsiteHelper->getWebsiteIdsForProduct($product);
             } catch (Exception $e) {
                 $this->log('getWebsiteIds()', ['exception' => $e]);
             }
@@ -322,15 +332,17 @@ class TierPrice
     /**
      * @param array $tierPrices
      *
-     * @return array
+     * @return string[]
      */
-    protected function aggregateCustomerGroupIds($tierPrices)
+    protected function aggregateCustomerGroupIds(array $tierPrices)
     {
         $customerGroupIds = [];
 
         foreach ($tierPrices as $tierPrice) {
-            if (isset($tierPrice['customer_group_id']) && $tierPrice['customer_group_id'] != '') {
-                $customerGroupIds[] = $tierPrice['customer_group_id'];
+            if (isset($tierPrice['customer_group_id'])) {
+                if ((string)$tierPrice['customer_group_id'] !== '') {
+                    $customerGroupIds[] = $tierPrice['customer_group_id'];
+                }
             }
         }
 
@@ -347,8 +359,14 @@ class TierPrice
      *
      * @return int
      */
-    protected function addIgnoreTierPriceRecord(int $productId, int $allGroups, $customerGroupId, $qty, $value, int $websiteId)
-    {
+    protected function addIgnoreTierPriceRecord(
+        int $productId,
+        int $allGroups,
+        int $customerGroupId,
+        int $qty,
+        float $value,
+        int $websiteId
+    ) {
         $this->log('addIgnoreTierPriceRecord', [
             'productId'       => $productId,
             'allGroups'       => $allGroups,
@@ -454,6 +472,6 @@ class TierPrice
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('Helper/TierPrice - ' . $message, $extra);
+        $this->logger->info('Helper/TierPrice - ' . $message, $extra);
     }
 }

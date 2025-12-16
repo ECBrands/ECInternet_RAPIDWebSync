@@ -29,6 +29,13 @@ class Indexer
      */
     private $logger;
 
+    /**
+     * Indexer constructor.
+     *
+     * @param \Magento\Indexer\Model\IndexerFactory            $indexerFactory
+     * @param \Magento\Indexer\Model\Indexer\CollectionFactory $indexerCollectionFactory
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger           $logger
+     */
     public function __construct(
         IndexerFactory $indexerFactory,
         IndexerCollectionFactory $indexerCollectionFactory,

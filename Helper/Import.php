@@ -27,52 +27,52 @@ class Import
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Attribute
      */
-    private $_attributeHelper;
+    private $attributeHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Category
      */
-    private $_categoryHelper;
+    private $categoryHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
      */
-    private $_helper;
+    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Configurable
      */
-    private $_configurableHelper;
+    private $configurableHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Image
      */
-    private $_imageHelper;
+    private $imageHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Link
      */
-    private $_linkHelper;
+    private $linkHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Rewrite
      */
-    private $_rewriteHelper;
+    private $rewriteHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
-    private $_storeWebsiteHelper;
+    private $storeWebsiteHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\TierPrice
      */
-    private $_tierPriceHelper;
+    private $tierPriceHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Model\Config
@@ -94,34 +94,34 @@ class Import
      *
      * @var array
      */
-    private $_skuEntityIdArray = [];
+    private $skuEntityIdArray = [];
 
     /**
      * Array for holding sku-row_id records
      *
      * @var array
      */
-    private $_skuRowIdArray = [];
+    private $skuRowIdArray = [];
 
     /**
      * @var bool
      */
-    private $_refreshEntityIdArray = true;
+    private $refreshEntityIdArray = true;
 
     /**
      * @var bool
      */
-    private $_refreshRowIdArray = true;
+    private $refreshRowIdArray = true;
 
     /**
      * @var string
      */
-    private $_sku;
+    private $sku;
 
     /**
      * @var int
      */
-    private $_productId;
+    private $productId;
 
     /**
      * Import constructor.
@@ -155,19 +155,19 @@ class Import
         Db $db,
         Inventory $inventoryProcessor,
     ) {
-        $this->_helper             = $helper;
-        $this->_attributeHelper    = $attributeHelper;
-        $this->_categoryHelper     = $categoryHelper;
-        $this->_configurableHelper = $configurableHelper;
-        $this->_imageHelper        = $imageHelper;
-        $this->_linkHelper         = $linkHelper;
-        $this->_rewriteHelper      = $rewriteHelper;
-        $this->_storeWebsiteHelper = $storeWebsiteHelper;
-        $this->_tierPriceHelper    = $tierPriceHelper;
-        $this->_logger             = $logger;
-        $this->config              = $config;
-        $this->db                  = $db;
-        $this->inventoryProcessor  = $inventoryProcessor;
+        $this->helper             = $helper;
+        $this->attributeHelper    = $attributeHelper;
+        $this->categoryHelper     = $categoryHelper;
+        $this->configurableHelper = $configurableHelper;
+        $this->imageHelper        = $imageHelper;
+        $this->linkHelper         = $linkHelper;
+        $this->rewriteHelper      = $rewriteHelper;
+        $this->storeWebsiteHelper = $storeWebsiteHelper;
+        $this->tierPriceHelper    = $tierPriceHelper;
+        $this->logger             = $logger;
+        $this->config             = $config;
+        $this->db                 = $db;
+        $this->inventoryProcessor = $inventoryProcessor;
 
         // Build SKU array so we can test for existing / new products
         $this->initSkuArray();
@@ -194,7 +194,7 @@ class Import
      */
     public function doesProductExist(string $sku)
     {
-        return $this->getProductIdForSku($sku) != null;
+        return $this->getProductIdForSku($sku) !== null;
     }
 
     /**
@@ -208,11 +208,11 @@ class Import
         $this->log('addProduct()');
 
         // Cache product sku
-        $this->_sku = (string)$product['sku'];
+        $this->sku = (string)$product['sku'];
 
         // Start building response
         $response        = [];
-        $response['sku'] = $this->_sku;
+        $response['sku'] = $this->sku;
         $response['new'] = true;
 
         // Check required fields
@@ -233,15 +233,15 @@ class Import
         $this->handleTaxClassId($product);
 
         // Creates master product record and adds to local dictionary of Sku/product_id
-        $this->createProductRecord($product, $this->_sku);
+        $this->createProductRecord($product, $this->sku);
 
         // Extract newly added entity_id (or row_id) and set it in response and private variable.
-        $entityId         = $this->_helper->isVersionCommunity() ? (int)$this->_skuEntityIdArray[$this->_sku] : (int)$this->_skuRowIdArray[$this->_sku];
+        $entityId         = $this->helper->isVersionCommunity() ? (int)$this->skuEntityIdArray[$this->sku] : (int)$this->skuRowIdArray[$this->sku];
         $response['id']   = $entityId;
-        $this->_productId = $entityId;
+        $this->productId = $entityId;
 
         /** @var int[] $websiteIds */
-        $websiteIds = $this->_storeWebsiteHelper->getWebsiteIdsForProduct($product);
+        $websiteIds = $this->storeWebsiteHelper->getWebsiteIdsForProduct($product);
         foreach ($websiteIds as $websiteId) {
             $this->addWebsiteRecord($entityId, $websiteId);
         }
@@ -275,19 +275,19 @@ class Import
         $this->log('updateProduct()');
 
         // Cache product sku and id
-        $this->_sku       = (string)$product['sku'];
-        $this->_productId = $this->getProductIdForSku($this->_sku);
+        $this->sku       = (string)$product['sku'];
+        $this->productId = $this->getProductIdForSku($this->sku);
 
         // Start building response
         $response        = [];
-        $response['sku'] = $this->_sku;
-        $response['id']  = $this->_productId;
+        $response['sku'] = $this->sku;
+        $response['id']  = $this->productId;
         $response['new'] = false;
 
         try {
             $this->processProduct($product, false);
-            $this->updateWebsites($this->_productId, $product);
-            $this->touchProduct($this->_productId);
+            $this->updateWebsites($this->productId, $product);
+            $this->touchProduct($this->productId);
         } catch (Exception $e) {
             $message = $e->getMessage();
             $trace   = $e->getTraceAsString();
@@ -313,7 +313,7 @@ class Import
     {
         //$this->log('getProductIdForSku()', ['sku' => $sku]);
 
-        if ($this->_helper->isVersionCommunity()) {
+        if ($this->helper->isVersionCommunity()) {
             // Handle for COMMUNITY
             if ($entityIdArray = $this->getEntityIdSkuArray()) {
                 if (isset($entityIdArray[$sku])) {
@@ -355,23 +355,23 @@ class Import
         $query = "SELECT DISTINCT `entity_id`, `sku` FROM `$table`";
 
         // If we're COMMUNITY we also want to pick up row_id
-        if (!$this->_helper->isVersionCommunity()) {
+        if (!$this->helper->isVersionCommunity()) {
             $query = "SELECT `row_id`, `entity_id`, `sku` FROM `$table`";
         }
 
         $results = $this->db->select($query);
         foreach ($results as $result) {
             // Always add rows to entity_id / sku array
-            $this->_skuEntityIdArray[$result['sku']] = (int)$result['entity_id'];
+            $this->skuEntityIdArray[$result['sku']] = (int)$result['entity_id'];
 
             // Only add rows to row_id / sku array if we're in COMMUNITY
-            if (!$this->_helper->isVersionCommunity()) {
-                $this->_skuRowIdArray[$result['sku']] = (int)$result['row_id'];
+            if (!$this->helper->isVersionCommunity()) {
+                $this->skuRowIdArray[$result['sku']] = (int)$result['row_id'];
             }
         }
 
-        $this->_refreshEntityIdArray = false;
-        $this->_refreshRowIdArray    = false;
+        $this->refreshEntityIdArray = false;
+        $this->refreshRowIdArray    = false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -428,7 +428,7 @@ class Import
     {
         $this->log('processAttributes()');
 
-        $this->_attributeHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->attributeHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     /**
@@ -443,7 +443,7 @@ class Import
     {
         $this->log('runInventoryProcessor()');
 
-        $this->inventoryProcessor->processProductData($productData, $this->_sku, $this->_productId);
+        $this->inventoryProcessor->processProductData($productData, $this->sku, $this->productId);
     }
 
     /**
@@ -458,7 +458,7 @@ class Import
     {
         $this->log('processTierPrices()');
 
-        $this->_tierPriceHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->tierPriceHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     /**
@@ -474,7 +474,7 @@ class Import
     {
         $this->log('processConfigurableProduct()');
 
-        $this->_configurableHelper->processProduct($product, $this->_sku, $this->_productId, $isNew);
+        $this->configurableHelper->processProduct($product, $this->sku, $this->productId, $isNew);
     }
 
     /**
@@ -490,7 +490,7 @@ class Import
         $this->log('processImageFields()');
 
         try {
-            $this->_imageHelper->processProduct($product, $this->_sku, $this->_productId);
+            $this->imageHelper->processProduct($product, $this->sku, $this->productId);
         } catch (Exception $e) {
             $this->log("Error found in ImageProcessor: [{$e->getMessage()}].");
             throw new IntegrationException(__("Error found in ImageProcessor: [{$e->getMessage()}]."));
@@ -509,7 +509,7 @@ class Import
     {
         $this->log('processCategories()');
 
-        $this->_categoryHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->categoryHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     /**
@@ -524,7 +524,7 @@ class Import
     {
         $this->log('processLinks()');
 
-        $this->_linkHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->linkHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     /**
@@ -537,7 +537,7 @@ class Import
     {
         $this->log('processRewrites()');
 
-        $this->_rewriteHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->rewriteHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -563,14 +563,14 @@ class Import
      */
     private function getEntityIdSkuArray()
     {
-        if ($this->_skuEntityIdArray === null ||
-            count($this->_skuEntityIdArray) === 0 ||
-            $this->_refreshEntityIdArray === true
+        if ($this->skuEntityIdArray === null ||
+            count($this->skuEntityIdArray) === 0 ||
+            $this->refreshEntityIdArray === true
         ) {
             $this->initSkuArray();
         }
 
-        return $this->_skuEntityIdArray;
+        return $this->skuEntityIdArray;
     }
 
     /**
@@ -580,14 +580,14 @@ class Import
      */
     private function getRowIdSkuArray()
     {
-        if ($this->_skuRowIdArray == null ||
-            count($this->_skuRowIdArray) == 0 ||
-            $this->_refreshRowIdArray === true
+        if ($this->skuRowIdArray === null ||
+            count($this->skuRowIdArray) === 0 ||
+            $this->refreshRowIdArray === true
         ) {
             $this->initSkuArray();
         }
 
-        return $this->_skuRowIdArray;
+        return $this->skuRowIdArray;
     }
 
     /**
@@ -649,7 +649,7 @@ class Import
             $this->db->beginTransaction();
 
             // Insert into sequence_product if we're in EE
-            if (!$this->_helper->isVersionCommunity()) {
+            if (!$this->helper->isVersionCommunity()) {
                 // Create a `sequence_product` record which will be like CE's entity_id
                 $sequenceProductId = $this->createSequenceProductRecord();
 
@@ -660,11 +660,11 @@ class Import
             // Filter out non-`catalog_product_entity` columns
             /** @var string[] $filteredColumns */
             $filteredColumns = array_intersect(array_keys($productData), $productColumns);
-            $values          = $this->_helper->filterKeyValueArray($productData, $filteredColumns);
+            $values          = $this->helper->filterKeyValueArray($productData, $filteredColumns);
 
             // Extract column and value strings
             $columnString = implode(',', $filteredColumns);
-            $valuesString = $this->_helper->arrayToCommaSeparatedValueString($filteredColumns);
+            $valuesString = $this->helper->arrayToCommaSeparatedValueString($filteredColumns);
 
             // Let's write this baby
             $table = $this->db->getTableName('catalog_product_entity');
@@ -681,16 +681,16 @@ class Import
             throw $e;
         }
 
-        if (!$this->_helper->isVersionCommunity()) {
+        if (!$this->helper->isVersionCommunity()) {
             // ENTERPRISE
             // $skuRowIdArray[$sku] gets newly created `row_id` value.
             // $skuEntityIdArray[$sku] gets `sequence_product` Id, which was originally used as 'entity_id' when creating product record.
-            $this->_skuRowIdArray[$sku]    = $catalogProductEntityId;
-            $this->_skuEntityIdArray[$sku] = $sequenceProductId;
+            $this->skuRowIdArray[$sku]    = $catalogProductEntityId;
+            $this->skuEntityIdArray[$sku] = $sequenceProductId;
         } else {
             // COMMUNITY
             // $skuEntityIdArray[$sku] gets newly created 'entity_id' value.
-            $this->_skuEntityIdArray[$sku] = $catalogProductEntityId;
+            $this->skuEntityIdArray[$sku] = $catalogProductEntityId;
         }
     }
 
@@ -726,7 +726,7 @@ class Import
             }
 
             // If not numeric, check for existing AttributeSet with this name
-            if ($existingAttributeSetId = $this->_attributeHelper->getAttributeSetId((string)$attributeSetId)) {
+            if ($existingAttributeSetId = $this->attributeHelper->getAttributeSetId((string)$attributeSetId)) {
                 return $existingAttributeSetId;
             }
         }
@@ -775,14 +775,14 @@ class Import
         if (!isset($productData['url_key'])) {
             if ($isNew) {
                 if (isset($productData['name'])) {
-                    $productData['url_key'] = $this->_helper->slug($productData['name']);
+                    $productData['url_key'] = $this->helper->slug($productData['name']);
                 } else {
-                    $productData['url_key'] = $this->_helper->slug($productData['sku']);
+                    $productData['url_key'] = $this->helper->slug($productData['sku']);
                 }
             }
         } else {
             // If 'url_key' is set, slug it and be done with it.
-            $productData['url_key'] = $this->_helper->slug($productData['url_key']);
+            $productData['url_key'] = $this->helper->slug($productData['url_key']);
         }
     }
 
@@ -816,7 +816,7 @@ class Import
             $websites = (string)$product['websites'];
 
             /** @var int[] $websiteIds */
-            $websiteIds = $this->_storeWebsiteHelper->getWebsiteIdsFromWebsitesColumn($websites);
+            $websiteIds = $this->storeWebsiteHelper->getWebsiteIdsFromWebsitesColumn($websites);
 
             // Clear existing -- SHOULD THIS BE REPLACE OR ADDITION?
             $this->clearProductWebsites($productId);
@@ -874,6 +874,6 @@ class Import
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info("ImportHelper - $message", $extra);
+        $this->logger->info("ImportHelper - $message", $extra);
     }
 }

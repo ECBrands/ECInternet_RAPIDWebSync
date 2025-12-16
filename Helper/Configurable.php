@@ -15,6 +15,7 @@ use Exception;
  * Configurable Helper
  *
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class Configurable
 {
@@ -22,27 +23,27 @@ class Configurable
 
     public const SIMPLES_SKUS_FIELD      = 'simples_skus';
 
-    private $_productIdColumn;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $_helper;
+    private $productIdColumn;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Attribute
      */
-    private $_attributeHelper;
+    private $attributeHelper;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Helper\Data
+     */
+    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
-    private $_storeWebsiteHelper;
+    private $storeWebsiteHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Model\Db
@@ -65,11 +66,11 @@ class Configurable
         Logger $logger,
         Db $db
     ) {
-        $this->_helper             = $helper;
-        $this->_attributeHelper    = $attributeHelper;
-        $this->_storeWebsiteHelper = $storeWebsiteHelper;
-        $this->_logger             = $logger;
-        $this->db                  = $db;
+        $this->helper             = $helper;
+        $this->attributeHelper    = $attributeHelper;
+        $this->storeWebsiteHelper = $storeWebsiteHelper;
+        $this->logger             = $logger;
+        $this->db                 = $db;
 
         $this->initializeProductIdColumn();
     }
@@ -89,7 +90,7 @@ class Configurable
         $this->log("| ProductId: [$productId]");
 
         // Make sure we have a configurable product, or leave
-        if (!$this->_helper->isProductConfigurable($product)) {
+        if (!$this->helper->isProductConfigurable($product)) {
             $this->log('| NOTE: Product is not configurable.');
             $this->log('| -- End Configurable Product Processor --' . PHP_EOL);
 
@@ -121,7 +122,7 @@ class Configurable
         $superAttributeIndex = 0;
         foreach ($configurableAttributeIds as $configurableAttributeId) {
             // Get attribute info
-            $attributeInfo = $this->_attributeHelper->getCatalogProductAttributeInfoById($configurableAttributeId);
+            $attributeInfo = $this->attributeHelper->getCatalogProductAttributeInfoById($configurableAttributeId);
 
             // Try to get 'product_super_attribute_id' for attribute
             $productSuperAttributeId = $this->getProductSuperAttributeId($productId, $configurableAttributeId);
@@ -134,7 +135,7 @@ class Configurable
 
             // Insert / Update attribute value for association
             /** @var int[] $productStoreIds */
-            $productStoreIds = $this->_storeWebsiteHelper->getStoreIdsForProduct($product);
+            $productStoreIds = $this->storeWebsiteHelper->getStoreIdsForProduct($product);
             foreach ($productStoreIds as $productStoreId) {
                 $this->upsertProductSuperAttributeLabelRecord($productSuperAttributeId, $productStoreId, (string)$attributeInfo['frontend_label']);
             }
@@ -158,7 +159,7 @@ class Configurable
      */
     private function initializeProductIdColumn()
     {
-        $this->_productIdColumn = $this->_helper->getProductIdColumn();
+        $this->productIdColumn = $this->helper->getProductIdColumn();
     }
 
     /**
@@ -175,7 +176,7 @@ class Configurable
 
         if (isset($product[self::CONFIGURABLE_ATTRIBUTES])) {
             if ($attributeCodes = explode(',', (string)$product[self::CONFIGURABLE_ATTRIBUTES])) {
-                $configurableAttributeIds = $this->_attributeHelper->getAttributeIdsFromCodes($attributeCodes);
+                $configurableAttributeIds = $this->attributeHelper->getAttributeIdsFromCodes($attributeCodes);
             }
         }
 
@@ -190,9 +191,12 @@ class Configurable
      */
     private function createFixedSuperLink(int $productId, array $skuArray)
     {
-        $this->log('createFixedSuperLink()', [$productId, $skuArray]);
+        $this->log('createFixedSuperLink()', [
+            'productId' => $productId,
+            'skuArray'  => $skuArray
+        ]);
 
-        $skus = $this->_helper->arrayToCommaSeparatedValueString($skuArray);
+        $skus = $this->helper->arrayToCommaSeparatedValueString($skuArray);
         $this->createSuperLink($productId, "IN ($skus)", $skuArray);
     }
 
@@ -205,7 +209,11 @@ class Configurable
      */
     private function createSuperLink(int $productId, string $condition, array $conditionData = [])
     {
-        $this->log('createSuperLink()', [$productId, $condition, $conditionData]);
+        $this->log('createSuperLink()', [
+            'productId'     => $productId,
+            'condition'     => $condition,
+            'conditionData' => $conditionData
+        ]);
 
         // Cache our table names
         $productSuperLinkTable = $this->db->getTableName('catalog_product_super_link');
@@ -223,27 +231,27 @@ class Configurable
         // Re-create associations
         $query = "INSERT INTO `$productSuperLinkTable` (`parent_id`, `product_id`)
                   SELECT
-                    `cpec`.`$this->_productIdColumn` as `parent_id`,
+                    `cpec`.`$this->productIdColumn` as `parent_id`,
                     `cpes`.`entity_id` as `product_id`
                   FROM `$productEntityTable` as `cpec`
                   
                   JOIN `$productEntityTable` as `cpes`
                   ON `cpes`.`type_id` IN ('simple', 'virtual') AND `cpes`.`sku` $condition
                   
-                  WHERE `cpec`.`$this->_productIdColumn` = ?";
+                  WHERE `cpec`.`$this->productIdColumn` = ?";
         $binds = array_merge($conditionData, [$productId]);
         $this->db->insert($query, $binds);
 
         $query = "INSERT INTO `$productRelationTable` (`parent_id`, `child_id`)
                   SELECT
-                    `cpec`.`$this->_productIdColumn` as `parent_id`,
+                    `cpec`.`$this->productIdColumn` as `parent_id`,
                     `cpes`.`entity_id` as `child_id`
                   FROM `$productEntityTable` as `cpec`
                   
                   JOIN `$productEntityTable` as `cpes`
                   ON `cpes`.`type_id` IN ('simple','virtual') AND `cpes`.`sku` $condition
 
-                  WHERE `cpec`.`$this->_productIdColumn` = ?";
+                  WHERE `cpec`.`$this->productIdColumn` = ?";
         $binds = array_merge($conditionData, [$productId]);
         $this->db->insert($query, $binds);
     }
@@ -253,10 +261,10 @@ class Configurable
      */
     private function updateProductToBeConfigurable(int $productId)
     {
-        $this->log('updateProductToBeConfigurable()', [$productId]);
+        $this->log('updateProductToBeConfigurable()', ['productId' => $productId]);
 
         $table = $this->db->getTableName('catalog_product_entity');
-        $query = "UPDATE `$table` SET `type_id` = 'configurable', `has_options` = 1, `required_options` = 1 WHERE `$this->_productIdColumn` = ?";
+        $query = "UPDATE `$table` SET `type_id` = 'configurable', `has_options` = 1, `required_options` = 1 WHERE `$this->productIdColumn` = ?";
         $binds = [$productId];
 
         $this->db->update($query, $binds);
@@ -319,8 +327,11 @@ class Configurable
      *
      * @return void
      */
-    private function upsertProductSuperAttributeLabelRecord(int $productSuperAttributeId, int $storeId, string $value)
-    {
+    private function upsertProductSuperAttributeLabelRecord(
+        int $productSuperAttributeId,
+        int $storeId,
+        string $value
+    ) {
         $this->log('upsertProductSuperAttributeLabelRecord()', [
             'productSuperAttributeId' => $productSuperAttributeId,
             'storeId'                 => $storeId,
@@ -346,6 +357,6 @@ class Configurable
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('Helper/Configurable - ' . $message, $extra);
+        $this->logger->info('Helper/Configurable - ' . $message, $extra);
     }
 }

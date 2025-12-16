@@ -14,6 +14,8 @@ use ECInternet\RAPIDWebSync\Model\Db;
 
 /**
  * Link Helper
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class Link
 {
