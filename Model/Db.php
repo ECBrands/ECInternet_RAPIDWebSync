@@ -8,7 +8,10 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Model;
 
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Select;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use Zend_Db_Statement_Exception;
+use Zend_Db_Statement_Interface;
 
 class Db
 {
@@ -156,7 +159,7 @@ class Db
      *
      * @return array
      */
-    public function fetchCol(\Magento\Framework\DB\Select $query)
+    public function fetchCol(Select $query)
     {
         return $this->connection->fetchCol($query);
     }
@@ -183,7 +186,7 @@ class Db
      * @param string $query
      * @param array  $params
      *
-     * @return \Zend_Db_Statement_Interface|null
+     * @return Zend_Db_Statement_Interface|null
      */
     public function update(string $query, array $params = [])
     {
@@ -192,7 +195,7 @@ class Db
             $this->log('update()', ['rowCount' => $result->rowCount()]);
 
             return $result;
-        } catch (\Zend_Db_Statement_Exception $e) {
+        } catch (Zend_Db_Statement_Exception $e) {
             $this->log('update()', ['error' => $e->getMessage()]);
         }
 
@@ -205,7 +208,7 @@ class Db
      * @param string $query
      * @param array  $params
      *
-     * @return \Zend_Db_Statement_Interface
+     * @return Zend_Db_Statement_Interface
      */
     public function delete(string $query, array $params = [])
     {
@@ -217,12 +220,93 @@ class Db
      *
      * @param string $query
      *
-     * @return \Zend_Db_Statement_Interface
+     * @return Zend_Db_Statement_Interface
      */
     public function execute(string $query)
     {
         return $this->connection->query($query);
     }
+
+    /**
+     * Is the current store set to "single-store" mode?
+     *
+     * @return bool
+     */
+    public function isSingleStore()
+    {
+        $table = $this->getTableName('store');
+        $query = "SELECT COUNT(`store_id`) as 'count' FROM `$table` WHERE `store_id` != 0";
+        $binds = [];
+
+        return $this->selectOne($query, $binds, 'count') == 1;
+    }
+
+    /**
+     * Get product sku
+     *
+     * @param int $productId
+     *
+     * @return string
+     */
+    public function getProductSku(int $productId)
+    {
+        $table = $this->getTableName('catalog_product_entity');
+        $query = "SELECT `sku` FROM `$table` WHERE `entity_id` = ?";
+        $binds = [$productId];
+
+        return (string)$this->selectOne($query, $binds, 'sku');
+    }
+
+    /**
+     * Get product id
+     *
+     * @param string $sku
+     *
+     * @return int|null
+     */
+    public function getProductId(string $sku)
+    {
+        $table = $this->getTableName('catalog_product_entity');
+        $query = "SELECT `entity_id` FROM `$table` WHERE `sku` = ?";
+        $binds = [$sku];
+
+        if ($result = $this->selectOne($query, $binds, 'entity_id')) {
+            if (is_numeric($result)) {
+                return (int)$result;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get 'catalog_product_link' records
+     *
+     * @param int $productId
+     * @param int $linkTypeId
+     *
+     * @return array
+     */
+    public function getLinkedProductIds(int $productId, int $linkTypeId)
+    {
+        $this->log('getLinkedProductIds()', [
+            'productId'  => $productId,
+            'linkTypeId' => $linkTypeId
+        ]);
+
+        $tableName = $this->getTableName('catalog_product_link');
+
+        /** @var \Magento\Framework\DB\Select $select */
+        $select = $this->connection->select()
+            ->from($tableName, ['linked_product_id'])
+            ->where('product_id = ?', $productId)
+            ->where('link_type_id = ?', $linkTypeId);
+
+        return $this->fetchCol($select);
+    }
+
+
+
 
     /**
      * Write to extension log

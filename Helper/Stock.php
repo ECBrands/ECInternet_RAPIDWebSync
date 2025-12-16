@@ -14,6 +14,9 @@ use ECInternet\RAPIDWebSync\Model\Db;
 
 /**
  * Stock Helper
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class Stock
 {

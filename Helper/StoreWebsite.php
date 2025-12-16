@@ -11,6 +11,7 @@ use Magento\Framework\Exception\InputException;
 use Magento\Store\Model\Data\StoreConfig;
 use Magento\Store\Model\Store;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Db;
 use Exception;
 
 /**
@@ -32,14 +33,11 @@ class StoreWebsite
     private $helper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $db;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
     private $logger;
+
+    private $db;
 
     /**
      * @var array
@@ -53,17 +51,17 @@ class StoreWebsite
 
     /**
      * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db     $db
      * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Db      $db
      */
     public function __construct(
         Data $helper,
-        Db $db,
-        Logger $logger
+        Logger $logger,
+        Db $db
     ) {
         $this->helper = $helper;
-        $this->db     = $db;
         $this->logger = $logger;
+        $this->db     = $db;
 
         $this->initStoreArray();
         $this->initWebsiteArray();

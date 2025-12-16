@@ -13,12 +13,14 @@ use Magento\Framework\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Driver\File;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
+use ECInternet\RAPIDWebSync\Model\Db;
 use Exception;
 
 /**
  * Image Helper
  *
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class Image
 {
@@ -49,11 +51,6 @@ class Image
     private $_attributeHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
     private $_storeWebsiteHelper;
@@ -69,6 +66,11 @@ class Image
     private $config;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
+
+    /**
      * @var string
      */
     private $_lastProcessedImage = '';
@@ -80,29 +82,29 @@ class Image
      * @param \Magento\Framework\Filesystem\Driver\File    $fileDriver
      * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
      * @param \ECInternet\RAPIDWebSync\Model\Config        $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
      */
     public function __construct(
         DirectoryList $directoryList,
         File $fileDriver,
         Data $helper,
         Attribute $attributeHelper,
-        Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
         Logger $logger,
-        Config $config
+        Config $config,
+        Db $db
     ) {
         $this->_directoryList      = $directoryList;
         $this->_fileDriver         = $fileDriver;
         $this->_helper             = $helper;
         $this->_attributeHelper    = $attributeHelper;
-        $this->_dbHelper           = $dbHelper;
         $this->_storeWebsiteHelper = $storeWebsiteHelper;
         $this->_logger             = $logger;
         $this->config              = $config;
+        $this->db                  = $db;
 
         $this->initializeProductIdColumn();
     }
@@ -255,7 +257,7 @@ class Image
             'maxPosition' => $maxPosition
         ]);
 
-        $this->_dbHelper->execute('SET foreign_key_checks = 0');
+        $this->db->execute('SET foreign_key_checks = 0');
 
         foreach ($targetStoreIds as $targetStoreId) {
             $mediaGalleryValueValueId = $this->getMediaGalleryValueValueId($mediaGalleryValueId, $targetStoreId);
@@ -269,7 +271,7 @@ class Image
         // Insert to `catalog_product_entity_media_gallery_value_to_entity`
         $this->addMediaGalleryValueToEntityRecord($mediaGalleryValueId, $productId);
 
-        $this->_dbHelper->execute('SET foreign_key_checks = 1');
+        $this->db->execute('SET foreign_key_checks = 1');
     }
 
     /**
@@ -282,8 +284,8 @@ class Image
     {
         $this->info('getMaxPosition()', ['productId' => $productId, 'storeId' => $storeId]);
 
-        $mediaGallery      = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery');
-        $mediaGalleryValue = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery_value');
+        $mediaGallery      = $this->db->getTableName('catalog_product_entity_media_gallery');
+        $mediaGalleryValue = $this->db->getTableName('catalog_product_entity_media_gallery_value');
 
         // Get maximum current position in the product gallery
         $sql = "SELECT MAX(`position`) as `maxpos`
@@ -291,7 +293,7 @@ class Image
                  JOIN `$mediaGallery` ON `$mediaGallery`.`value_id` = `$mediaGalleryValue`.`value_id` AND `$mediaGalleryValue`.`$this->_productIdColumn` = ?
                  WHERE `$mediaGalleryValue`.`store_id` = ?
                  GROUP BY `$mediaGalleryValue`.`$this->_productIdColumn`";
-        $maxPosition = $this->_dbHelper->selectOne($sql, [$productId, $storeId], 'maxpos');
+        $maxPosition = $this->db->selectOne($sql, [$productId, $storeId], 'maxpos');
 
         return ($maxPosition == null) ? 0 : $maxPosition + 1;
     }
@@ -337,7 +339,7 @@ class Image
                 $productData['store'] = self::STORE_VIEW_ADMIN;
             }
 
-            if ($this->_dbHelper->isSingleStore()) {
+            if ($this->db->isSingleStore()) {
                 $targetStoreIds = $this->_storeWebsiteHelper->getStoreIds();
             } else {
                 $targetStoreIds = $this->_storeWebsiteHelper->getStoreIdsForStoreScope($productData['store']);
@@ -447,7 +449,7 @@ class Image
                 // Copy image from source directory to Product Media directory
                 $imageFile = $this->copyImageFile($imageFile);
                 if ($imageFile !== false) {
-                    $targetStoreIds = ($this->_dbHelper->isSingleStore())
+                    $targetStoreIds = ($this->db->isSingleStore())
                         ? $this->_storeWebsiteHelper->getStoreIds()
                         : $this->_storeWebsiteHelper->getStoreIdsForStoreScope((string)$productData['store']);
 
@@ -640,9 +642,9 @@ class Image
             'label'       => $label
         ]);
 
-        $mediaGallery         = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery');
-        $mediaGalleryValue    = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery_value');
-        $productEntityVarchar = $this->_dbHelper->getTableName('catalog_product_entity_varchar');
+        $mediaGallery         = $this->db->getTableName('catalog_product_entity_media_gallery');
+        $mediaGalleryValue    = $this->db->getTableName('catalog_product_entity_media_gallery_value');
+        $productEntityVarchar = $this->db->getTableName('catalog_product_entity_varchar');
 
         $storeIdString = implode(',', $storeIds);
 
@@ -659,7 +661,7 @@ class Image
                   WHERE `gv`.`store_id` IN ($storeIdString)";
         $binds = [$productId, $attributeInfo['attribute_id'], $label];
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     /**
@@ -793,11 +795,11 @@ class Image
             'value'       => $value
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery');
+        $table = $this->db->getTableName('catalog_product_entity_media_gallery');
         $query = "INSERT INTO `$table` (`attribute_id`, `value`, `media_type`) VALUES (?,?,?)";
         $binds = [$attributeId, $value, 'image'];
 
-        return $this->_dbHelper->insert($query, $binds);
+        return $this->db->insert($query, $binds);
     }
 
     /**
@@ -815,11 +817,11 @@ class Image
             'value'       => $value
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery');
+        $table = $this->db->getTableName('catalog_product_entity_media_gallery');
         $query = "SELECT `value_id` FROM `$table` WHERE `attribute_id`=? AND `value`=? AND `media_type`=?";
         $binds = [$attributeId, $value, 'image'];
 
-        return $this->_dbHelper->selectOne($query, $binds, 'value_id');
+        return $this->db->selectOne($query, $binds, 'value_id');
     }
 
     ////////////////////////////////////////////////////
@@ -843,11 +845,11 @@ class Image
             'storeId' => $storeId
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery_value');
+        $table = $this->db->getTableName('catalog_product_entity_media_gallery_value');
         $query = "SELECT `value_id` FROM `$table` WHERE `value_id`=? AND `store_id`=?";
         $binds = [$valueId, $storeId];
 
-        return $this->_dbHelper->selectOne($query, $binds, 'value_id');
+        return $this->db->selectOne($query, $binds, 'value_id');
     }
 
     /**
@@ -871,11 +873,11 @@ class Image
             'position'  => $position
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery_value');
+        $table = $this->db->getTableName('catalog_product_entity_media_gallery_value');
         $query = "INSERT INTO `$table` (`value_id`, `store_id`, `$this->_productIdColumn`, `label`, `position`) VALUES (?,?,?,?,?)";
         $binds = [$valueId, $storeId, $productId, $label, $position];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -895,11 +897,11 @@ class Image
             'label'    => $label
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery_value');
+        $table = $this->db->getTableName('catalog_product_entity_media_gallery_value');
         $query = "UPDATE `$table` SET `label`=? WHERE `value_id`=? AND `store_id`=?";
         $binds = [$label, $valueId, $storeId];
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     ////////////////////////////////////////////////////
@@ -923,11 +925,11 @@ class Image
             'productId' => $productId
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_media_gallery_value_to_entity');
+        $table = $this->db->getTableName('catalog_product_entity_media_gallery_value_to_entity');
         $query = "INSERT IGNORE INTO `$table` (`value_id`, `$this->_productIdColumn`) VALUES (?,?)";
         $binds = [$valueId, $productId];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     ////////////////////////////////////////////////////

@@ -10,10 +10,14 @@ namespace ECInternet\RAPIDWebSync\Helper;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\StateException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Db;
 use Exception;
 
 /**
  * Rewrite Helper
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class Rewrite
 {
@@ -29,14 +33,14 @@ class Rewrite
     private $_helper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
     private $_logger;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
 
     /**
      * @var int
@@ -52,19 +56,19 @@ class Rewrite
      * Rewrite constructor.
      *
      * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db     $dbHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Db      $db
      *
      * @throws \Exception
      */
     public function __construct(
         Data $helper,
-        Db $dbHelper,
-        Logger $logger
+        Logger $logger,
+        Db $db
     ) {
         $this->_helper   = $helper;
-        $this->_dbHelper = $dbHelper;
         $this->_logger   = $logger;
+        $this->db        = $db;
 
         // Cache the AttributeId for 'url_path'
         $this->initCategoryUrlPathAttributeId();
@@ -234,10 +238,10 @@ class Rewrite
      */
     private function initCategoryUrlPathAttributeId()
     {
-        $table = $this->_dbHelper->getTableName('eav_attribute');
+        $table = $this->db->getTableName('eav_attribute');
         $query = "SELECT `attribute_id` FROM `$table` WHERE `entity_type_id` = 3 AND `attribute_code` = 'url_path'";
 
-        $results = $this->_dbHelper->select($query);
+        $results = $this->db->select($query);
         if (!$results) {
             throw new StateException(__("Unable to lookup 'url_path' attribute id"));
         }
@@ -317,11 +321,11 @@ class Rewrite
 
         $categoryIds = [];
 
-        $table = $this->_dbHelper->getTableName('catalog_category_product');
+        $table = $this->db->getTableName('catalog_category_product');
         $query = "SELECT `category_id` FROM `$table` WHERE `product_id` = ?";
         $binds = [$productEntityId];
 
-        $results = $this->_dbHelper->select($query, $binds);
+        $results = $this->db->select($query, $binds);
         foreach ($results as $result) {
             if (isset($result['category_id'])) {
                 $categoryId = $result['category_id'];
@@ -348,11 +352,11 @@ class Rewrite
 
         $productIdColumn = $this->_helper->getProductIdColumn();
 
-        $table = $this->_dbHelper->getTableName('catalog_category_entity_varchar');
+        $table = $this->db->getTableName('catalog_category_entity_varchar');
         $query = "SELECT `value` FROM `$table` WHERE `attribute_id` = ? AND `store_id` = ? AND `$productIdColumn` = ?";
         $binds = [$this->_categoryUrlPathAttributeId, $storeId, $categoryId];
 
-        $value = $this->_dbHelper->selectOne($query, $binds, 'value');
+        $value = $this->db->selectOne($query, $binds, 'value');
         if ($value !== null) {
             return (string)$value;
         }
@@ -372,11 +376,11 @@ class Rewrite
     {
         $this->log('getUniqueUrlRewriteId()', ['requestPath' => $requestPath, 'storeId' => $storeId]);
 
-        $table = $this->_dbHelper->getTableName('url_rewrite');
+        $table = $this->db->getTableName('url_rewrite');
         $query = "SELECT `url_rewrite_id` FROM `$table` WHERE `request_path` = ? AND `store_id` = ?";
         $binds = [$requestPath, $storeId];
 
-        $urlRewriteId = $this->_dbHelper->selectOne($query, $binds, 'url_rewrite_id');
+        $urlRewriteId = $this->db->selectOne($query, $binds, 'url_rewrite_id');
         if (is_numeric($urlRewriteId)) {
             return (int)$urlRewriteId;
         }
@@ -393,11 +397,11 @@ class Rewrite
      */
     private function getProductBaseUrlRewrites(int $productId)
     {
-        $table = $this->_dbHelper->getTableName('url_rewrite');
+        $table = $this->db->getTableName('url_rewrite');
         $query = "SELECT `url_rewrite_id`, `request_path` FROM `$table` WHERE `entity_type` = 'product' AND `metadata` IS NULL AND `entity_id` = ?";
         $binds = [$productId];
 
-        return $this->_dbHelper->select($query, $binds);
+        return $this->db->select($query, $binds);
     }
 
     /**
@@ -538,11 +542,11 @@ class Rewrite
             'storeId'    => $storeId
         ]);
 
-        $table = $this->_dbHelper->getTableName('url_rewrite');
+        $table = $this->db->getTableName('url_rewrite');
         $query = "SELECT `url_rewrite_id` FROM `$table` WHERE `entity_type` = ? AND `entity_id` = ? AND `target_path` = ? AND `store_id` = ?";
         $binds = [$entityType, $entityId, $targetPath, $storeId];
 
-        $urlRewriteId = $this->_dbHelper->selectOne($query, $binds, 'url_rewrite_id');
+        $urlRewriteId = $this->db->selectOne($query, $binds, 'url_rewrite_id');
         if (is_numeric($urlRewriteId)) {
             return (int)$urlRewriteId;
         }
@@ -573,12 +577,12 @@ class Rewrite
             'metadata'    => $metadata
         ]);
 
-        $table = $this->_dbHelper->getTableName('url_rewrite');
+        $table = $this->db->getTableName('url_rewrite');
         $query = "INSERT INTO `$table` (`entity_type`, `entity_id`, `request_path`, `target_path`, `store_id`, `is_autogenerated`, `metadata`) VALUES (?,?,?,?,?,?,?)";
         $binds = [$entityType, $entityId, $requestPath, $targetPath, $storeId, 1, $metadata];
 
         try {
-            $this->_dbHelper->insert($query, $binds);
+            $this->db->insert($query, $binds);
         } catch (Exception $e) {
             $this->log('insertUrlRewriteRecord()', ['exception' => $e->getMessage()]);
         }
@@ -603,12 +607,12 @@ class Rewrite
             'metadata'     => $metadata
         ]);
 
-        $table = $this->_dbHelper->getTableName('url_rewrite');
+        $table = $this->db->getTableName('url_rewrite');
         $query = "UPDATE `$table` SET `request_path`=?, `target_path`=?, `metadata`=? WHERE `url_rewrite_id`=?";
         $binds = [$requestPath, $targetPath, $metadata, $urlRewriteId];
 
         try {
-            $this->_dbHelper->update($query, $binds);
+            $this->db->update($query, $binds);
         } catch (Exception $e) {
             $this->log('updateUrlRewriteRecord()', ['exception' => $e->getMessage()]);
         }
@@ -625,11 +629,11 @@ class Rewrite
     {
         $this->log('deleteProductBaseUrlRewriteByProductId()', ['productId' => $productId]);
 
-        $table = $this->_dbHelper->getTableName('url_rewrite');
+        $table = $this->db->getTableName('url_rewrite');
         $query = "DELETE FROM `$table` WHERE `entity_type` = 'product' AND `metadata` IS NULL AND `entity_id`=?";
         $binds = [$productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -644,11 +648,11 @@ class Rewrite
     {
         $this->log('clearCategoryProductRewrites()', ['productId' => $productId]);
 
-        $table = $this->_dbHelper->getTableName('url_rewrite');
+        $table = $this->db->getTableName('url_rewrite');
         $query = "DELETE FROM `$table` WHERE `entity_type` = 'product' AND `entity_id`=? AND `metadata` IS NOT NULL";
         $binds = [$productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**

@@ -10,6 +10,7 @@ namespace ECInternet\RAPIDWebSync\Helper;
 use Magento\Framework\Exception\IntegrationException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
+use ECInternet\RAPIDWebSync\Model\Db;
 use DateTime;
 use DateInterval;
 use Exception;
@@ -38,11 +39,6 @@ class Import
      * @var \ECInternet\RAPIDWebSync\Helper\Configurable
      */
     private $_configurableHelper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Image
@@ -85,6 +81,11 @@ class Import
     private $config;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
+
+    /**
      * Array for holding sku-entity_id records
      *
      * @var array
@@ -125,7 +126,6 @@ class Import
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Category     $categoryHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Configurable $configurableHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Image        $imageHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Link         $linkHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Rewrite      $rewriteHelper
@@ -134,13 +134,13 @@ class Import
      * @param \ECInternet\RAPIDWebSync\Helper\TierPrice    $tierPriceHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
      * @param \ECInternet\RAPIDWebSync\Model\Config        $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
      */
     public function __construct(
         Data $helper,
         Attribute $attributeHelper,
         Category $categoryHelper,
         Configurable $configurableHelper,
-        Db $dbHelper,
         Image $imageHelper,
         Link $linkHelper,
         Rewrite $rewriteHelper,
@@ -148,13 +148,13 @@ class Import
         StoreWebsite $storeWebsiteHelper,
         TierPrice $tierPriceHelper,
         Logger $logger,
-        Config $config
+        Config $config,
+        Db $db
     ) {
         $this->_helper             = $helper;
         $this->_attributeHelper    = $attributeHelper;
         $this->_categoryHelper     = $categoryHelper;
         $this->_configurableHelper = $configurableHelper;
-        $this->_dbHelper           = $dbHelper;
         $this->_imageHelper        = $imageHelper;
         $this->_linkHelper         = $linkHelper;
         $this->_rewriteHelper      = $rewriteHelper;
@@ -163,6 +163,7 @@ class Import
         $this->_tierPriceHelper    = $tierPriceHelper;
         $this->_logger             = $logger;
         $this->config              = $config;
+        $this->db                  = $db;
 
         // Build SKU array so we can test for existing / new products
         $this->initSkuArray();
@@ -179,7 +180,7 @@ class Import
      */
     public function getSalesOrderColumns()
     {
-        return $this->_dbHelper->getTableColumns('sales_order');
+        return $this->db->getTableColumns('sales_order');
     }
 
     /**
@@ -356,7 +357,7 @@ class Import
      */
     protected function initSkuArray()
     {
-        $table = $this->_dbHelper->getTableName('catalog_product_entity');
+        $table = $this->db->getTableName('catalog_product_entity');
         $query = "SELECT DISTINCT `entity_id`, `sku` FROM `$table`";
 
         // If we're COMMUNITY we also want to pick up row_id
@@ -364,7 +365,7 @@ class Import
             $query = "SELECT `row_id`, `entity_id`, `sku` FROM `$table`";
         }
 
-        $results = $this->_dbHelper->select($query);
+        $results = $this->db->select($query);
         foreach ($results as $result) {
             // Always add rows to entity_id / sku array
             $this->_skuEntityIdArray[$result['sku']] = (int)$result['entity_id'];
@@ -558,7 +559,7 @@ class Import
      */
     private function getProductColumns()
     {
-        return $this->_dbHelper->getTableColumns('catalog_product_entity');
+        return $this->db->getTableColumns('catalog_product_entity');
     }
 
     /**
@@ -651,7 +652,7 @@ class Import
         $catalogProductEntityId = null;
 
         try {
-            $this->_dbHelper->beginTransaction();
+            $this->db->beginTransaction();
 
             // Insert into sequence_product if we're in EE
             if (!$this->_helper->isVersionCommunity()) {
@@ -672,17 +673,17 @@ class Import
             $valuesString = $this->_helper->arrayToCommaSeparatedValueString($filteredColumns);
 
             // Let's write this baby
-            $table = $this->_dbHelper->getTableName('catalog_product_entity');
+            $table = $this->db->getTableName('catalog_product_entity');
             $query = "INSERT INTO `$table` ($columnString) VALUES ($valuesString)";
             $binds = array_values($values);
 
             // For CE this will be new `entity_id`
             // For EE this will be new `row_id`
-            $catalogProductEntityId = $this->_dbHelper->insert($query, $binds);
+            $catalogProductEntityId = $this->db->insert($query, $binds);
 
-            $this->_dbHelper->commit();
+            $this->db->commit();
         } catch (Exception $e) {
-            $this->_dbHelper->rollBack();
+            $this->db->rollBack();
             throw $e;
         }
 
@@ -708,10 +709,10 @@ class Import
     {
         $this->log('createSequenceProductRecord()');
 
-        $table = $this->_dbHelper->getTableName('sequence_product');
+        $table = $this->db->getTableName('sequence_product');
         $query = "INSERT INTO `$table` VALUES (null)";
 
-        return $this->_dbHelper->insert($query);
+        return $this->db->insert($query);
     }
 
     /**
@@ -750,11 +751,11 @@ class Import
     {
         $this->log('addWebsiteRecord()', ['productId' => $productId, 'websiteId' => $websiteId]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_website');
+        $table = $this->db->getTableName('catalog_product_website');
         $query = "INSERT IGNORE INTO `$table` (`product_id`, `website_id`) VALUES (?,?)";
         $binds = [$productId, $websiteId];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -844,11 +845,11 @@ class Import
     {
         $this->log('clearProductWebsites()', ['productId' => $productId]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_website');
+        $table = $this->db->getTableName('catalog_product_website');
         $query = "DELETE FROM `$table` WHERE `product_id` = ?";
         $binds = [$productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -864,11 +865,11 @@ class Import
 
         $timestamp = date('Y-m-d H:i:s');
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity');
+        $table = $this->db->getTableName('catalog_product_entity');
         $query = "UPDATE `$table` SET `updated_at`=? WHERE `entity_id`=?";
         $binds = [$timestamp, $productId];
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     /**

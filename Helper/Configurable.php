@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Helper;
 
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Db;
 use Exception;
 
 /**
@@ -34,11 +35,6 @@ class Configurable
     private $_attributeHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
     private $_storeWebsiteHelper;
@@ -49,26 +45,31 @@ class Configurable
     private $_logger;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
+
+    /**
      * Configurable constructor.
      *
      * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
      */
     public function __construct(
         Data $helper,
         Attribute $attributeHelper,
-        Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger
+        Logger $logger,
+        Db $db
     ) {
         $this->_helper             = $helper;
         $this->_attributeHelper    = $attributeHelper;
-        $this->_dbHelper           = $dbHelper;
         $this->_storeWebsiteHelper = $storeWebsiteHelper;
         $this->_logger             = $logger;
+        $this->db                  = $db;
 
         $this->initializeProductIdColumn();
     }
@@ -207,9 +208,9 @@ class Configurable
         $this->log('createSuperLink()', [$productId, $condition, $conditionData]);
 
         // Cache our table names
-        $productSuperLinkTable = $this->_dbHelper->getTableName('catalog_product_super_link');
-        $productRelationTable  = $this->_dbHelper->getTableName('catalog_product_relation');
-        $productEntityTable    = $this->_dbHelper->getTableName('catalog_product_entity');
+        $productSuperLinkTable = $this->db->getTableName('catalog_product_super_link');
+        $productRelationTable  = $this->db->getTableName('catalog_product_relation');
+        $productEntityTable    = $this->db->getTableName('catalog_product_entity');
 
         // TODO: Needs cleanup
         // Delete associations
@@ -217,7 +218,7 @@ class Configurable
                   JOIN `$productRelationTable` as `cpsr` ON `cpsr`.`parent_id` = `cpsl`.`parent_id`
                   WHERE `cpsl`.`parent_id` = ?";
         $binds = [$productId];
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
 
         // Re-create associations
         $query = "INSERT INTO `$productSuperLinkTable` (`parent_id`, `product_id`)
@@ -231,7 +232,7 @@ class Configurable
                   
                   WHERE `cpec`.`$this->_productIdColumn` = ?";
         $binds = array_merge($conditionData, [$productId]);
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
 
         $query = "INSERT INTO `$productRelationTable` (`parent_id`, `child_id`)
                   SELECT
@@ -244,7 +245,7 @@ class Configurable
 
                   WHERE `cpec`.`$this->_productIdColumn` = ?";
         $binds = array_merge($conditionData, [$productId]);
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -254,11 +255,11 @@ class Configurable
     {
         $this->log('updateProductToBeConfigurable()', [$productId]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity');
+        $table = $this->db->getTableName('catalog_product_entity');
         $query = "UPDATE `$table` SET `type_id` = 'configurable', `has_options` = 1, `required_options` = 1 WHERE `$this->_productIdColumn` = ?";
         $binds = [$productId];
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     /**
@@ -274,13 +275,13 @@ class Configurable
             'attributeId' => $attributeId
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_super_attribute');
+        $table = $this->db->getTableName('catalog_product_super_attribute');
         $query = "SELECT `product_super_attribute_id`
                   FROM `$table`
                   WHERE `product_id` = ? AND `attribute_id` = ?";
         $binds = [$productId, $attributeId];
 
-        if ($result = $this->_dbHelper->selectOne($query, $binds, 'product_super_attribute_id')) {
+        if ($result = $this->db->selectOne($query, $binds, 'product_super_attribute_id')) {
             if (is_numeric($result)) {
                 return (int)$result;
             }
@@ -304,11 +305,11 @@ class Configurable
             'index'       => $index
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_super_attribute');
+        $table = $this->db->getTableName('catalog_product_super_attribute');
         $query = "INSERT INTO `$table` (`product_id`, `attribute_id`, `position`) VALUES (?, ?, ?)";
         $binds = [$productId, $attributeId, $index];
 
-        return $this->_dbHelper->insert($query, $binds);
+        return $this->db->insert($query, $binds);
     }
 
     /**
@@ -326,13 +327,13 @@ class Configurable
             'value'                   => $value
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_super_attribute_label');
+        $table = $this->db->getTableName('catalog_product_super_attribute_label');
         $query = "INSERT INTO `$table`
                   (`product_super_attribute_id`, `store_id`, `use_default`, `value`) VALUES (?, ?, ?, ?)
                   ON DUPLICATE KEY UPDATE value=VALUES(`value`)";
         $binds = [$productSuperAttributeId, $storeId, 1, $value];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**

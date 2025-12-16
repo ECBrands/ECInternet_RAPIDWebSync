@@ -22,6 +22,7 @@ use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
+use ECInternet\RAPIDWebSync\Model\Db;
 use Exception;
 
 /**
@@ -53,11 +54,6 @@ class Attribute
     private $_helper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
     private $_storeWebsiteHelper;
@@ -71,6 +67,11 @@ class Attribute
      * @var \ECInternet\RAPIDWebSync\Model\Config
      */
     private $config;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
 
     /**
      * @var string
@@ -97,25 +98,25 @@ class Attribute
      *
      * @param \Magento\Eav\Model\Config                    $eavConfig
      * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
      * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
      * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
      * @param \ECInternet\RAPIDWebSync\Model\Config        $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
      */
     public function __construct(
         EavConfig $eavConfig,
         Data $helper,
-        Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
         Logger $logger,
-        Config $config
+        Config $config,
+        Db $db
     ) {
         $this->_eavConfig          = $eavConfig;
         $this->_helper             = $helper;
-        $this->_dbHelper           = $dbHelper;
         $this->_storeWebsiteHelper = $storeWebsiteHelper;
         $this->_logger             = $logger;
         $this->config              = $config;
+        $this->db                  = $db;
     }
 
     /**
@@ -334,11 +335,11 @@ class Attribute
      */
     private function initializeCatalogProductEntityTypeId()
     {
-        $table = $this->_dbHelper->getTableName('eav_entity_type');
+        $table = $this->db->getTableName('eav_entity_type');
         $query = "SELECT `entity_type_id` FROM `$table` WHERE `entity_type_code` = ?";
         $binds = ['catalog_product'];
 
-        $results = $this->_dbHelper->select($query, $binds);
+        $results = $this->db->select($query, $binds);
         if (!$results) {
             throw new InitException(__("Unable to lookup 'entity_type_id' for 'entity_type_code' = 'catalog_product'"));
         }
@@ -364,13 +365,13 @@ class Attribute
      */
     private function initializeAttributeSets()
     {
-        $table = $this->_dbHelper->getTableName('eav_attribute_set');
+        $table = $this->db->getTableName('eav_attribute_set');
         $query = "SELECT `attribute_set_id`, `attribute_set_name`
                   FROM `$table`
                   WHERE `entity_type_id` = ?";
         $binds = [$this->getProductEntityTypeId()];
 
-        $results = $this->_dbHelper->select($query, $binds);
+        $results = $this->db->select($query, $binds);
         foreach ($results as $result) {
             $this->_attributeSets[$result['attribute_set_name']] = (int)$result['attribute_set_id'];
         }
@@ -384,8 +385,8 @@ class Attribute
      */
     private function initializeCatalogProductAttributes()
     {
-        $eav_attribute         = $this->_dbHelper->getTableName('eav_attribute');
-        $catalog_eav_attribute = $this->_dbHelper->getTableName('catalog_eav_attribute');
+        $eav_attribute         = $this->db->getTableName('eav_attribute');
+        $catalog_eav_attribute = $this->db->getTableName('catalog_eav_attribute');
 
         $query = "SELECT
                     `$eav_attribute`.`attribute_id`,
@@ -408,7 +409,7 @@ class Attribute
                     `$eav_attribute`.`entity_type_id` = ?";
         $binds = [$this->getProductEntityTypeId()];
 
-        $results = $this->_dbHelper->select($query, $binds);
+        $results = $this->db->select($query, $binds);
         foreach ($results as $result) {
             $this->_attributes[$result[AttributeInterface::ATTRIBUTE_CODE]] = [
                 AttributeInterface::ATTRIBUTE_ID    => (int)$result[AttributeInterface::ATTRIBUTE_ID],
@@ -599,7 +600,7 @@ class Attribute
             : [0];
 
         // TODO: Add handling for deleting from ALL stores when not singleStore.
-        if ($this->_dbHelper->isSingleStore()) {
+        if ($this->db->isSingleStore()) {
             // Delete from all but 0
             $this->deleteProductAttributeValueExclude($productId, 0, $attributeInfo);
         }
@@ -628,13 +629,13 @@ class Attribute
             'attributeType' => $attributeType
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $attributeType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $attributeType);
         $query = "SELECT COUNT(*) as 'count'
                   FROM `$table`
                   WHERE `attribute_id`=? AND `store_id`=? AND `{$this->getProductIdColumn()}`=?";
         $binds = [$attributeId, $storeId, $productId];
 
-        return ((int)$this->_dbHelper->selectOne($query, $binds, 'count')) > 0;
+        return ((int)$this->db->selectOne($query, $binds, 'count')) > 0;
     }
 
     /**
@@ -657,11 +658,11 @@ class Attribute
             'value'          => $value,
             'attribute_type' => $attributeType]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $attributeType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $attributeType);
         $query = "INSERT INTO `$table` (`attribute_id`,`store_id`,`{$this->getProductIdColumn()}`,`value`) VALUES (?,?,?,?)";
         $binds = [$attributeId, $storeId, $productId, $value];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -685,11 +686,11 @@ class Attribute
             'value'         => $value
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $attributeType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $attributeType);
         $query = "UPDATE `$table` SET `value`=? WHERE `attribute_id`=? AND `store_id`=? AND `{$this->getProductIdColumn()}`=?";
         $binds = [$value, $attributeId, $storeId, $productId];
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     /**
@@ -749,11 +750,11 @@ class Attribute
     {
         $this->log('getTopSortOrderEavAttributeOption()', ['attribute_id' => $attributeId]);
 
-        $table = $this->_dbHelper->getTableName('eav_attribute_option');
+        $table = $this->db->getTableName('eav_attribute_option');
         $query = "SELECT MAX(`sort_order`) as 'sort_order' FROM `$table` WHERE `attribute_id`=?";
         $binds = [$attributeId];
 
-        return $this->_dbHelper->selectOne($query, $binds, 'sort_order');
+        return $this->db->selectOne($query, $binds, 'sort_order');
     }
 
     /**
@@ -771,9 +772,9 @@ class Attribute
             'value'          => $attributeOptionValue
         ]);
 
-        $eavAttribute            = $this->_dbHelper->getTableName('eav_attribute');
-        $eavAttributeOption      = $this->_dbHelper->getTableName('eav_attribute_option');
-        $eavAttributeOptionValue = $this->_dbHelper->getTableName('eav_attribute_option_value');
+        $eavAttribute            = $this->db->getTableName('eav_attribute');
+        $eavAttributeOption      = $this->db->getTableName('eav_attribute_option');
+        $eavAttributeOptionValue = $this->db->getTableName('eav_attribute_option_value');
 
         $query = "SELECT
                     `$eavAttribute`.`attribute_code`,
@@ -793,7 +794,7 @@ class Attribute
                     `$eavAttribute`.`attribute_code`=? AND `$eavAttributeOptionValue`.`value`=?";
         $binds = [$attributeCode, $attributeOptionValue];
 
-        return (int)$this->_dbHelper->selectOne($query, $binds, 'option_id');
+        return (int)$this->db->selectOne($query, $binds, 'option_id');
     }
 
     private function getAttributeSourceOptionId(string $attributeCode, string $value)
@@ -927,11 +928,11 @@ class Attribute
             $sortOrder = 0;
         }
 
-        $table = $this->_dbHelper->getTableName('eav_attribute_option');
+        $table = $this->db->getTableName('eav_attribute_option');
         $query = "INSERT INTO `$table` (`attribute_id`, `sort_order`) VALUES (?,?)";
         $binds = [$attributeId, $sortOrder];
 
-        return $this->_dbHelper->insert($query, $binds);
+        return $this->db->insert($query, $binds);
     }
 
     /**
@@ -951,11 +952,11 @@ class Attribute
             'value'    => $value,
         ]);
 
-        $table = $this->_dbHelper->getTableName('eav_attribute_option_value');
+        $table = $this->db->getTableName('eav_attribute_option_value');
         $query = "INSERT INTO `$table` (`option_id`, `store_id`, `value`) VALUES (?,?,?)";
         $binds = [$optionId, $storeId, $value];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -979,11 +980,11 @@ class Attribute
         $attributeId = $attributeInfo[AttributeInterface::ATTRIBUTE_ID];
         $backendType = $attributeInfo[AttributeInterface::BACKEND_TYPE];
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $backendType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $backendType);
         $query = "DELETE FROM `$table` WHERE `attribute_id` = ? AND `store_id` = ? AND `{$this->getProductIdColumn()}` = ?";
         $binds = [$attributeId, $storeId, $productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -1007,11 +1008,11 @@ class Attribute
         $attributeId = $attributeInfo[AttributeInterface::ATTRIBUTE_ID];
         $backendType = $attributeInfo[AttributeInterface::BACKEND_TYPE];
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $backendType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $backendType);
         $query = "DELETE FROM `$table` WHERE `attribute_id` = ? AND `store_id` <> ? AND `{$this->getProductIdColumn()}` = ?";
         $binds = [$attributeId, $storeId, $productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
