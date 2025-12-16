@@ -132,8 +132,13 @@ class Inventory implements DataProcessorInterface
         $this->upsertStockStatusRecords($productData);
 
         // HANDLE MULTI SOURCE INVENTORY
-        if ($this->handleMultiSourceInventory()) {
+        if ($this->isMultiSourceInventoryInstalled()) {
             $this->upsertInventorySourceItem($productData);
+
+            // Remove inventory_reservation records
+            if ($this->shouldAutomaticallyRemoveReservations()) {
+                $this->clearReservations($sku);
+            }
         }
 
         $this->log('| -- End Stock Processor --' . PHP_EOL);
@@ -182,9 +187,14 @@ class Inventory implements DataProcessorInterface
      *
      * @return bool
      */
-    private function handleMultiSourceInventory()
+    private function isMultiSourceInventoryInstalled()
     {
         return $this->moduleManager->isEnabled('Magento_Inventory');
+    }
+
+    private function shouldAutomaticallyRemoveReservations()
+    {
+        return $this->config->shouldAutomaticallyRemoveReservations();
     }
 
     /**
@@ -360,6 +370,18 @@ class Inventory implements DataProcessorInterface
             : 0;
 
         $this->upsertInventorySourceItemRecord($sourceCode, $this->sku, (int)$qty, $stockStatus);
+    }
+
+    private function clearReservations(string $sku)
+    {
+        $this->log('clearReservations()', ['sku' => $sku]);
+
+        $table = $this->db->getTableName('inventory_reservation');
+        $query = "DELETE FROM `$table` WHERE `sku` = ?";
+        $binds = [$sku];
+
+        $response = $this->db->delete($query, $binds);
+        $this->log('clearReservations()', ['rowCount' => $response->rowCount()]);
     }
 
     private function upsertInventorySourceItemRecord(string $sourceCode, string $sku, int $qty, int $status = 0)
