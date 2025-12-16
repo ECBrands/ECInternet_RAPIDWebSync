@@ -552,7 +552,7 @@ class Image
         $this->log('copyImageFile()', ['targetPath' => $targetPath]);
 
         // Check the last image we processed so we can grab that quickly
-        if ($imagePath == $this->lastProcessedImage) {
+        if ($imagePath === $this->lastProcessedImage) {
             $this->log('copyImageFile() - The current image file was also the last one processed - Using that.', [$imagePath]);
             return $imagePath;
         }

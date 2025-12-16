@@ -349,7 +349,7 @@ class Attribute
             throw new InitException(__("Unable to lookup 'entity_type_id' for 'entity_type_code' = 'catalog_product'"));
         }
 
-        if (count($results) != 1) {
+        if (count($results) !== 1) {
             throw new StateException(
                 __('Found ' . count($results) . " results when looking for 'catalog_product' 'entity_type_id'.")
             );

@@ -37,6 +37,9 @@ class StoreWebsite
      */
     private $logger;
 
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
     private $db;
 
     /**
@@ -75,6 +78,7 @@ class StoreWebsite
     public function getStoreIds()
     {
         $storeIds = [];
+
         foreach ($this->stores as $storeId => $storeData) {
             $storeIds[] = $storeId;
         }
@@ -272,7 +276,7 @@ class StoreWebsite
         // Use this value as our key when we iterate through website_ids
         $key = (string)$product[self::FIELD_STORE];
 
-        if (trim($key) != static::ADMIN_STORECODE) {
+        if (trim($key) !== static::ADMIN_STORECODE) {
             $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($key);
             foreach ($storeCodes as $storeCode) {
                 $websiteIds[] = $this->getWebsiteIdsForStoreCode($storeCode);
@@ -358,7 +362,7 @@ class StoreWebsite
 
         $results = $this->db->select($query);
         foreach ($results as $result) {
-            if (isset($result[StoreConfig::KEY_CODE]) && isset($result[StoreConfig::KEY_WEBSITE_ID])) {
+            if (isset($result[StoreConfig::KEY_CODE], $result[StoreConfig::KEY_WEBSITE_ID])) {
                 $code      = $result[StoreConfig::KEY_CODE];
                 $websiteId = $result[StoreConfig::KEY_WEBSITE_ID];
 

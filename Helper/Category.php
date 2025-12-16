@@ -177,7 +177,7 @@ class Category
 
                         // For each part of category list to include upwards, match up to local root
                         foreach ($explodedProductCategoriesStrings as $categoryItem) {
-                            if (substr($categoryItem, 0, $baseLength) == $base) {
+                            if (str_starts_with($categoryItem, $base)) {
                                 $rootPath = $ra['rootarr'];
                                 array_shift($rootPath);
                                 $categoryIds = array_merge($categoryIds, $rootPath);
@@ -675,19 +675,21 @@ class Category
         $this->log('getStoreRootPaths()', ['storeIds' => $storeIds]);
 
         // Remove 'admin' from StoreIds (no category root in it)
-        if ($storeIds[0] == 0) {
+        if ($storeIds[0] === 0) {
             array_shift($storeIds);
         }
 
         // If only 'admin' store is set, use website store roots
-        if (count($storeIds) == 0) {
+        if (count($storeIds) === 0) {
+            $websiteStoreIds = [];
+
             $websiteIds = $this->storeWebsiteHelper->getWebsiteIdsForProduct($product);
             foreach ($websiteIds as $websiteId) {
-                $websiteStoreIds = $this->categoryRootWebsites[$websiteId];
-
-                // Add website-level StoreIds to array of store-level StoreIds
-                $storeIds = array_merge($storeIds, $websiteStoreIds);
+                $websiteStoreIds[] = $this->categoryRootWebsites[$websiteId];
             }
+
+            // Add website-level StoreIds to array of store-level StoreIds
+            $storeIds = array_merge($storeIds, $websiteStoreIds);
         }
 
         // Check for explicit root assignment (wrapping root in brackets)

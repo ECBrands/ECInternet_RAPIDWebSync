@@ -292,17 +292,30 @@ class TierPrice
      */
     protected function getWebsiteIds(array $product)
     {
-        $websiteIds = [0];
-
-        if (!$this->db->isSingleStore() && $this->getPriceScope() != self::PRICE_SCOPE_GLOBAL) {
-            try {
-                $websiteIds = $this->storeWebsiteHelper->getWebsiteIdsForProduct($product);
-            } catch (Exception $e) {
-                $this->log('getWebsiteIds()', ['exception' => $e]);
-            }
+        // Single store, only set for storeId 0
+        if (!$this->db->isSingleStore()) {
+            return [0];
         }
 
-        return $websiteIds;
+        // Confirm valid price scope for comparison
+        $priceScope = $this->getPriceScope();
+        if (!is_numeric($priceScope)) {
+            $this->log('getWebsiteIds() - Non-numeric price scope.');
+            return [0];
+        }
+
+        // Global price, only set for storeId 0
+        if ((int)$priceScope === self::PRICE_SCOPE_GLOBAL) {
+            return [0];
+        }
+
+        try {
+            return $this->storeWebsiteHelper->getWebsiteIdsForProduct($product);
+        } catch (Exception $e) {
+            $this->log('getWebsiteIds()', ['exception' => $e]);
+        }
+
+        return [0];
     }
 
     /**
@@ -415,8 +428,11 @@ class TierPrice
      *
      * @return void
      */
-    protected function deleteProductTierPriceRecordsForWebsiteAndGroup(int $productId, array $websiteIds, array $customerGroupCodes)
-    {
+    protected function deleteProductTierPriceRecordsForWebsiteAndGroup(
+        int $productId,
+        array $websiteIds,
+        array $customerGroupCodes
+    ) {
         $this->log('deleteProductTierPriceRecordsForWebsiteAndGroup()', [
             'productId'          => $productId,
             'websiteIds'         => $websiteIds,
@@ -426,7 +442,7 @@ class TierPrice
         $customerGroupIds = [];
         foreach ($customerGroupCodes as $customerGroupCode) {
             $customerGroupId = $this->getCustomerGroupId($customerGroupCode);
-            if ($customerGroupId != null) {
+            if ($customerGroupId !== null) {
                 $customerGroupIds[] = $customerGroupId;
             }
         }
