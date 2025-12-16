@@ -18,7 +18,6 @@ use ECInternet\RAPIDWebSync\Helper\Attribute as AttributeHelper;
 use ECInternet\RAPIDWebSync\Helper\Import as ImportHelper;
 use ECInternet\RAPIDWebSync\Helper\Indexer as IndexerHelper;
 use ECInternet\RAPIDWebSync\Logger\Logger;
-use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
 use Exception;
 
