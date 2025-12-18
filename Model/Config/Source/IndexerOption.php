@@ -12,13 +12,15 @@ use Magento\Indexer\Model\Indexer\CollectionFactory as IndexerCollectionFactory;
 
 /**
  * Options for Indexer
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class IndexerOption implements OptionSourceInterface
 {
     /**
      * @var \Magento\Indexer\Model\Indexer\CollectionFactory
      */
-    private $_indexerCollectionFactory;
+    private $indexerCollectionFactory;
 
     /**
      * IndexerOption constructor.
@@ -28,7 +30,7 @@ class IndexerOption implements OptionSourceInterface
     public function __construct(
         IndexerCollectionFactory $indexerCollectionFactory
     ) {
-        $this->_indexerCollectionFactory = $indexerCollectionFactory;
+        $this->indexerCollectionFactory = $indexerCollectionFactory;
     }
 
     /**
@@ -41,7 +43,7 @@ class IndexerOption implements OptionSourceInterface
         $options = [];
 
         /** @var \Magento\Indexer\Model\Indexer\Collection $indexers */
-        $indexers = $this->_indexerCollectionFactory->create();
+        $indexers = $this->indexerCollectionFactory->create();
         foreach ($indexers as $indexer) {
             /** @var \Magento\Indexer\Model\Indexer $indexer */
             $options[] = [

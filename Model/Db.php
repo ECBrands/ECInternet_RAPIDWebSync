@@ -13,6 +13,9 @@ use ECInternet\RAPIDWebSync\Logger\Logger;
 use Zend_Db_Statement_Exception;
 use Zend_Db_Statement_Interface;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortClassName)
+ */
 class Db
 {
     /**
@@ -304,9 +307,6 @@ class Db
 
         return $this->fetchCol($select);
     }
-
-
-
 
     /**
      * Write to extension log

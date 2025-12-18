@@ -13,6 +13,8 @@ use ECInternet\RAPIDWebSync\Api\Data\LogInterface;
 
 /**
  * Log Model
+ *
+ * @SuppressWarnings(PHPMD.CamelCasePropertyName)
  */
 class Log extends AbstractModel implements IdentityInterface, LogInterface
 {

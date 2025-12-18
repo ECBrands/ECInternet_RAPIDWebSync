@@ -15,7 +15,7 @@ class Index implements ArgumentInterface
     /**
      * @var \Magento\Framework\UrlInterface
      */
-    private $_urlBuilder;
+    private $urlBuilder;
 
     /**
      * @param \Magento\Framework\UrlInterface $urlInterface
@@ -23,7 +23,7 @@ class Index implements ArgumentInterface
     public function __construct(
         UrlInterface $urlInterface
     ) {
-        $this->_urlBuilder = $urlInterface;
+        $this->urlBuilder = $urlInterface;
     }
 
     /**
@@ -33,6 +33,6 @@ class Index implements ArgumentInterface
      */
     public function getDownloadUrl()
     {
-        return $this->_urlBuilder->getUrl('rapidwebsync/export/download');
+        return $this->urlBuilder->getUrl('rapidwebsync/export/download');
     }
 }

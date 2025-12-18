@@ -11,6 +11,8 @@ use Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection;
 
 /**
  * Log Collection
+ *
+ * @SuppressWarnings(PHPMD.CamelCasePropertyName)
  */
 class Collection extends AbstractCollection
 {

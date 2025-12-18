@@ -12,6 +12,9 @@ use ECInternet\RAPIDWebSync\Api\Data\ProductDataProcessorInterface;
 use ECInternet\RAPIDWebSync\Api\ProductDataProcessorPoolInterface;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class ProductDataProcessorPool implements ProductDataProcessorPoolInterface
 {
     /**

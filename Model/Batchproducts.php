@@ -29,32 +29,32 @@ class Batchproducts implements BatchproductsInterface
     /**
      * @var \Magento\Catalog\Model\Product\Image
      */
-    private $_productImage;
+    private $productImage;
 
     /**
      * @var \Magento\Framework\Filesystem\Driver\File
      */
-    private $_fileDriver;
+    private $fileDriver;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Api\LogRepositoryInterface
      */
-    private $_logRepository;
+    private $logRepository;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
      */
-    private $_helper;
+    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Attribute
      */
-    private $_attributeHelper;
+    private $attributeHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Import
      */
-    private $_importHelper;
+    private $importHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Indexer
@@ -64,12 +64,12 @@ class Batchproducts implements BatchproductsInterface
     /**
      * @var \ECInternet\RAPIDWebSync\Model\LogFactory
      */
-    private $_logFactory;
+    private $logFactory;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Model\Config
@@ -79,7 +79,7 @@ class Batchproducts implements BatchproductsInterface
     /**
      * @var string
      */
-    private $_input;
+    private $input;
 
     /**
      * Batchproducts constructor.
@@ -107,16 +107,16 @@ class Batchproducts implements BatchproductsInterface
         Logger $logger,
         Config $config
     ) {
-        $this->_productImage    = $productImage;
-        $this->_fileDriver      = $fileDriver;
-        $this->_logRepository   = $logRepository;
-        $this->_helper          = $helper;
-        $this->_attributeHelper = $attributeHelper;
-        $this->_importHelper    = $importHelper;
-        $this->indexerHelper    = $indexerHelper;
-        $this->_logFactory      = $logFactory;
-        $this->_logger          = $logger;
-        $this->config           = $config;
+        $this->productImage    = $productImage;
+        $this->fileDriver      = $fileDriver;
+        $this->logRepository   = $logRepository;
+        $this->helper          = $helper;
+        $this->attributeHelper = $attributeHelper;
+        $this->importHelper    = $importHelper;
+        $this->indexerHelper   = $indexerHelper;
+        $this->logFactory      = $logFactory;
+        $this->logger          = $logger;
+        $this->config          = $config;
     }
 
     /**
@@ -136,7 +136,7 @@ class Batchproducts implements BatchproductsInterface
         $startTime = microtime(true);
 
         /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
-        $log = $this->_logFactory->create();
+        $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_INSERT);
 
         $importedProducts = [];
@@ -181,12 +181,12 @@ class Batchproducts implements BatchproductsInterface
 
                 $this->log("add() - Processing sku '$sku'...");
 
-                if ($this->_importHelper->doesProductExist($sku)) {
+                if ($this->importHelper->doesProductExist($sku)) {
                     $response['warning'] = "Cannot add product.  Product with sku '$sku' exists already.";
                     $warningCount++;
                 } else {
                     try {
-                        $response = $this->_importHelper->addProduct($product);
+                        $response = $this->importHelper->addProduct($product);
                         $productOutCount++;
                     } catch (Exception $e) {
                         // If this was from attempting to add new attribute option, and we're skipping product, simply log it and move only next product
@@ -211,7 +211,7 @@ class Batchproducts implements BatchproductsInterface
         $log->setCountOut($productOutCount);
         $log->setWarningCount($warningCount);
         $log->setErrorCount($errorCount);
-        $this->_logRepository->save($log);
+        $this->logRepository->save($log);
 
         $this->reindex();
         $this->clearImageCache();
@@ -238,7 +238,7 @@ class Batchproducts implements BatchproductsInterface
         $startTime = microtime(true);
 
         /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
-        $log = $this->_logFactory->create();
+        $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_UPDATE);
 
         $importedProducts = [];
@@ -271,9 +271,9 @@ class Batchproducts implements BatchproductsInterface
 
                 $this->log("update() - Processing sku '$sku'...");
 
-                if ($this->_importHelper->doesProductExist($sku)) {
+                if ($this->importHelper->doesProductExist($sku)) {
                     try {
-                        $response = $this->_importHelper->updateProduct($product);
+                        $response = $this->importHelper->updateProduct($product);
                         $productCountOut++;
                     } catch (Exception $e) {
                         // If this was from attempting to add new attribute option, and we're skipping product, simply log it and move only next product
@@ -308,7 +308,7 @@ class Batchproducts implements BatchproductsInterface
         $log->setCountOut($productCountOut);
         $log->setWarningCount($warningCount);
         $log->setErrorCount($errorCount);
-        $this->_logRepository->save($log);
+        $this->logRepository->save($log);
 
         $this->reindex();
         $this->clearImageCache();
@@ -335,7 +335,7 @@ class Batchproducts implements BatchproductsInterface
         $startTime = microtime(true);
 
         /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
-        $log = $this->_logFactory->create();
+        $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_UPSERT);
 
         $importedProducts = [];
@@ -368,9 +368,9 @@ class Batchproducts implements BatchproductsInterface
 
                 $this->log("Processing sku '$sku'...");
 
-                if ($this->_importHelper->doesProductExist($sku)) {
+                if ($this->importHelper->doesProductExist($sku)) {
                     try {
-                        $response = $this->_importHelper->updateProduct($product);
+                        $response = $this->importHelper->updateProduct($product);
                         $productOutCount++;
                     } catch (Exception $e) {
                         $response['error'] = $e->getMessage();
@@ -378,7 +378,7 @@ class Batchproducts implements BatchproductsInterface
                     }
                 } else {
                     try {
-                        $response = $this->_importHelper->addProduct($product);
+                        $response = $this->importHelper->addProduct($product);
                         if (isset($response['error'])) {
                             $errorCount++;
                         } else {
@@ -404,7 +404,7 @@ class Batchproducts implements BatchproductsInterface
         $log->setCountOut($productOutCount);
         $log->setWarningCount($warningCount);
         $log->setErrorCount($errorCount);
-        $this->_logRepository->save($log);
+        $this->logRepository->save($log);
 
         $this->reindex();
         $this->clearImageCache();
@@ -421,7 +421,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getSalesOrderColumns()
     {
-        return $this->_importHelper->getSalesOrderColumns();
+        return $this->importHelper->getSalesOrderColumns();
     }
 
     /**
@@ -432,7 +432,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getProductAttributeCodes()
     {
-        return $this->_attributeHelper->getCatalogProductAttributeCodes();
+        return $this->attributeHelper->getCatalogProductAttributeCodes();
     }
 
     /**
@@ -517,7 +517,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getMagentoEdition()
     {
-        return $this->_helper->getMagentoEdition();
+        return $this->helper->getMagentoEdition();
     }
 
     /**
@@ -527,7 +527,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getMagentoVersion()
     {
-        return $this->_helper->getMagentoVersion();
+        return $this->helper->getMagentoVersion();
     }
 
     /**
@@ -545,7 +545,7 @@ class Batchproducts implements BatchproductsInterface
         }
 
         try {
-            $this->_productImage->clearCache();
+            $this->productImage->clearCache();
         } catch (FileSystemException $e) {
             $this->log('clearImageCache()', ['exception' => $e->getMessage()]);
         }
@@ -623,14 +623,14 @@ class Batchproducts implements BatchproductsInterface
      */
     private function getInput()
     {
-        if (!$this->_input) {
-            $contents  = $this->_fileDriver->fileGetContents('php://input');
+        if (!$this->input) {
+            $contents  = $this->fileDriver->fileGetContents('php://input');
             $this->log("| JSON INPUT: [$contents]");
             $this->log('|');
-            $this->_input = json_decode($contents, true);
+            $this->input = json_decode($contents, true);
         }
 
-        return $this->_input;
+        return $this->input;
     }
 
     /**
@@ -641,6 +641,6 @@ class Batchproducts implements BatchproductsInterface
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('Model/Batchproducts - ' . $message, $extra);
+        $this->logger->info('Model/Batchproducts - ' . $message, $extra);
     }
 }
