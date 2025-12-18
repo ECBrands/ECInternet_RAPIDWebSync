@@ -17,12 +17,12 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
-    const MENU_ID = 'ECInternet_RAPIDWebSync::log';
+    private const MENU_ID = 'ECInternet_RAPIDWebSync::log';
 
     /**
      * @var \Magento\Framework\View\Result\PageFactory
      */
-    protected $_resultPageFactory;
+    protected $resultPageFactory;
 
     /**
      * Index constructor.
@@ -36,7 +36,7 @@ class Index extends Action implements HttpGetActionInterface
     ) {
         parent::__construct($context);
 
-        $this->_resultPageFactory = $resultPageFactory;
+        $this->resultPageFactory = $resultPageFactory;
     }
 
     /**
@@ -47,7 +47,7 @@ class Index extends Action implements HttpGetActionInterface
     public function execute()
     {
         /** @var \Magento\Backend\Model\View\Result\Page $resultPage */
-        $resultPage = $this->_resultPageFactory->create();
+        $resultPage = $this->resultPageFactory->create();
 
         // Active menu
         $resultPage->setActiveMenu(static::MENU_ID);

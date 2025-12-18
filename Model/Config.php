@@ -53,6 +53,8 @@ class Config
 
     private const CONFIG_PATH_INVENTORY_AUTO_SET_IS_IN_STOCK          = 'rapid_web_sync/inventory/auto_set_is_in_stock';
 
+    private const CONFIG_PATH_INVENTORY_AUTO_REMOVE_RESERVATIONS      = 'rapid_web_sync/inventory/auto_remove_reservations';
+
     private const CONFIG_PATH_RELATED_PRODUCTS_MODE                   = 'rapid_web_sync/related_products/mode';
 
     private const CONFIG_PATH_POST_IMPORT_REINDEX                     = 'rapid_web_sync/post_import/reindex_enable';
@@ -135,6 +137,16 @@ class Config
     public function getDefaultVisibility()
     {
         return $this->scopeConfig->getValue(self::CONFIG_PATH_DEFAULT_VISIBILITY);
+    }
+
+    /**
+     * Get the default tax class id
+     *
+     * @return mixed
+     */
+    public function getDefaultTaxClassId()
+    {
+        return $this->scopeConfig->getValue(self::CONFIG_PATH_DEFAULT_TAX_CLASS);
     }
 
     /**
@@ -264,6 +276,16 @@ class Config
     public function shouldAutomaticallySetIsInStock()
     {
         return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_INVENTORY_AUTO_SET_IS_IN_STOCK);
+    }
+
+    /**
+     * Should we automatically remove reservations for synced products?
+     *
+     * @return bool
+     */
+    public function shouldAutomaticallyRemoveReservations()
+    {
+        return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_INVENTORY_AUTO_REMOVE_RESERVATIONS);
     }
 
     /**

@@ -11,18 +11,21 @@ use Magento\Framework\Exception\InputException;
 use Magento\Store\Model\Data\StoreConfig;
 use Magento\Store\Model\Store;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Db;
 use Exception;
 
 /**
  * Store / Website helper
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class StoreWebsite
 {
-    const ADMIN_STORECODE = 'admin';
+    private const ADMIN_STORECODE = 'admin';
 
-    const FIELD_STORE     = 'store';
+    private const FIELD_STORE     = 'store';
 
-    const FIELD_WEBSITES  = 'websites';
+    private const FIELD_WEBSITES  = 'websites';
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
@@ -30,14 +33,14 @@ class StoreWebsite
     private $helper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $db;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
     private $logger;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
 
     /**
      * @var array
@@ -51,17 +54,17 @@ class StoreWebsite
 
     /**
      * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db     $db
      * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Db      $db
      */
     public function __construct(
         Data $helper,
-        Db $db,
-        Logger $logger
+        Logger $logger,
+        Db $db
     ) {
         $this->helper = $helper;
-        $this->db     = $db;
         $this->logger = $logger;
+        $this->db     = $db;
 
         $this->initStoreArray();
         $this->initWebsiteArray();
@@ -75,7 +78,8 @@ class StoreWebsite
     public function getStoreIds()
     {
         $storeIds = [];
-        foreach ($this->stores as $storeId => $storeData) {
+
+        foreach (array_keys($this->stores) as $storeId) {
             $storeIds[] = $storeId;
         }
 
@@ -272,7 +276,7 @@ class StoreWebsite
         // Use this value as our key when we iterate through website_ids
         $key = (string)$product[self::FIELD_STORE];
 
-        if (trim($key) != static::ADMIN_STORECODE) {
+        if (trim($key) !== static::ADMIN_STORECODE) {
             $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($key);
             foreach ($storeCodes as $storeCode) {
                 $websiteIds[] = $this->getWebsiteIdsForStoreCode($storeCode);
@@ -358,7 +362,7 @@ class StoreWebsite
 
         $results = $this->db->select($query);
         foreach ($results as $result) {
-            if (isset($result[StoreConfig::KEY_CODE]) && isset($result[StoreConfig::KEY_WEBSITE_ID])) {
+            if (isset($result[StoreConfig::KEY_CODE], $result[StoreConfig::KEY_WEBSITE_ID])) {
                 $code      = $result[StoreConfig::KEY_CODE];
                 $websiteId = $result[StoreConfig::KEY_WEBSITE_ID];
 

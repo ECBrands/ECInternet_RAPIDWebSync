@@ -18,6 +18,9 @@ class Log extends AbstractDb
      * Initialize resource model
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+     * @noinspection MagicMethodsValidityInspection
      */
     protected function _construct()
     {

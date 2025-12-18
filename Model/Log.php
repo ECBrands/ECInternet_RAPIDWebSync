@@ -16,7 +16,7 @@ use ECInternet\RAPIDWebSync\Api\Data\LogInterface;
  */
 class Log extends AbstractModel implements IdentityInterface, LogInterface
 {
-    const CACHE_TAG = 'ecinternet_rapidwebsync_log';
+    private const CACHE_TAG = 'ecinternet_rapidwebsync_log';
 
     protected $_cacheTag    = 'ecinternet_rapidwebsync_log';
 
@@ -26,6 +26,9 @@ class Log extends AbstractModel implements IdentityInterface, LogInterface
 
     /**
      * @inheritDoc
+     *
+     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+     * @noinspection MagicMethodsValidityInspection
      */
     protected function _construct()
     {

@@ -10,55 +10,34 @@ namespace ECInternet\RAPIDWebSync\Helper;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\App\ProductMetadataInterface;
-use ECInternet\RAPIDWebSync\Logger\Logger;
 
 /**
  * Helper
  */
 class Data extends AbstractHelper
 {
-    const CONFIG_PATH_ENABLE_SPEED_LOGGING              = 'rapid_web_sync/general/speed_logging';
+    private const CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES = 'catalog/seo/generate_category_product_rewrites';
 
-    const CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES = 'catalog/seo/generate_category_product_rewrites';
-
-    const COMMUNITY_EDITION_VALUE                       = 'Community';
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Logger\Logger
-     */
-    protected $_logger;
+    private const COMMUNITY_EDITION_VALUE                       = 'Community';
 
     /**
      * @var \Magento\Framework\App\ProductMetadataInterface
      */
-    private $_productMetadata;
+    private $productMetadata;
 
     /**
      * Data constructor.
      *
      * @param \Magento\Framework\App\Helper\Context           $context
      * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger          $logger
      */
     public function __construct(
         Context $context,
-        ProductMetadataInterface $productMetadata,
-        Logger $logger
+        ProductMetadataInterface $productMetadata
     ) {
+        $this->productMetadata = $productMetadata;
+
         parent::__construct($context);
-
-        $this->_productMetadata = $productMetadata;
-        $this->_logger          = $logger;
-    }
-
-    /**
-     * Is speed logging enabled?
-     *
-     * @return bool
-     */
-    public function isSpeedLoggingEnabled()
-    {
-        return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_ENABLE_SPEED_LOGGING);
     }
 
     /**
@@ -79,25 +58,6 @@ class Data extends AbstractHelper
     public function isProductConfigurable(array $product)
     {
         return isset($product['type_id']) && $product['type_id'] === 'configurable';
-    }
-
-    /**
-     * Log a speed test
-     *
-     * @param float  $start
-     * @param float  $end
-     * @param string $function
-     */
-    public function logSpeedTest(float $start, float $end, string $function)
-    {
-        if ($this->isSpeedLoggingEnabled()) {
-            $elapsedTime = $end - $start;
-
-            $this->log('--- SPEED TEST ---');
-            $this->log("| Process [$function]");
-            $this->log("| Elapsed time: [$elapsedTime seconds]");
-            $this->log('--- SPEED TEST ---' . PHP_EOL);
-        }
     }
 
     //////////////////////////////////////////////////
@@ -151,7 +111,7 @@ class Data extends AbstractHelper
      *
      * @return string
      */
-    public function arrayToCommaSeparatedValueString($array)
+    public function arrayToCommaSeparatedValueString(array $array)
     {
         return substr(str_repeat('?,', count($array)), 0, -1);
     }
@@ -169,9 +129,8 @@ class Data extends AbstractHelper
     {
         $array = explode($separator, $list);
 
-        $arrayCount = count($array);
-        for ($i = 0; $i < $arrayCount; $i++) {
-            $array[$i] = trim($array[$i]);
+        foreach ($array as $i => $value) {
+            $array[$i] = trim($value);
         }
 
         return $array;
@@ -232,7 +191,7 @@ class Data extends AbstractHelper
      */
     public function getMagentoEdition()
     {
-        return $this->_productMetadata->getEdition();
+        return $this->productMetadata->getEdition();
     }
 
     /**
@@ -242,7 +201,7 @@ class Data extends AbstractHelper
      */
     public function getMagentoVersion()
     {
-        return $this->_productMetadata->getVersion();
+        return $this->productMetadata->getVersion();
     }
 
     /**
@@ -259,18 +218,5 @@ class Data extends AbstractHelper
     public function getProductIdColumn()
     {
         return $this->isVersionCommunity() ? 'entity_id' : 'row_id';
-    }
-
-    /**
-     * Write to extension log
-     *
-     * @param string $message
-     * @param array  $extra
-     *
-     * @return void
-     */
-    private function log(string $message, array $extra = [])
-    {
-        $this->_logger->info('Helper/Data - ' . $message, $extra);
     }
 }

@@ -249,14 +249,12 @@ class Download extends Action implements HttpGetActionInterface
             // Error handling
             if (!$this->isProductTypeValid($product)) {
                 $this->log('execute()', ['error' => "invalid product type: $type"]);
-
                 continue;
             }
 
             // Prevent null/empty SKUs.
             if (empty($sku)) {
                 $this->log("execute() - Product ID [{$product->getId()}] has no SKU.");
-
                 continue;
             }
 
@@ -267,7 +265,7 @@ class Download extends Action implements HttpGetActionInterface
             foreach ($attributes as $attribute) {
                 // Cache for readability
                 $attributeCode         = $attribute->getAttributeCode();
-                $frontendInput         = $attribute->getFrontendInput();
+                $frontendInput         = (string)$attribute->getFrontendInput();
                 $productAttributeValue = $product->getData($attributeCode);
 
                 $this->log('execute()', ['key' => $attributeCode, 'value' => $productAttributeValue]);
@@ -279,13 +277,13 @@ class Download extends Action implements HttpGetActionInterface
                 }
 
                 // Handle 'select'
-                if ($frontendInput == 'select') {
+                if ($frontendInput === 'select') {
                     $productData[$attributeCode] = $this->getOptionText($attribute, $productAttributeValue);
                     continue;
                 }
 
                 // Handle 'multiselect'
-                if ($frontendInput == 'multiselect') {
+                if ($frontendInput === 'multiselect') {
                     $productData[$attributeCode] = $this->implodeMultiselectValues($attribute, $productAttributeValue);
                     continue;
                 }
@@ -367,17 +365,17 @@ class Download extends Action implements HttpGetActionInterface
     ) {
         return
             // Static attributes are stored in the main table of an entity
-            $attribute->getBackendType() != 'static' &&
+            (string)$attribute->getBackendType() !== 'static' &&
 
             // Must display on frontend and not be image-like
             $attribute->getFrontendInput() &&
-            $attribute->getFrontendInput() != 'gallery' &&
-            $attribute->getFrontendInput() != 'media_image' &&
+            (string)$attribute->getFrontendInput() !== 'gallery' &&
+            (string)$attribute->getFrontendInput() !== 'media_image' &&
             $attribute->getDefaultFrontendLabel() &&
 
             // Explicitly exclude a few
-            $attribute->getAttributeCode() != 'tier_price' &&
-            $attribute->getAttributeCode() != 'quantity_and_stock_status';
+            (string)$attribute->getAttributeCode() !== 'tier_price' &&
+            (string)$attribute->getAttributeCode() !== 'quantity_and_stock_status';
     }
 
     /**
@@ -405,14 +403,14 @@ class Download extends Action implements HttpGetActionInterface
      * Implode the multiselect values into a string
      *
      * @param \Magento\Catalog\Model\ResourceModel\Eav\Attribute $attribute
-     * @param string                                             $productAttributeValue
+     * @param mixed                                              $productAttributeValue
      *
      * @return string
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     private function implodeMultiselectValues(
         Attribute $attribute,
-        $productAttributeValue
+        mixed $productAttributeValue
     ) {
         $this->log('implodeMultiselectValues()', [
             'attributeCode' => $attribute->getAttributeCode(),
@@ -424,8 +422,7 @@ class Download extends Action implements HttpGetActionInterface
         if ($productAttributeValue) {
             $multiselectKeys = explode(',', $productAttributeValue);
             foreach ($multiselectKeys as $multiselectKey) {
-                $value = $attribute->getSource()->getOptionText($multiselectKey);
-                if ($value != '') {
+                if ($value = $attribute->getSource()->getOptionText($multiselectKey)) {
                     $multiselectValues[] = $value;
                 }
             }
@@ -454,11 +451,17 @@ class Download extends Action implements HttpGetActionInterface
             if ($categoryPath = $productCategory->getPath()) {
                 $categoryPathIds = explode('/', $categoryPath);
 
+                /** @var string[] $categoryNames */
                 $categoryNames = [];
                 foreach ($categoryPathIds as $categoryPathId) {
-                    // Skip root categories
-                    if (!in_array($categoryPathId, [1, 2])) {
-                        $categoryNames[] = $this->getCategoryName($categoryPathId);
+                    if (is_numeric($categoryPathId)) {
+                        // Cast to int
+                        $categoryPathId = (int)$categoryPathId;
+
+                        // Skip root categories
+                        if (!in_array($categoryPathId, [1, 2])) {
+                            $categoryNames[] = $this->getCategoryName($categoryPathId);
+                        }
                     }
                 }
 
@@ -483,10 +486,10 @@ class Download extends Action implements HttpGetActionInterface
      */
     private function buildImageString(
         Product $product,
-        $attributeCode
+        string $attributeCode
     ) {
         if ($product->hasData($attributeCode)) {
-            $attributeValue = $product->getData($attributeCode);
+            $attributeValue = (string)$product->getData($attributeCode);
 
             return $this->stripImageString($attributeValue);
         }
@@ -511,7 +514,7 @@ class Download extends Action implements HttpGetActionInterface
 
         foreach ($mediaGalleryImages as $mediaGalleryImage) {
             if (isset($mediaGalleryImage['path'])) {
-                if ($strippedImageString = $this->baseName($mediaGalleryImage['path'])) {
+                if ($strippedImageString = $this->baseName((string)$mediaGalleryImage['path'])) {
                     $output[] = $strippedImageString;
                 }
             }
@@ -596,9 +599,10 @@ class Download extends Action implements HttpGetActionInterface
 
         if (count($parentIds) > 0) {
             $productId = $parentIds[0];
-
-            if ($parentProduct = $this->getProduct($productId)) {
-                return $parentProduct->getSku();
+            if (is_numeric($productId)) {
+                if ($parentProduct = $this->getProductById((int)$productId)) {
+                    return $parentProduct->getSku();
+                }
             }
         }
 
@@ -612,7 +616,7 @@ class Download extends Action implements HttpGetActionInterface
      *
      * @return \Magento\Catalog\Api\Data\ProductInterface|null
      */
-    private function getProduct($entityId)
+    private function getProductById(int $entityId)
     {
         try {
             return $this->_productRepository->getById($entityId);
@@ -631,7 +635,7 @@ class Download extends Action implements HttpGetActionInterface
      * @return string
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    private function getCategoryName($categoryId)
+    private function getCategoryName(int $categoryId)
     {
         /** @var \Magento\Catalog\Model\Category $category */
         $category = $this->_categoryRepository->get($categoryId);
@@ -646,7 +650,7 @@ class Download extends Action implements HttpGetActionInterface
      *
      * @return string
      */
-    private function stripImageString($imagePath)
+    private function stripImageString(string $imagePath)
     {
         // 4 characters for folders, 4 characters for file extension and dot
         if (strlen($imagePath) > 8) {
@@ -663,7 +667,7 @@ class Download extends Action implements HttpGetActionInterface
      *
      * @return string
      */
-    private function baseName($path)
+    private function baseName(string $path)
     {
         /** @var \Magento\Framework\Filesystem\Io\File $fileInfo */
         $fileInfo = $this->_file->getPathInfo($path);

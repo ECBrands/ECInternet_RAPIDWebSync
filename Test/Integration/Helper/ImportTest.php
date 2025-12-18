@@ -79,16 +79,16 @@ class ImportTest extends \PHPUnit\Framework\TestCase
         $sku = 'TestProduct';
 
         $data = [
-            "sku"              => $sku,
-            "attribute_set_id" => 4,
-            "name"             => 'Test Product',
-            "weight"           => "1",
-            "status"           => "1",
-            "price"            => "61.99",
-            "visibility"       => "4",
+            'sku'              => $sku,
+            'attribute_set_id' => 4,
+            'name'             => 'Test Product',
+            'weight'           => '1',
+            'status'           => '1',
+            'price'            => '61.99',
+            'visibility'       => '4',
             'url_key'          => 'test_product',
-            "allow_on_web"     => "1",
-            "categories"       => "Home Office;;Home Office|Test Products;;Home Office|Test Products|New Products"
+            'allow_on_web'     => '1',
+            'categories'       => 'Home Office;;Home Office|Test Products;;Home Office|Test Products|New Products'
         ];
 
         // Add product
@@ -101,7 +101,7 @@ class ImportTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($sku, $response['sku']);
         $this->assertArrayHasKey('new', $response);
         if ($this->_refreshDb) {
-            $this->assertEquals(true, $response['new']);
+            $this->assertTrue($response['new']);
         }
         $this->assertArrayHasKey('id', $response);
         if ($this->_refreshDb) {
