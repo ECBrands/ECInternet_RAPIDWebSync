@@ -589,7 +589,7 @@ class Category
             }
 
             $translationOption = array_values(array_filter($a, function ($option) {
-                return stripos($option, '[') === 0;
+                return str_starts_with($option, '[');
             }));
 
             $translationOptionPart = count($translationOption)
