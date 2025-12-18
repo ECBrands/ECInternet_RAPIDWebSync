@@ -556,10 +556,8 @@ class Category
 
         // Cleaning parts: trim, remove empty
         $pCategoryParts = [];
-        $explodedCategoryStringPartsCount = count($explodedCategoryStringParts);
-        for ($i = 0; $i < $explodedCategoryStringPartsCount; $i++) {
-            $trimmedExplodedCategoryPartsString = trim($explodedCategoryStringParts[$i]);
-            if ($trimmedExplodedCategoryPartsString !== '') {
+        foreach ($explodedCategoryStringParts as $explodedCategoryStringPart) {
+            if ($trimmedExplodedCategoryPartsString = trim($explodedCategoryStringPart)) {
                 $pCategoryParts[] = $trimmedExplodedCategoryPartsString;
             }
         }
@@ -765,17 +763,13 @@ class Category
             $categoryIds = $this->getCategoryIds($categoryData);
 
             // Now get the diff
-            $diff      = array_diff(array_keys($categoryData), $categoryIds);
-            $diffCount = count($diff);
+            $diffs     = array_diff(array_keys($categoryData), $categoryIds);
+            $diffCount = count($diffs);
 
-            // If there are some... warning:
+            // Remove invalid category entries
             if ($diffCount > 0) {
-                $this->log("WARNING: DiffCount: [$diffCount]");
-                $this->log("WARNING: Invalid category_id's found for sku {$product['sku']}: " . implode(',', $diff));
-
-                // Remove invalid category entries
-                for ($i = 0; $i < $diffCount; $i++) {
-                    unset($categoryData[$diff[$i]]);
+                foreach ($diffs as $diff) {
+                    unset($categoryData[$diff]);
                 }
             }
 
