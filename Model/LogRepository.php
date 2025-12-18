@@ -21,7 +21,7 @@ class LogRepository implements LogRepositoryInterface
     /**
      * @var \ECInternet\RAPIDWebSync\Model\ResourceModel\Log
      */
-    private $_resourceModel;
+    private $resourceModel;
 
     /**
      * LogRepository constructor.
@@ -31,7 +31,7 @@ class LogRepository implements LogRepositoryInterface
     public function __construct(
         Log $resourceModel
     ) {
-        $this->_resourceModel = $resourceModel;
+        $this->resourceModel = $resourceModel;
     }
 
     /**
@@ -46,7 +46,7 @@ class LogRepository implements LogRepositoryInterface
         LogInterface $log
     ) {
         try {
-            $this->_resourceModel->save($log);
+            $this->resourceModel->save($log);
         } catch (Exception $e) {
             throw new CouldNotSaveException(__('Could not save the log: %1', $e->getMessage()));
         }
