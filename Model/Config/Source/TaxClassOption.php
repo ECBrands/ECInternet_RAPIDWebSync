@@ -16,23 +16,25 @@ use Magento\Tax\Model\ClassModel;
 
 /**
  * Options for Tax Class
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class TaxClassOption implements OptionSourceInterface
 {
     /**
      * @var \Magento\Framework\Api\FilterBuilder
      */
-    private $_filterBuilder;
+    private $filterBuilder;
 
     /**
      * @var \Magento\Framework\Api\SearchCriteriaBuilder
      */
-    private $_searchCriteriaBuilder;
+    private $searchCriteriaBuilder;
 
     /**
      * @var \Magento\Tax\Api\TaxClassRepositoryInterface
      */
-    private $_taxClassRepository;
+    private $taxClassRepository;
 
     /**
      * TaxClassOption constructor.
@@ -46,9 +48,9 @@ class TaxClassOption implements OptionSourceInterface
         SearchCriteriaBuilder $searchCriteriaBuilder,
         TaxClassRepositoryInterface $taxClassRepository
     ) {
-        $this->_filterBuilder         = $filterBuilder;
-        $this->_searchCriteriaBuilder = $searchCriteriaBuilder;
-        $this->_taxClassRepository    = $taxClassRepository;
+        $this->filterBuilder         = $filterBuilder;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+        $this->taxClassRepository    = $taxClassRepository;
     }
 
     /**
@@ -61,13 +63,13 @@ class TaxClassOption implements OptionSourceInterface
     {
         $options = [];
 
-        $filter = $this->_filterBuilder
+        $filter = $this->filterBuilder
             ->setField(ClassModel::KEY_TYPE)
             ->setValue(TaxClassManagementInterface::TYPE_PRODUCT)
             ->create();
 
-        $searchCriteria = $this->_searchCriteriaBuilder->addFilters([$filter])->create();
-        $searchResults  = $this->_taxClassRepository->getList($searchCriteria);
+        $searchCriteria = $this->searchCriteriaBuilder->addFilters([$filter])->create();
+        $searchResults  = $this->taxClassRepository->getList($searchCriteria);
         foreach ($searchResults->getItems() as $taxClass) {
             $options[] = [
                 'value' => $taxClass->getClassId(),

@@ -308,9 +308,6 @@ class Db
         return $this->fetchCol($select);
     }
 
-
-
-
     /**
      * Write to extension log
      *

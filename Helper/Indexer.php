@@ -12,6 +12,9 @@ use Magento\Indexer\Model\Indexer\CollectionFactory as IndexerCollectionFactory;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use Exception;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class Indexer
 {
     /**

@@ -58,7 +58,7 @@ class TierPrice
     /**
      * @var string
      */
-    private $_productIdColumn;
+    private $productIdColumn;
 
     /**
      * TierPrice constructor.
@@ -78,9 +78,9 @@ class TierPrice
     ) {
         $this->helper             = $helper;
         $this->storeWebsiteHelper = $storeWebsiteHelper;
-        $this->logger            = $logger;
-        $this->config              = $config;
-        $this->db                  = $db;
+        $this->logger             = $logger;
+        $this->config             = $config;
+        $this->db                 = $db;
     }
 
     /**
@@ -209,11 +209,11 @@ class TierPrice
      */
     private function getProductIdColumn()
     {
-        if ($this->_productIdColumn === null) {
-            $this->_productIdColumn = $this->helper->getProductIdColumn();
+        if ($this->productIdColumn === null) {
+            $this->productIdColumn = $this->helper->getProductIdColumn();
         }
 
-        return $this->_productIdColumn;
+        return $this->productIdColumn;
     }
 
     /**
