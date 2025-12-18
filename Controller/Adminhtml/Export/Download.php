@@ -43,57 +43,57 @@ class Download extends Action implements HttpGetActionInterface
     /**
      * @var \Magento\Framework\View\Result\PageFactory
      */
-    protected $_resultPageFactory;
+    protected $resultPageFactory;
 
     /**
      * @var \Magento\Catalog\Api\CategoryRepositoryInterface
      */
-    private $_categoryRepository;
+    private $categoryRepository;
 
     /**
      * @var \Magento\Catalog\Api\ProductRepositoryInterface
      */
-    private $_productRepository;
+    private $productRepository;
 
     /**
      * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory
      */
-    private $_productAttributeCollectionFactory;
+    private $productAttributeCollectionFactory;
 
     /**
      * @var \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory
      */
-    private $_productCollectionFactory;
+    private $productCollectionFactory;
 
     /**
      * @var \Magento\ConfigurableProduct\Model\Product\Type\Configurable
      */
-    private $_configurableProductType;
+    private $configurableProductType;
 
     /**
      * @var \Magento\Framework\App\Response\Http\FileFactory
      */
-    private $_fileFactory;
+    private $fileFactory;
 
     /**
      * @var \Magento\Framework\Filesystem\Io\File
      */
-    private $_file;
+    private $file;
 
     /**
      * @var \Magento\Framework\Filesystem\Directory\WriteInterface
      */
-    private $_directory;
+    private $directory;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Link
      */
-    private $_link;
+    private $link;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Model\Config
@@ -136,18 +136,18 @@ class Download extends Action implements HttpGetActionInterface
     ) {
         parent::__construct($context);
 
-        $this->_resultPageFactory                 = $resultPageFactory;
-        $this->_categoryRepository                = $categoryRepository;
-        $this->_productRepository                 = $productRepository;
-        $this->_productCollectionFactory          = $productCollectionFactory;
-        $this->_productAttributeCollectionFactory = $attributeCollectionFactory;
-        $this->_configurableProductType           = $configurableProductType;
-        $this->_fileFactory                       = $fileFactory;
-        $this->_file                              = $file;
-        $this->_directory                         = $filesystem->getDirectoryWrite(DirectoryList::VAR_DIR);
-        $this->_link                              = $link;
-        $this->_logger                            = $logger;
-        $this->config                             = $config;
+        $this->resultPageFactory                 = $resultPageFactory;
+        $this->categoryRepository                = $categoryRepository;
+        $this->productRepository                 = $productRepository;
+        $this->productCollectionFactory          = $productCollectionFactory;
+        $this->productAttributeCollectionFactory = $attributeCollectionFactory;
+        $this->configurableProductType           = $configurableProductType;
+        $this->fileFactory                       = $fileFactory;
+        $this->file                              = $file;
+        $this->directory                         = $filesystem->getDirectoryWrite(DirectoryList::VAR_DIR);
+        $this->link                              = $link;
+        $this->logger                            = $logger;
+        $this->config                            = $config;
     }
 
     /**
@@ -163,13 +163,13 @@ class Download extends Action implements HttpGetActionInterface
         $this->log('execute()');
 
         /** @var \Magento\Backend\Model\View\Result\Page $resultPage */
-        $resultPage = $this->_resultPageFactory->create();
+        $resultPage = $this->resultPageFactory->create();
 
         // Build file path for CSV file
         $filePath = $this->getFilePath();
 
         try {
-            $this->_directory->create('export');
+            $this->directory->create('export');
         } catch (FileSystemException $e) {
             $this->log("execute() - Unable to create 'export' folder - {$e->getMessage()}.");
             throw $e;
@@ -177,7 +177,7 @@ class Download extends Action implements HttpGetActionInterface
 
         // Open and lock file
         /** @var \Magento\Framework\Filesystem\File\WriteInterface $stream */
-        $stream = $this->_directory->openFile($filePath, 'w+');
+        $stream = $this->directory->openFile($filePath, 'w+');
         $stream->lock();
 
         /** @var string[] $columns */
@@ -187,7 +187,7 @@ class Download extends Action implements HttpGetActionInterface
         $attributes = [];
 
         /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $productAttributes */
-        $productAttributes = $this->_productAttributeCollectionFactory->create();
+        $productAttributes = $this->productAttributeCollectionFactory->create();
         foreach ($productAttributes as $productAttribute) {
             /** @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $productAttribute */
             if ($this->isAttributeValidForExport($productAttribute)) {
@@ -223,7 +223,7 @@ class Download extends Action implements HttpGetActionInterface
         }
 
         /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
-        $products = $this->_productCollectionFactory->create()
+        $products = $this->productCollectionFactory->create()
             ->addAttributeToSelect('*')
             ->addMediaGalleryData();
 
@@ -329,7 +329,7 @@ class Download extends Action implements HttpGetActionInterface
         $content['rm']    = '1';
 
         try {
-            return $this->_fileFactory->create(self::FILE_NAME, $content, DirectoryList::VAR_DIR);
+            return $this->fileFactory->create(self::FILE_NAME, $content, DirectoryList::VAR_DIR);
         } catch (Exception $e) {
             $this->log('Unable to create file - ' . $e->getMessage());
         }
@@ -387,11 +387,14 @@ class Download extends Action implements HttpGetActionInterface
      */
     private function getOptionText(Attribute $attribute, mixed $attributeValue)
     {
-        $optionText = $attribute->getSource()->getOptionText($attributeValue);
-        if (is_array($optionText)) {
-            foreach ($optionText as $optionTextItem) {
-                if (is_string($optionTextItem)) {
-                    return $optionTextItem;
+        if ($source = $attribute->getSource()) {
+            if ($optionText = $source->getOptionText($attributeValue)) {
+                if (is_array($optionText)) {
+                    foreach ($optionText as $optionTextItem) {
+                        if (is_string($optionTextItem)) {
+                            return $optionTextItem;
+                        }
+                    }
                 }
             }
         }
@@ -422,8 +425,10 @@ class Download extends Action implements HttpGetActionInterface
         if ($productAttributeValue) {
             $multiselectKeys = explode(',', $productAttributeValue);
             foreach ($multiselectKeys as $multiselectKey) {
-                if ($value = $attribute->getSource()->getOptionText($multiselectKey)) {
-                    $multiselectValues[] = $value;
+                if ($source = $attribute->getSource()) {
+                    if ($value = $source->getOptionText($multiselectKey)) {
+                        $multiselectValues[] = $value;
+                    }
                 }
             }
         }
@@ -536,7 +541,7 @@ class Download extends Action implements HttpGetActionInterface
         $id = $product->getId();
 
         if (is_numeric($id)) {
-            return implode(',', $this->_link->getRelatedProductSkus((int)$id));
+            return implode(',', $this->link->getRelatedProductSkus((int)$id));
         }
 
         return '';
@@ -554,7 +559,7 @@ class Download extends Action implements HttpGetActionInterface
 
         if ($product->getTypeId() === 'configurable') {
             /** @var \Magento\ConfigurableProduct\Model\Product\Type\Configurable\Attribute[] $configurableAttributes */
-            $configurableAttributes = $this->_configurableProductType->getConfigurableAttributes($product);
+            $configurableAttributes = $this->configurableProductType->getConfigurableAttributes($product);
             foreach ($configurableAttributes as $configurableAttribute) {
                 $values[] = $configurableAttribute->getProductAttribute()->getAttributeCode();
             }
@@ -575,7 +580,7 @@ class Download extends Action implements HttpGetActionInterface
 
         if ($product->getTypeId() === 'configurable') {
             /** @var \Magento\Catalog\Api\Data\ProductInterface[] $children */
-            $children = $this->_configurableProductType->getUsedProducts($product);
+            $children = $this->configurableProductType->getUsedProducts($product);
             foreach ($children as $child) {
                 $values[] = $child->getSku();
             }
@@ -595,7 +600,7 @@ class Download extends Action implements HttpGetActionInterface
         Product $product
     ) {
         /** @var string[] $parentIds */
-        $parentIds = $this->_configurableProductType->getParentIdsByChild($product->getId());
+        $parentIds = $this->configurableProductType->getParentIdsByChild($product->getId());
 
         if (count($parentIds) > 0) {
             $productId = $parentIds[0];
@@ -619,7 +624,7 @@ class Download extends Action implements HttpGetActionInterface
     private function getProductById(int $entityId)
     {
         try {
-            return $this->_productRepository->getById($entityId);
+            return $this->productRepository->getById($entityId);
         } catch (NoSuchEntityException $e) {
             $this->log("getProduct() - Unable to lookup productId [$entityId] - {$e->getMessage()}");
         }
@@ -638,7 +643,7 @@ class Download extends Action implements HttpGetActionInterface
     private function getCategoryName(int $categoryId)
     {
         /** @var \Magento\Catalog\Model\Category $category */
-        $category = $this->_categoryRepository->get($categoryId);
+        $category = $this->categoryRepository->get($categoryId);
 
         return $category->getName();
     }
@@ -670,7 +675,7 @@ class Download extends Action implements HttpGetActionInterface
     private function baseName(string $path)
     {
         /** @var \Magento\Framework\Filesystem\Io\File $fileInfo */
-        $fileInfo = $this->_file->getPathInfo($path);
+        $fileInfo = $this->file->getPathInfo($path);
 
         return $fileInfo['basename'];
     }
@@ -685,6 +690,6 @@ class Download extends Action implements HttpGetActionInterface
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('Controller/Adminhtml/Export/Download - ' . $message, $extra);
+        $this->logger->info('Controller/Adminhtml/Export/Download - ' . $message, $extra);
     }
 }
