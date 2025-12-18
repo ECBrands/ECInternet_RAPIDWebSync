@@ -236,8 +236,8 @@ class Import
         $this->createProductRecord($product, $this->sku);
 
         // Extract newly added entity_id (or row_id) and set it in response and private variable.
-        $entityId         = $this->helper->isVersionCommunity() ? (int)$this->skuEntityIdArray[$this->sku] : (int)$this->skuRowIdArray[$this->sku];
-        $response['id']   = $entityId;
+        $entityId        = $this->helper->isVersionCommunity() ? (int)$this->skuEntityIdArray[$this->sku] : (int)$this->skuRowIdArray[$this->sku];
+        $response['id']  = $entityId;
         $this->productId = $entityId;
 
         /** @var int[] $websiteIds */
