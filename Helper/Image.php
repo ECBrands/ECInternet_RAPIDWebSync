@@ -624,10 +624,8 @@ class Image
         $scanDirectoriesCount = count($scanDirectories);
         $this->log("findImageFile() - Found [$scanDirectoriesCount] directories to scan:", $scanDirectories);
 
-        // Iterate over image source directories.
-        // Try to resolve file name based on input value and current source directory
-        for ($i = 0; $i < $scanDirectoriesCount; $i++) {
-            $scanDirectory = $scanDirectories[$i];
+        // Iterate over image source directories
+        foreach ($scanDirectories as $scanDirectory) {
             $this->log("findImageFile() - Scanning directory: [$scanDirectory] for image: [$filename]...");
 
             // ScanDirectory is relative
@@ -636,6 +634,7 @@ class Image
                 $scanDirectory = $magentoDirectory . '/' . $scanDirectory;
             }
 
+            // Try to resolve file name based on input value and current source directory
             $imageFile = $this->getAbsolutePath($filename, $scanDirectory);
             $this->log('findImageFile()', ['absolutePath' => $imageFile]);
 
@@ -773,11 +772,7 @@ class Image
         $pathParts = explode('/', $imagePath);
         $outParts  = [];
 
-        $partsCount = count($pathParts);
-        for ($i = 0; $i < $partsCount; $i++) {
-            // Cache
-            $pathPart = $pathParts[$i];
-
+        foreach ($pathParts as $pathPart) {
             if ($pathPart === '..') {
                 array_pop($outParts);
             } elseif ($pathPart !== '.') {
