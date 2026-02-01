@@ -65,43 +65,6 @@ class Data extends AbstractHelper
     //////////////////////////////////////////////////
 
     /**
-     * Transforms a 1-d array into a comma-separated list of single-quote(')-wrapped values.
-     *
-     * @param array $values
-     *
-     * @return string
-     */
-    public function arrayToCommaSeparatedValues(array $values)
-    {
-        $array = [];
-
-        foreach ($values as $value) {
-            $array[] = "'$value'";
-        }
-
-        return implode(',', $array);
-    }
-
-    /**
-     * Transform a 2-d array into a comma-separated list of update prepared placeholders.
-     * "arr2update"
-     *
-     * @param array $updateArray
-     *
-     * @return string
-     */
-    public function arrayToCommaSeparatedUpdateString(array $updateArray)
-    {
-        $array = [];
-
-        foreach ($updateArray as $updateKey => $updateValue) {
-            $array[] = "$updateKey=?";
-        }
-
-        return implode(',', $array);
-    }
-
-    /**
      * Transforms a 1-d array into a comma-separated list of unnamed placeholders.
      * "arr2values"
      *
@@ -132,33 +95,6 @@ class Data extends AbstractHelper
         }
 
         return $array;
-    }
-
-    /**
-     * Filters a key value array over a list of keys.
-     *
-     * Replaces __NULL__ magic value with true null
-     *
-     * @param array    $keyValueArray
-     * @param string[] $keys
-     *
-     * @return array
-     */
-    public function filterKeyValueArray(array $keyValueArray, array $keys)
-    {
-        $out = [];
-
-        // Iterate over keys.
-        // If key exists in our array, and it's not '__NULL__', include it.
-        foreach ($keys as $key) {
-            if (isset($keyValueArray[$key]) && $keyValueArray[$key] !== '__NULL__') {
-                $out[$key] = $keyValueArray[$key];
-            } else {
-                $out[$key] = null;
-            }
-        }
-
-        return $out;
     }
 
     /**

@@ -80,6 +80,33 @@ class ArrayString
     }
 
     /**
+     * Filters a key value array over a list of keys.
+     *
+     * Replaces __NULL__ magic value with true null
+     *
+     * @param array    $keyValueArray
+     * @param string[] $keys
+     *
+     * @return array
+     */
+    public function filterKeyValueArray(array $keyValueArray, array $keys)
+    {
+        $out = [];
+
+        // Iterate over keys.
+        // If key exists in our array, and it's not '__NULL__', include it.
+        foreach ($keys as $key) {
+            if (isset($keyValueArray[$key]) && $keyValueArray[$key] !== '__NULL__') {
+                $out[$key] = $keyValueArray[$key];
+            } else {
+                $out[$key] = null;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Build url slug from string
      *
      * @param string $string

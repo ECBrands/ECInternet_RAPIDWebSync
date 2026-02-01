@@ -13,6 +13,7 @@ use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
 use ECInternet\RAPIDWebSync\Model\Magento\Environment;
 use ECInternet\RAPIDWebSync\Processor\Inventory;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use DateTime;
 use DateInterval;
 use Exception;
@@ -34,11 +35,6 @@ class Import
      * @var \ECInternet\RAPIDWebSync\Helper\Category
      */
     private $categoryHelper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Configurable
@@ -96,6 +92,11 @@ class Import
     private $inventoryProcessor;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
+
+    /**
      * Array for holding sku-entity_id records
      *
      * @var array
@@ -132,7 +133,6 @@ class Import
     /**
      * Import constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data               $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute          $attributeHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Category           $categoryHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Configurable       $configurableHelper
@@ -146,9 +146,9 @@ class Import
      * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
      * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
      * @param \ECInternet\RAPIDWebSync\Processor\Inventory       $inventoryProcessor
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
      */
     public function __construct(
-        Data $helper,
         Attribute $attributeHelper,
         Category $categoryHelper,
         Configurable $configurableHelper,
@@ -162,8 +162,8 @@ class Import
         Db $db,
         Environment $magentoEnvironment,
         Inventory $inventoryProcessor,
+        ArrayString  $arrayStringUtils,
     ) {
-        $this->helper             = $helper;
         $this->attributeHelper    = $attributeHelper;
         $this->categoryHelper     = $categoryHelper;
         $this->configurableHelper = $configurableHelper;
@@ -177,6 +177,7 @@ class Import
         $this->db                 = $db;
         $this->magentoEnvironment = $magentoEnvironment;
         $this->inventoryProcessor = $inventoryProcessor;
+        $this->arrayStringUtils   = $arrayStringUtils;
 
         // Build SKU array so we can test for existing / new products
         $this->initSkuArray();
@@ -669,11 +670,11 @@ class Import
             // Filter out non-`catalog_product_entity` columns
             /** @var string[] $filteredColumns */
             $filteredColumns = array_intersect(array_keys($productData), $productColumns);
-            $values          = $this->helper->filterKeyValueArray($productData, $filteredColumns);
+            $values          = $this->arrayStringUtils->filterKeyValueArray($productData, $filteredColumns);
 
             // Extract column and value strings
             $columnString = implode(',', $filteredColumns);
-            $valuesString = $this->helper->arrayToCommaSeparatedValueString($filteredColumns);
+            $valuesString = $this->arrayStringUtils->arrayToCommaSeparatedValueString($filteredColumns);
 
             // Let's write this baby
             $table = $this->db->getTableName('catalog_product_entity');
@@ -784,14 +785,14 @@ class Import
         if (!isset($productData['url_key'])) {
             if ($isNew) {
                 if (isset($productData['name'])) {
-                    $productData['url_key'] = $this->helper->slug($productData['name']);
+                    $productData['url_key'] = $this->arrayStringUtils->slugify($productData['name']);
                 } else {
-                    $productData['url_key'] = $this->helper->slug($productData['sku']);
+                    $productData['url_key'] = $this->arrayStringUtils->slugify($productData['sku']);
                 }
             }
         } else {
             // If 'url_key' is set, slug it and be done with it.
-            $productData['url_key'] = $this->helper->slug($productData['url_key']);
+            $productData['url_key'] = $this->arrayStringUtils->slugify($productData['url_key']);
         }
     }
 
