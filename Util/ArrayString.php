@@ -78,4 +78,25 @@ class ArrayString
 
         return $array;
     }
+
+    /**
+     * Build url slug from string
+     *
+     * @param string $string
+     * @param bool   $allowSlash
+     *
+     * @return string
+     * @noinspection PhpUnnecessaryLocalVariableInspection
+     */
+    public function slugify(string $string, bool $allowSlash = false)
+    {
+        $regex = $allowSlash ? '[^a-z0-9-/]' : '[^a-z0-9-]';
+
+        $string = strtolower(trim($string));
+        $string = preg_replace("|$regex|", '-', $string);
+        $string = preg_replace('|-+|', '-', $string);
+        $string = preg_replace('|-$|', '', $string);
+
+        return $string;
+    }
 }
