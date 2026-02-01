@@ -18,24 +18,22 @@ class Data extends AbstractHelper
 {
     private const CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES = 'catalog/seo/generate_category_product_rewrites';
 
-    private const COMMUNITY_EDITION_VALUE                       = 'Community';
-
     /**
-     * @var \Magento\Framework\App\ProductMetadataInterface
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
      */
-    private $productMetadata;
+    private $magentoEnvironment;
 
     /**
      * Data constructor.
      *
-     * @param \Magento\Framework\App\Helper\Context           $context
-     * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
+     * @param \Magento\Framework\App\Helper\Context              $context
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
      */
     public function __construct(
         Context $context,
-        ProductMetadataInterface $productMetadata
+        \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
     ) {
-        $this->productMetadata = $productMetadata;
+        $this->magentoEnvironment = $magentoEnvironment;
 
         parent::__construct($context);
     }
@@ -191,7 +189,7 @@ class Data extends AbstractHelper
      */
     public function getMagentoEdition()
     {
-        return $this->productMetadata->getEdition();
+        return $this->magentoEnvironment->getMagentoEdition();
     }
 
     /**
@@ -201,15 +199,7 @@ class Data extends AbstractHelper
      */
     public function getMagentoVersion()
     {
-        return $this->productMetadata->getVersion();
-    }
-
-    /**
-     * @return bool
-     */
-    public function isVersionCommunity()
-    {
-        return $this->getMagentoEdition() === self::COMMUNITY_EDITION_VALUE;
+        return $this->magentoEnvironment->getMagentoVersion();
     }
 
     /**
@@ -217,6 +207,6 @@ class Data extends AbstractHelper
      */
     public function getProductIdColumn()
     {
-        return $this->isVersionCommunity() ? 'entity_id' : 'row_id';
+        return $this->magentoEnvironment->getProductIdColumn();
     }
 }
