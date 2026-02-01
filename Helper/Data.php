@@ -9,7 +9,7 @@ namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
-use Magento\Framework\App\ProductMetadataInterface;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
 
 /**
  * Helper
@@ -31,7 +31,7 @@ class Data extends AbstractHelper
      */
     public function __construct(
         Context $context,
-        \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+        Environment $magentoEnvironment
     ) {
         $this->magentoEnvironment = $magentoEnvironment;
 
@@ -46,7 +46,7 @@ class Data extends AbstractHelper
      */
     public function shouldGenerateCatalogProductRewrites()
     {
-        if (version_compare($this->getMagentoVersion(), '2.3.3', '>=')) {
+        if (version_compare($this->magentoEnvironment->getMagentoVersion(), '2.3.3', '>=')) {
             return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES);
         }
 
@@ -180,26 +180,6 @@ class Data extends AbstractHelper
         $string = preg_replace('|-$|', '', $string);
 
         return $string;
-    }
-
-    /**
-     * Get Product edition
-     *
-     * @return string
-     */
-    public function getMagentoEdition()
-    {
-        return $this->magentoEnvironment->getMagentoEdition();
-    }
-
-    /**
-     * Get Product version
-     *
-     * @return string
-     */
-    public function getMagentoVersion()
-    {
-        return $this->magentoEnvironment->getMagentoVersion();
     }
 
     /**

@@ -13,12 +13,12 @@ use Magento\Framework\Filesystem\Driver\File;
 use ECInternet\RAPIDWebSync\Api\BatchproductsInterface;
 use ECInternet\RAPIDWebSync\Api\LogRepositoryInterface;
 use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
-use ECInternet\RAPIDWebSync\Helper\Data as Helper;
 use ECInternet\RAPIDWebSync\Helper\Attribute as AttributeHelper;
 use ECInternet\RAPIDWebSync\Helper\Import as ImportHelper;
 use ECInternet\RAPIDWebSync\Helper\Indexer as IndexerHelper;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
 use Exception;
 
 /**
@@ -40,11 +40,6 @@ class Batchproducts implements BatchproductsInterface
      * @var \ECInternet\RAPIDWebSync\Api\LogRepositoryInterface
      */
     private $logRepository;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Attribute
@@ -77,6 +72,11 @@ class Batchproducts implements BatchproductsInterface
     private $config;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
      * @var string
      */
     private $input;
@@ -87,36 +87,36 @@ class Batchproducts implements BatchproductsInterface
      * @param \Magento\Catalog\Model\Product\Image                $productImage
      * @param \Magento\Framework\Filesystem\Driver\File           $fileDriver
      * @param \ECInternet\RAPIDWebSync\Api\LogRepositoryInterface $logRepository
-     * @param \ECInternet\RAPIDWebSync\Helper\Data                $helper
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute           $attributeHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Import              $importHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Indexer             $indexerHelper
      * @param \ECInternet\RAPIDWebSync\Model\LogFactory           $logFactory
      * @param \ECInternet\RAPIDWebSync\Logger\Logger              $logger
      * @param \ECInternet\RAPIDWebSync\Model\Config               $config
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment  $magentoEnvironment
      */
     public function __construct(
         ProductImage $productImage,
         File $fileDriver,
         LogRepositoryInterface $logRepository,
-        Helper $helper,
         AttributeHelper $attributeHelper,
         ImportHelper $importHelper,
         IndexerHelper $indexerHelper,
         LogFactory $logFactory,
         Logger $logger,
-        Config $config
+        Config $config,
+        Environment $magentoEnvironment
     ) {
-        $this->productImage    = $productImage;
-        $this->fileDriver      = $fileDriver;
-        $this->logRepository   = $logRepository;
-        $this->helper          = $helper;
-        $this->attributeHelper = $attributeHelper;
-        $this->importHelper    = $importHelper;
-        $this->indexerHelper   = $indexerHelper;
-        $this->logFactory      = $logFactory;
-        $this->logger          = $logger;
-        $this->config          = $config;
+        $this->productImage       = $productImage;
+        $this->fileDriver         = $fileDriver;
+        $this->logRepository      = $logRepository;
+        $this->attributeHelper    = $attributeHelper;
+        $this->importHelper       = $importHelper;
+        $this->indexerHelper      = $indexerHelper;
+        $this->logFactory         = $logFactory;
+        $this->logger             = $logger;
+        $this->config             = $config;
+        $this->magentoEnvironment = $magentoEnvironment;
     }
 
     /**
@@ -517,7 +517,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getMagentoEdition()
     {
-        return $this->helper->getMagentoEdition();
+        return $this->magentoEnvironment->getMagentoEdition();
     }
 
     /**
@@ -527,7 +527,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getMagentoVersion()
     {
-        return $this->helper->getMagentoVersion();
+        return $this->magentoEnvironment->getMagentoVersion();
     }
 
     /**
