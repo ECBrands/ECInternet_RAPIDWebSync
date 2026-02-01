@@ -10,7 +10,10 @@ namespace ECInternet\RAPIDWebSync\Helper;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\StateException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
+use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
 
 /**
@@ -28,19 +31,29 @@ class Rewrite
     private const REWRITE_TYPE_PRODUCT  = 'product';
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
     private $logger;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
      * @var \ECInternet\RAPIDWebSync\Model\Db
      */
     private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * @var int
@@ -55,20 +68,26 @@ class Rewrite
     /**
      * Rewrite constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Db      $db
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger             $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
      *
      * @throws \Exception
      */
     public function __construct(
-        Data $helper,
         Logger $logger,
-        Db $db
+        Config $config,
+        Db $db,
+        Environment $magentoEnvironment,
+        ArrayString $arrayStringUtils,
     ) {
-        $this->helper = $helper;
-        $this->logger = $logger;
-        $this->db     = $db;
+        $this->logger             = $logger;
+        $this->config             = $config;
+        $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->arrayStringUtils   = $arrayStringUtils;
 
         // Cache the AttributeId for 'url_path'
         $this->initCategoryUrlPathAttributeId();
@@ -150,7 +169,7 @@ class Rewrite
             $this->deleteProductBaseUrlRewriteByProductId($this->entityId);
         }
 
-        $sluggedUrlKey = $this->helper->slug($urlKey);
+        $sluggedUrlKey = $this->arrayStringUtils->slugify($urlKey);
         $targetPath    = $this->buildProductTargetPath($this->entityId);
 
         $this->upsertUrlRewriteRecord(self::REWRITE_TYPE_PRODUCT, $this->entityId, $sluggedUrlKey, $targetPath, $storeId);
@@ -186,7 +205,7 @@ class Rewrite
             return;
         }
 
-        $sluggedUrlKey = $this->helper->slug($urlKey);
+        $sluggedUrlKey = $this->arrayStringUtils->slugify($urlKey);
         if ($sluggedUrlKey === '') {
             $this->log("upsertProductCategoryRewrite() - Unable to create url slug for urlKey $urlKey");
 
@@ -350,7 +369,7 @@ class Rewrite
     {
         $this->log('getCategoryUrlPath()', ['categoryId' => $categoryId, 'storeId' => $storeId]);
 
-        $productIdColumn = $this->helper->getProductIdColumn();
+        $productIdColumn = $this->magentoEnvironment->getProductIdColumn();
 
         $table = $this->db->getTableName('catalog_category_entity_varchar');
         $query = "SELECT `value` FROM `$table` WHERE `attribute_id` = ? AND `store_id` = ? AND `$productIdColumn` = ?";
@@ -648,7 +667,7 @@ class Rewrite
      */
     private function shouldGenerateCategoryProductRewrites()
     {
-        return $this->helper->shouldGenerateCatalogProductRewrites();
+        return $this->config->shouldGenerateCatalogProductRewrites();
     }
 
     private function clearCategoryProductRewrites(int $productId)

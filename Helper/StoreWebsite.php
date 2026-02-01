@@ -12,6 +12,7 @@ use Magento\Store\Model\Data\StoreConfig;
 use Magento\Store\Model\Store;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
 
 /**
@@ -34,11 +35,6 @@ class StoreWebsite
     public const SCOPE_WEBSITE    = 2;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
     private $logger;
@@ -47,6 +43,11 @@ class StoreWebsite
      * @var \ECInternet\RAPIDWebSync\Model\Db
      */
     private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtil;
 
     /**
      * @var array
@@ -59,18 +60,20 @@ class StoreWebsite
     private $websites = [];
 
     /**
-     * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Db      $db
+     * StoreWebsite constructor.
+     *
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger    $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Db         $db
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString $arrayStringUtil
      */
     public function __construct(
-        Data $helper,
         Logger $logger,
-        Db $db
+        Db $db,
+        ArrayString $arrayStringUtils,
     ) {
-        $this->helper = $helper;
-        $this->logger = $logger;
-        $this->db     = $db;
+        $this->logger           = $logger;
+        $this->db               = $db;
+        $this->arrayStringUtils = $arrayStringUtils;
 
         $this->initStoreArray();
         $this->initWebsiteArray();
@@ -143,8 +146,8 @@ class StoreWebsite
     {
         $storeIds = [];
 
-        $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($storeCodeString);
-        $values     = $this->helper->arrayToCommaSeparatedValueString($storeCodes);
+        $storeCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($storeCodeString);
+        $values     = $this->arrayStringUtils->arrayToCommaSeparatedValueString($storeCodes);
 
         $table = $this->db->getTableName('store');
         $query = "SELECT `store_id` FROM `$table` WHERE `code` IN ($values)";
@@ -198,7 +201,7 @@ class StoreWebsite
     {
         $websiteIds = [];
 
-        $websiteCodes = $this->helper->commaSeparatedListToTrimmedArray($websitesString);
+        $websiteCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($websitesString);
         foreach ($websiteCodes as $websiteCode) {
             if ($websiteId = $this->getWebsiteIdForWebsiteCode($websiteCode)) {
                 $websiteIds[] = $websiteId;
@@ -231,8 +234,8 @@ class StoreWebsite
     {
         $storeIds = [];
 
-        $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($storeCodeString);
-        $values     = $this->helper->arrayToCommaSeparatedValueString($storeCodes);
+        $storeCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($storeCodeString);
+        $values     = $this->arrayStringUtils->arrayToCommaSeparatedValueString($storeCodes);
 
         $table = $this->db->getTableName('store');
         $query = "SELECT `b`.`store_id` FROM `$table` as a
@@ -292,7 +295,7 @@ class StoreWebsite
         $key = (string)$product[self::FIELD_STORE];
 
         if (trim($key) !== static::ADMIN_STORECODE) {
-            $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($key);
+            $storeCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($key);
             foreach ($storeCodes as $storeCode) {
                 $websiteIds[] = $this->getWebsiteIdsForStoreCode($storeCode);
             }

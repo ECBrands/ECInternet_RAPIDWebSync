@@ -9,6 +9,8 @@ namespace ECInternet\RAPIDWebSync\Helper;
 
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
 
 /**
@@ -31,11 +33,6 @@ class Configurable
     private $attributeHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
     private $storeWebsiteHelper;
@@ -51,26 +48,39 @@ class Configurable
     private $db;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
+
+    /**
      * Configurable constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
+     * @param \ECInternet\RAPIDWebSync\Helper\Attribute          $attributeHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger             $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
      */
     public function __construct(
-        Data $helper,
         Attribute $attributeHelper,
         StoreWebsite $storeWebsiteHelper,
         Logger $logger,
-        Db $db
+        Db $db,
+        Environment $magentoEnvironment,
+        ArrayString $arrayStringUtils,
     ) {
-        $this->helper             = $helper;
         $this->attributeHelper    = $attributeHelper;
         $this->storeWebsiteHelper = $storeWebsiteHelper;
         $this->logger             = $logger;
         $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->arrayStringUtils   = $arrayStringUtils;
 
         $this->initializeProductIdColumn();
     }
@@ -90,7 +100,7 @@ class Configurable
         $this->log("| ProductId: [$productId]");
 
         // Make sure we have a configurable product, or leave
-        if (!$this->helper->isProductConfigurable($product)) {
+        if (!$this->isProductConfigurable($product)) {
             $this->log('| NOTE: Product is not configurable.');
             $this->log('| -- End Configurable Product Processor --' . PHP_EOL);
 
@@ -159,7 +169,12 @@ class Configurable
      */
     private function initializeProductIdColumn()
     {
-        $this->productIdColumn = $this->helper->getProductIdColumn();
+        $this->productIdColumn = $this->magentoEnvironment->getProductIdColumn();
+    }
+
+    private function isProductConfigurable(array $product)
+    {
+        return isset($product['type_id']) && $product['type_id'] === 'configurable';
     }
 
     /**
@@ -196,7 +211,7 @@ class Configurable
             'skuArray'  => $skuArray
         ]);
 
-        $skus = $this->helper->arrayToCommaSeparatedValueString($skuArray);
+        $skus = $this->arrayStringUtils->arrayToCommaSeparatedValueString($skuArray);
         $this->createSuperLink($productId, "IN ($skus)", $skuArray);
     }
 

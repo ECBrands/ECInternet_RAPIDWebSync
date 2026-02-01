@@ -14,6 +14,7 @@ use Magento\Framework\Filesystem\Driver\File;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
 use Exception;
 
 /**
@@ -46,11 +47,6 @@ class Image
     private $attributeHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
     private $storeWebsiteHelper;
@@ -71,6 +67,11 @@ class Image
     private $db;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
      * @var string
      */
     private $lastProcessedImage = '';
@@ -78,33 +79,33 @@ class Image
     /**
      * Image constructor.
      *
-     * @param \Magento\Framework\Filesystem\DirectoryList  $directoryList
-     * @param \Magento\Framework\Filesystem\Driver\File    $fileDriver
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
-     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
+     * @param \Magento\Framework\Filesystem\DirectoryList        $directoryList
+     * @param \Magento\Framework\Filesystem\Driver\File          $fileDriver
+     * @param \ECInternet\RAPIDWebSync\Helper\Attribute          $attributeHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger             $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
      */
     public function __construct(
         DirectoryList $directoryList,
         File $fileDriver,
-        Data $helper,
         Attribute $attributeHelper,
         StoreWebsite $storeWebsiteHelper,
         Logger $logger,
         Config $config,
-        Db $db
+        Db $db,
+        Environment $magentoEnvironment,
     ) {
         $this->directoryList      = $directoryList;
         $this->fileDriver         = $fileDriver;
-        $this->helper             = $helper;
         $this->attributeHelper    = $attributeHelper;
         $this->storeWebsiteHelper = $storeWebsiteHelper;
         $this->logger             = $logger;
         $this->config             = $config;
         $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
 
         $this->initializeProductIdColumn();
     }
@@ -199,7 +200,7 @@ class Image
      */
     private function initializeProductIdColumn()
     {
-        $this->productIdColumn = $this->helper->getProductIdColumn();
+        $this->productIdColumn = $this->magentoEnvironment->getProductIdColumn();
     }
 
     /**

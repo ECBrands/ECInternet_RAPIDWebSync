@@ -11,6 +11,8 @@ use Magento\Framework\Exception\InputException;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
 
 /**
@@ -28,11 +30,6 @@ class Category
     private const CATEGORY_MODE_ADDITION    = 1;
 
     private const CATEGORY_MODE_REPLACEMENT = 2;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Rewrite
@@ -58,6 +55,16 @@ class Category
      * @var \ECInternet\RAPIDWebSync\Model\Db
      */
     private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * @var string
@@ -89,27 +96,30 @@ class Category
     /**
      * Category constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Rewrite      $rewriteHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
-     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
+     * @param \ECInternet\RAPIDWebSync\Helper\Rewrite            $rewriteHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger             $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
      */
     public function __construct(
-        Data $helper,
         Rewrite $rewriteHelper,
         StoreWebsite $storeWebsiteHelper,
         Logger $logger,
         Config $config,
-        Db $db
+        Db $db,
+        Environment $magentoEnvironment,
+        ArrayString $arrayStringUtils,
     ) {
-        $this->helper             = $helper;
         $this->rewriteHelper      = $rewriteHelper;
         $this->storeWebsiteHelper = $storeWebsiteHelper;
         $this->logger             = $logger;
         $this->config             = $config;
         $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->arrayStringUtils   = $arrayStringUtils;
 
         $this->initializeCategories();
         $this->initializeCategoryInfo();
@@ -218,7 +228,7 @@ class Category
     private function getProductIdColumn()
     {
         if ($this->productIdColumn === null) {
-            $this->productIdColumn = $this->helper->getProductIdColumn();
+            $this->productIdColumn = $this->magentoEnvironment->getProductIdColumn();
         }
 
         return $this->productIdColumn;
@@ -503,14 +513,14 @@ class Category
                 'is_active'       => $partsCount > 1 ? $parts[1] : 1,
                 'is_anchor'       => $partsCount > 2 ? $parts[2] : 1,
                 'include_in_menu' => $partsCount > 3 ? $parts[3] : 1,
-                'url_key'         => $this->helper->slug($categoryName),
-                'url_path'        => $this->helper->slug(implode('/', $categoryNames), true),
+                'url_key'         => $this->arrayStringUtils->slugify($categoryName),
+                'url_path'        => $this->arrayStringUtils->slugify(implode('/', $categoryNames), true),
             ];
 
             if ($categoryName !== $storeCategoryName) {
                 $attributes['translated_name']     = $storeCategoryName;
-                $attributes['translated_url_key']  = $this->helper->slug($storeCategoryName);
-                $attributes['translated_url_path'] = $this->helper->slug(implode('/', $storeCategoryNames), true);
+                $attributes['translated_url_key']  = $this->arrayStringUtils->slugify($storeCategoryName);
+                $attributes['translated_url_path'] = $this->arrayStringUtils->slugify(implode('/', $storeCategoryNames), true);
             }
 
             $categoryAttributeList[] = $attributes;
@@ -836,7 +846,7 @@ class Category
         $categoryData = [];
 
         /** @var string[] $categoryIds */
-        $categoryIds = $this->helper->commaSeparatedListToTrimmedArray($productCategoryIds);
+        $categoryIds = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($productCategoryIds);
         $this->log('buildCategoryData()', ['categoryIdsCount' => count($categoryIds)]);
 
         // Find positive category assignments
@@ -889,7 +899,7 @@ class Category
         $categoryIds = [];
 
         $keys   = array_keys($categoryData);
-        $values = $this->helper->arrayToCommaSeparatedValueString($keys);
+        $values = $this->arrayStringUtils->arrayToCommaSeparatedValueString($keys);
 
         $table = $this->db->getTableName('catalog_category_entity');
         $query = "SELECT `{$this->getProductIdColumn()}` FROM `$table` WHERE `{$this->getProductIdColumn()}` IN ($values)";
