@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace ECInternet\RAPIDWebSync\Test\Integration\Helper;
+namespace ECInternet\RAPIDWebSync\Test\Integration\Model\Import;
 
 use Magento\Catalog\Api\CategoryListInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
@@ -19,17 +19,17 @@ use Magento\Catalog\Helper\Product as ProductHelper;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Module\FullModuleList;
 use Magento\TestFramework\Helper\Bootstrap;
-use ECInternet\RAPIDWebSync\Helper\Import;
+use ECInternet\RAPIDWebSync\Model\Import\ProductImporter;
 
 /**
  * @magentoDbIsolation disabled
  */
-class ImportTest extends \PHPUnit\Framework\TestCase
+class ProductImporterTest extends \PHPUnit\Framework\TestCase
 {
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Import
+     * @var \ECInternet\RAPIDWebSync\Model\Import\ProductImporter
      */
-    private $_import;
+    private $productImporter;
 
     /**
      * @var \Magento\Catalog\Api\CategoryListInterface
@@ -64,7 +64,7 @@ class ImportTest extends \PHPUnit\Framework\TestCase
         $objectManager = Bootstrap::getObjectManager();
 
         // Test class
-        $this->_import = $objectManager->get(Import::class);
+        $this->productImporter = $objectManager->get(ProductImporter::class);
 
         // Other classes
         $this->_categoryList          = $objectManager->get(CategoryListInterface::class);
@@ -92,7 +92,7 @@ class ImportTest extends \PHPUnit\Framework\TestCase
         ];
 
         // Add product
-        $response = $this->_import->addProduct($data);
+        $response = $this->productImporter->addProduct($data);
 
         // Confirm valid response
         $this->assertIsArray($response);
