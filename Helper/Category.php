@@ -182,9 +182,6 @@ class Category
                 // Assign to category roots
                 if (!$this->assignProductsToLastCategoryOnly()) {
                     foreach ($storeRootPaths as $base => $ra) {
-                        // Find root length
-                        $baseLength = strlen($base);
-
                         // For each part of category list to include upwards, match up to local root
                         foreach ($explodedProductCategoriesStrings as $categoryItem) {
                             if (str_starts_with($categoryItem, $base)) {
@@ -449,7 +446,7 @@ class Category
 
                 if ($categoryId !== null) {
                     // Set category path with inserted category id
-                    $this->updateCategoryRecordPath($path, $categoryId);
+                    $this->updateCategoryRecordPath($categoryId, $path);
 
                     // Set category attributes
                     $this->log('getCategoryId() - Setting Category Attributes...');
@@ -679,7 +676,7 @@ class Category
         $rootPaths['__error__'] = [];
 
         /** @var int[] $storeIds */
-        $storeIds = $this->storeWebsiteHelper->getStoreIdsForProduct($product, 2);
+        $storeIds = $this->storeWebsiteHelper->getStoreIdsForProduct($product, StoreWebsite::SCOPE_WEBSITE);
         $this->log('getStoreRootPaths()', ['storeIds' => $storeIds]);
 
         // Remove 'admin' from StoreIds (no category root in it)
@@ -1000,14 +997,14 @@ class Category
     /**
      * Set category path with inserted category id
      *
-     * @param string $path
      * @param int    $categoryId
+     * @param string $path
      *
      * @return void
      */
-    private function updateCategoryRecordPath(string $path, int $categoryId)
+    private function updateCategoryRecordPath(int $categoryId, string $path)
     {
-        $this->log('updateCategoryRecordPath()', ['path' => $path, 'categoryId' => $categoryId]);
+        $this->log('updateCategoryRecordPath()', ['categoryId' => $categoryId, 'path' => $path]);
 
         $table = $this->db->getTableName('catalog_category_entity');
         $query = "UPDATE `$table` SET `path` = ?, `created_at`= NOW(), `updated_at` = NOW() WHERE `{$this->getProductIdColumn()}`=?";
