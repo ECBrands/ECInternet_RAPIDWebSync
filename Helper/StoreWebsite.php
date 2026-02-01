@@ -27,6 +27,12 @@ class StoreWebsite
 
     private const FIELD_WEBSITES  = 'websites';
 
+    public const SCOPE_STORE      = 0;
+
+    public const SCOPE_GLOBAL     = 1;
+
+    public const SCOPE_WEBSITE    = 2;
+
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Data
      */
@@ -107,18 +113,15 @@ class StoreWebsite
         }
 
         switch ($scope) {
-            // Store-View Scope
-            case 0:
+            case self::SCOPE_STORE:
                 // Gets store_ids for the values in $product['store'] (possibly "admin" if nothing passed in)
                 return $this->getStoreIdsForStoreScope((string)$product[self::FIELD_STORE]);
 
-            // Global Scope
-            case 1:
+            case self::SCOPE_GLOBAL:
                 // Gets store_id for the store with code "admin" (usually store_id = 0)
                 return $this->getStoreIdsForStoreScope(static::ADMIN_STORECODE);
 
-            // Website Scope
-            case 2:
+            case self::SCOPE_WEBSITE:
                 // Gets store_ids that share website of $product['store'] (possibly "admin" if nothing is passed in)
                 return $this->getStoreIdsForWebsiteScope((string)$product[self::FIELD_STORE]);
 
