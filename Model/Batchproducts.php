@@ -17,6 +17,7 @@ use ECInternet\RAPIDWebSync\Helper\Attribute as AttributeHelper;
 use ECInternet\RAPIDWebSync\Helper\Indexer as IndexerHelper;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
+use ECInternet\RAPIDWebSync\Model\Data\LogFactory;
 use ECInternet\RAPIDWebSync\Model\Import\ProductImporter;
 use ECInternet\RAPIDWebSync\Model\Magento\Environment;
 use Exception;
@@ -89,7 +90,7 @@ class Batchproducts implements BatchproductsInterface
      * @param \ECInternet\RAPIDWebSync\Api\LogRepositoryInterface   $logRepository
      * @param \ECInternet\RAPIDWebSync\Helper\Attribute             $attributeHelper
      * @param \ECInternet\RAPIDWebSync\Helper\Indexer               $indexerHelper
-     * @param \ECInternet\RAPIDWebSync\Model\LogFactory             $logFactory
+     * @param \ECInternet\RAPIDWebSync\Model\Data\LogFactory        $logFactory
      * @param \ECInternet\RAPIDWebSync\Logger\Logger                $logger
      * @param \ECInternet\RAPIDWebSync\Model\Config                 $config
      * @param \ECInternet\RAPIDWebSync\Model\Import\ProductImporter $productImporter
