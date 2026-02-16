@@ -47,7 +47,7 @@ class StoreWebsite
     /**
      * @var \ECInternet\RAPIDWebSync\Util\ArrayString
      */
-    private $arrayStringUtil;
+    private $arrayStringUtils;
 
     /**
      * @var array
@@ -64,7 +64,7 @@ class StoreWebsite
      *
      * @param \ECInternet\RAPIDWebSync\Logger\Logger    $logger
      * @param \ECInternet\RAPIDWebSync\Model\Db         $db
-     * @param \ECInternet\RAPIDWebSync\Util\ArrayString $arrayStringUtil
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString $arrayStringUtils
      */
     public function __construct(
         Logger $logger,
