@@ -11,6 +11,8 @@ use Magento\Customer\Api\Data\GroupInterface;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
 
 /**
@@ -29,11 +31,6 @@ class TierPrice
     private const PRICING_MODE_ADDITION    = 1;
 
     private const PRICING_MODE_REPLACEMENT = 2;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
@@ -55,6 +52,13 @@ class TierPrice
      */
     private $db;
 
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
+
     /**
      * @var string
      */
@@ -63,24 +67,27 @@ class TierPrice
     /**
      * TierPrice constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
-     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger             $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
      */
     public function __construct(
-        Data $helper,
         StoreWebsite $storeWebsiteHelper,
         Logger $logger,
         Config $config,
         Db $db,
+        Environment $magentoEnvironment,
+        ArrayString $arrayStringUtils,
     ) {
-        $this->helper             = $helper;
         $this->storeWebsiteHelper = $storeWebsiteHelper;
         $this->logger             = $logger;
         $this->config             = $config;
         $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->arrayStringUtils   = $arrayStringUtils;
     }
 
     /**
@@ -210,7 +217,7 @@ class TierPrice
     private function getProductIdColumn()
     {
         if ($this->productIdColumn === null) {
-            $this->productIdColumn = $this->helper->getProductIdColumn();
+            $this->productIdColumn = $this->magentoEnvironment->getProductIdColumn();
         }
 
         return $this->productIdColumn;
@@ -410,7 +417,7 @@ class TierPrice
 
         $table = $this->db->getTableName('catalog_product_entity_tier_price');
         $query = "DELETE FROM `$table` WHERE `{$this->getProductIdColumn()}` = ? AND `website_id` IN (?)";
-        $binds = [$productId, $this->helper->arrayToCommaSeparatedValues($websiteIds)];
+        $binds = [$productId, $this->arrayStringUtils->arrayToCommaSeparatedValues($websiteIds)];
 
         try {
             $this->db->select($query, $binds);
@@ -451,8 +458,8 @@ class TierPrice
         $query = "DELETE FROM `$table` WHERE `{$this->getProductIdColumn()}` = ? AND `website_id` IN (?) AND `customer_group_id` IN (?)";
         $binds = [
             $productId,
-            $this->helper->arrayToCommaSeparatedValues($websiteIds),
-            $this->helper->arrayToCommaSeparatedValues($customerGroupIds)
+            $this->arrayStringUtils->arrayToCommaSeparatedValues($websiteIds),
+            $this->arrayStringUtils->arrayToCommaSeparatedValues($customerGroupIds)
         ];
 
         $this->db->delete($query, $binds);

@@ -13,12 +13,14 @@ use Magento\Framework\Filesystem\Driver\File;
 use ECInternet\RAPIDWebSync\Api\BatchproductsInterface;
 use ECInternet\RAPIDWebSync\Api\LogRepositoryInterface;
 use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
-use ECInternet\RAPIDWebSync\Helper\Data as Helper;
 use ECInternet\RAPIDWebSync\Helper\Attribute as AttributeHelper;
-use ECInternet\RAPIDWebSync\Helper\Import as ImportHelper;
 use ECInternet\RAPIDWebSync\Helper\Indexer as IndexerHelper;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
+use ECInternet\RAPIDWebSync\Model\Data\Log;
+use ECInternet\RAPIDWebSync\Model\Data\LogFactory;
+use ECInternet\RAPIDWebSync\Model\Import\ProductImporter;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
 use Exception;
 
 /**
@@ -42,19 +44,9 @@ class Batchproducts implements BatchproductsInterface
     private $logRepository;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\Attribute
      */
     private $attributeHelper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Import
-     */
-    private $importHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Indexer
@@ -62,7 +54,7 @@ class Batchproducts implements BatchproductsInterface
     private $indexerHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Model\LogFactory
+     * @var \ECInternet\RAPIDWebSync\Model\Data\LogFactory
      */
     private $logFactory;
 
@@ -77,6 +69,16 @@ class Batchproducts implements BatchproductsInterface
     private $config;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Import\ProductImporter
+     */
+    private $productImporter;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
      * @var string
      */
     private $input;
@@ -84,39 +86,39 @@ class Batchproducts implements BatchproductsInterface
     /**
      * Batchproducts constructor.
      *
-     * @param \Magento\Catalog\Model\Product\Image                $productImage
-     * @param \Magento\Framework\Filesystem\Driver\File           $fileDriver
-     * @param \ECInternet\RAPIDWebSync\Api\LogRepositoryInterface $logRepository
-     * @param \ECInternet\RAPIDWebSync\Helper\Data                $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Attribute           $attributeHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Import              $importHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Indexer             $indexerHelper
-     * @param \ECInternet\RAPIDWebSync\Model\LogFactory           $logFactory
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger              $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Config               $config
+     * @param \Magento\Catalog\Model\Product\Image                  $productImage
+     * @param \Magento\Framework\Filesystem\Driver\File             $fileDriver
+     * @param \ECInternet\RAPIDWebSync\Api\LogRepositoryInterface   $logRepository
+     * @param \ECInternet\RAPIDWebSync\Helper\Attribute             $attributeHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Indexer               $indexerHelper
+     * @param \ECInternet\RAPIDWebSync\Model\Data\LogFactory        $logFactory
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger                $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config                 $config
+     * @param \ECInternet\RAPIDWebSync\Model\Import\ProductImporter $productImporter
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment    $magentoEnvironment
      */
     public function __construct(
         ProductImage $productImage,
         File $fileDriver,
         LogRepositoryInterface $logRepository,
-        Helper $helper,
         AttributeHelper $attributeHelper,
-        ImportHelper $importHelper,
         IndexerHelper $indexerHelper,
         LogFactory $logFactory,
         Logger $logger,
-        Config $config
+        Config $config,
+        ProductImporter $productImporter,
+        Environment $magentoEnvironment
     ) {
-        $this->productImage    = $productImage;
-        $this->fileDriver      = $fileDriver;
-        $this->logRepository   = $logRepository;
-        $this->helper          = $helper;
-        $this->attributeHelper = $attributeHelper;
-        $this->importHelper    = $importHelper;
-        $this->indexerHelper   = $indexerHelper;
-        $this->logFactory      = $logFactory;
-        $this->logger          = $logger;
-        $this->config          = $config;
+        $this->productImage       = $productImage;
+        $this->fileDriver         = $fileDriver;
+        $this->logRepository      = $logRepository;
+        $this->attributeHelper    = $attributeHelper;
+        $this->indexerHelper      = $indexerHelper;
+        $this->logFactory         = $logFactory;
+        $this->logger             = $logger;
+        $this->config             = $config;
+        $this->productImporter    = $productImporter;
+        $this->magentoEnvironment = $magentoEnvironment;
     }
 
     /**
@@ -135,7 +137,7 @@ class Batchproducts implements BatchproductsInterface
 
         $startTime = microtime(true);
 
-        /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
+        /** @var \ECInternet\RAPIDWebSync\Model\Data\Log $log */
         $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_INSERT);
 
@@ -181,12 +183,12 @@ class Batchproducts implements BatchproductsInterface
 
                 $this->log("add() - Processing sku '$sku'...");
 
-                if ($this->importHelper->doesProductExist($sku)) {
+                if ($this->productImporter->doesProductExist($sku)) {
                     $response['warning'] = "Cannot add product.  Product with sku '$sku' exists already.";
                     $warningCount++;
                 } else {
                     try {
-                        $response = $this->importHelper->addProduct($product);
+                        $response = $this->productImporter->addProduct($product);
                         $productOutCount++;
                     } catch (Exception $e) {
                         // If this was from attempting to add new attribute option, and we're skipping product, simply log it and move only next product
@@ -237,7 +239,7 @@ class Batchproducts implements BatchproductsInterface
 
         $startTime = microtime(true);
 
-        /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
+        /** @var \ECInternet\RAPIDWebSync\Model\Data\Log $log */
         $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_UPDATE);
 
@@ -271,9 +273,9 @@ class Batchproducts implements BatchproductsInterface
 
                 $this->log("update() - Processing sku '$sku'...");
 
-                if ($this->importHelper->doesProductExist($sku)) {
+                if ($this->productImporter->doesProductExist($sku)) {
                     try {
-                        $response = $this->importHelper->updateProduct($product);
+                        $response = $this->productImporter->updateProduct($product);
                         $productCountOut++;
                     } catch (Exception $e) {
                         // If this was from attempting to add new attribute option, and we're skipping product, simply log it and move only next product
@@ -334,7 +336,7 @@ class Batchproducts implements BatchproductsInterface
 
         $startTime = microtime(true);
 
-        /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
+        /** @var \ECInternet\RAPIDWebSync\Model\Data\Log $log */
         $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_UPSERT);
 
@@ -368,9 +370,9 @@ class Batchproducts implements BatchproductsInterface
 
                 $this->log("Processing sku '$sku'...");
 
-                if ($this->importHelper->doesProductExist($sku)) {
+                if ($this->productImporter->doesProductExist($sku)) {
                     try {
-                        $response = $this->importHelper->updateProduct($product);
+                        $response = $this->productImporter->updateProduct($product);
                         $productOutCount++;
                     } catch (Exception $e) {
                         $response['error'] = $e->getMessage();
@@ -378,7 +380,7 @@ class Batchproducts implements BatchproductsInterface
                     }
                 } else {
                     try {
-                        $response = $this->importHelper->addProduct($product);
+                        $response = $this->productImporter->addProduct($product);
                         if (isset($response['error'])) {
                             $errorCount++;
                         } else {
@@ -421,7 +423,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getSalesOrderColumns()
     {
-        return $this->importHelper->getSalesOrderColumns();
+        return $this->productImporter->getSalesOrderColumns();
     }
 
     /**
@@ -517,7 +519,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getMagentoEdition()
     {
-        return $this->helper->getMagentoEdition();
+        return $this->magentoEnvironment->getMagentoEdition();
     }
 
     /**
@@ -527,7 +529,7 @@ class Batchproducts implements BatchproductsInterface
      */
     public function getMagentoVersion()
     {
-        return $this->helper->getMagentoVersion();
+        return $this->magentoEnvironment->getMagentoVersion();
     }
 
     /**

@@ -5,11 +5,12 @@
  */
 declare(strict_types=1);
 
-namespace ECInternet\RAPIDWebSync\Model;
+namespace ECInternet\RAPIDWebSync\Model\Data;
 
 use Magento\Framework\DataObject\IdentityInterface;
 use Magento\Framework\Model\AbstractModel;
 use ECInternet\RAPIDWebSync\Api\Data\LogInterface;
+use ECInternet\RAPIDWebSync\Model\ResourceModel;
 
 /**
  * Log Model

@@ -5,67 +5,10 @@
  */
 declare(strict_types=1);
 
-namespace ECInternet\RAPIDWebSync\Helper;
+namespace ECInternet\RAPIDWebSync\Util;
 
-use Magento\Framework\App\Helper\AbstractHelper;
-use Magento\Framework\App\Helper\Context;
-use Magento\Framework\App\ProductMetadataInterface;
-
-/**
- * Helper
- */
-class Data extends AbstractHelper
+class ArrayString
 {
-    private const CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES = 'catalog/seo/generate_category_product_rewrites';
-
-    private const COMMUNITY_EDITION_VALUE                       = 'Community';
-
-    /**
-     * @var \Magento\Framework\App\ProductMetadataInterface
-     */
-    private $productMetadata;
-
-    /**
-     * Data constructor.
-     *
-     * @param \Magento\Framework\App\Helper\Context           $context
-     * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
-     */
-    public function __construct(
-        Context $context,
-        ProductMetadataInterface $productMetadata
-    ) {
-        $this->productMetadata = $productMetadata;
-
-        parent::__construct($context);
-    }
-
-    /**
-     * Should we generated rewrites?
-     *
-     * @return bool
-     * @since 2.3.3
-     */
-    public function shouldGenerateCatalogProductRewrites()
-    {
-        if (version_compare($this->getMagentoVersion(), '2.3.3', '>=')) {
-            return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES);
-        }
-
-        return true;
-    }
-
-    public function isProductConfigurable(array $product)
-    {
-        return isset($product['type_id']) && $product['type_id'] === 'configurable';
-    }
-
-    //////////////////////////////////////////////////
-    ///
-    /// STRING / ARRAY FUNCTIONS
-    ///
-    //////////////////////////////////////////////////
-
     /**
      * Transforms a 1-d array into a comma-separated list of single-quote(')-wrapped values.
      *
@@ -172,7 +115,7 @@ class Data extends AbstractHelper
      * @return string
      * @noinspection PhpUnnecessaryLocalVariableInspection
      */
-    public function slug(string $string, bool $allowSlash = false)
+    public function slugify(string $string, bool $allowSlash = false)
     {
         $regex = $allowSlash ? '[^a-z0-9-/]' : '[^a-z0-9-]';
 
@@ -182,41 +125,5 @@ class Data extends AbstractHelper
         $string = preg_replace('|-$|', '', $string);
 
         return $string;
-    }
-
-    /**
-     * Get Product edition
-     *
-     * @return string
-     */
-    public function getMagentoEdition()
-    {
-        return $this->productMetadata->getEdition();
-    }
-
-    /**
-     * Get Product version
-     *
-     * @return string
-     */
-    public function getMagentoVersion()
-    {
-        return $this->productMetadata->getVersion();
-    }
-
-    /**
-     * @return bool
-     */
-    public function isVersionCommunity()
-    {
-        return $this->getMagentoEdition() === self::COMMUNITY_EDITION_VALUE;
-    }
-
-    /**
-     * @return string
-     */
-    public function getProductIdColumn()
-    {
-        return $this->isVersionCommunity() ? 'entity_id' : 'row_id';
     }
 }

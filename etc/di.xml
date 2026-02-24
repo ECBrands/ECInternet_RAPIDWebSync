@@ -8,7 +8,7 @@
 	<preference for="ECInternet\RAPIDWebSync\Api\LogRepositoryInterface"
 	            type="ECInternet\RAPIDWebSync\Model\LogRepository" />
 	<preference for="ECInternet\RAPIDWebSync\Api\Data\LogInterface"
-	            type="ECInternet\RAPIDWebSync\Model\Log" />
+	            type="ECInternet\RAPIDWebSync\Model\Data\Log" />
 
 	<!-- Custom Logger -->
 	<type name="ECInternet\RAPIDWebSync\Logger\Logger">

@@ -5,24 +5,28 @@
  */
 declare(strict_types=1);
 
-namespace ECInternet\RAPIDWebSync\Helper;
+namespace ECInternet\RAPIDWebSync\Model\Import;
 
-use Magento\Framework\Exception\IntegrationException;
+use DateInterval;
+use DateTime;
+use ECInternet\RAPIDWebSync\Helper\Attribute;
+use ECInternet\RAPIDWebSync\Helper\Category;
+use ECInternet\RAPIDWebSync\Helper\Configurable;
+use ECInternet\RAPIDWebSync\Helper\Image;
+use ECInternet\RAPIDWebSync\Helper\Link;
+use ECInternet\RAPIDWebSync\Helper\Rewrite;
+use ECInternet\RAPIDWebSync\Helper\StoreWebsite;
+use ECInternet\RAPIDWebSync\Helper\TierPrice;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
 use ECInternet\RAPIDWebSync\Processor\Inventory;
-use DateTime;
-use DateInterval;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
+use Magento\Framework\Exception\IntegrationException;
 
-/**
- * Import Helper
- *
- * @SuppressWarnings(PHPMD.LongVariable)
- * @SuppressWarnings(PHPMD.ShortVariable)
- */
-class Import
+class ProductImporter
 {
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Attribute
@@ -33,11 +37,6 @@ class Import
      * @var \ECInternet\RAPIDWebSync\Helper\Category
      */
     private $categoryHelper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Configurable
@@ -85,9 +84,19 @@ class Import
     private $db;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
      * @var \ECInternet\RAPIDWebSync\Processor\Inventory
      */
     private $inventoryProcessor;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * Array for holding sku-entity_id records
@@ -126,22 +135,22 @@ class Import
     /**
      * Import constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Category     $categoryHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Configurable $configurableHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Image        $imageHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Link         $linkHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Rewrite      $rewriteHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\TierPrice    $tierPriceHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
-     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
-     * @param \ECInternet\RAPIDWebSync\Processor\Inventory $inventoryProcessor
+     * @param \ECInternet\RAPIDWebSync\Helper\Attribute          $attributeHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Category           $categoryHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Configurable       $configurableHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Image              $imageHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Link               $linkHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Rewrite            $rewriteHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\TierPrice          $tierPriceHelper
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger             $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Processor\Inventory       $inventoryProcessor
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
      */
     public function __construct(
-        Data $helper,
         Attribute $attributeHelper,
         Category $categoryHelper,
         Configurable $configurableHelper,
@@ -153,9 +162,10 @@ class Import
         Logger $logger,
         Config $config,
         Db $db,
+        Environment $magentoEnvironment,
         Inventory $inventoryProcessor,
+        ArrayString  $arrayStringUtils,
     ) {
-        $this->helper             = $helper;
         $this->attributeHelper    = $attributeHelper;
         $this->categoryHelper     = $categoryHelper;
         $this->configurableHelper = $configurableHelper;
@@ -167,7 +177,9 @@ class Import
         $this->logger             = $logger;
         $this->config             = $config;
         $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
         $this->inventoryProcessor = $inventoryProcessor;
+        $this->arrayStringUtils   = $arrayStringUtils;
 
         // Build SKU array so we can test for existing / new products
         $this->initSkuArray();
@@ -236,7 +248,7 @@ class Import
         $this->createProductRecord($product, $this->sku);
 
         // Extract newly added entity_id (or row_id) and set it in response and private variable.
-        $entityId        = $this->helper->isVersionCommunity() ? (int)$this->skuEntityIdArray[$this->sku] : (int)$this->skuRowIdArray[$this->sku];
+        $entityId        = $this->magentoEnvironment->isVersionCommunity() ? (int)$this->skuEntityIdArray[$this->sku] : (int)$this->skuRowIdArray[$this->sku];
         $response['id']  = $entityId;
         $this->productId = $entityId;
 
@@ -313,7 +325,7 @@ class Import
     {
         //$this->log('getProductIdForSku()', ['sku' => $sku]);
 
-        if ($this->helper->isVersionCommunity()) {
+        if ($this->magentoEnvironment->isVersionCommunity()) {
             // Handle for COMMUNITY
             if ($entityIdArray = $this->getEntityIdSkuArray()) {
                 if (isset($entityIdArray[$sku])) {
@@ -355,7 +367,7 @@ class Import
         $query = "SELECT DISTINCT `entity_id`, `sku` FROM `$table`";
 
         // If we're COMMUNITY we also want to pick up row_id
-        if (!$this->helper->isVersionCommunity()) {
+        if (!$this->magentoEnvironment->isVersionCommunity()) {
             $query = "SELECT `row_id`, `entity_id`, `sku` FROM `$table`";
         }
 
@@ -365,7 +377,7 @@ class Import
             $this->skuEntityIdArray[$result['sku']] = (int)$result['entity_id'];
 
             // Only add rows to row_id / sku array if we're in COMMUNITY
-            if (!$this->helper->isVersionCommunity()) {
+            if (!$this->magentoEnvironment->isVersionCommunity()) {
                 $this->skuRowIdArray[$result['sku']] = (int)$result['row_id'];
             }
         }
@@ -649,7 +661,7 @@ class Import
             $this->db->beginTransaction();
 
             // Insert into sequence_product if we're in EE
-            if (!$this->helper->isVersionCommunity()) {
+            if (!$this->magentoEnvironment->isVersionCommunity()) {
                 // Create a `sequence_product` record which will be like CE's entity_id
                 $sequenceProductId = $this->createSequenceProductRecord();
 
@@ -660,11 +672,11 @@ class Import
             // Filter out non-`catalog_product_entity` columns
             /** @var string[] $filteredColumns */
             $filteredColumns = array_intersect(array_keys($productData), $productColumns);
-            $values          = $this->helper->filterKeyValueArray($productData, $filteredColumns);
+            $values          = $this->arrayStringUtils->filterKeyValueArray($productData, $filteredColumns);
 
             // Extract column and value strings
             $columnString = implode(',', $filteredColumns);
-            $valuesString = $this->helper->arrayToCommaSeparatedValueString($filteredColumns);
+            $valuesString = $this->arrayStringUtils->arrayToCommaSeparatedValueString($filteredColumns);
 
             // Let's write this baby
             $table = $this->db->getTableName('catalog_product_entity');
@@ -681,7 +693,7 @@ class Import
             throw $e;
         }
 
-        if (!$this->helper->isVersionCommunity()) {
+        if (!$this->magentoEnvironment->isVersionCommunity()) {
             // ENTERPRISE
             // $skuRowIdArray[$sku] gets newly created `row_id` value.
             // $skuEntityIdArray[$sku] gets `sequence_product` Id, which was originally used as 'entity_id' when creating product record.
@@ -775,14 +787,14 @@ class Import
         if (!isset($productData['url_key'])) {
             if ($isNew) {
                 if (isset($productData['name'])) {
-                    $productData['url_key'] = $this->helper->slug($productData['name']);
+                    $productData['url_key'] = $this->arrayStringUtils->slugify($productData['name']);
                 } else {
-                    $productData['url_key'] = $this->helper->slug($productData['sku']);
+                    $productData['url_key'] = $this->arrayStringUtils->slugify($productData['sku']);
                 }
             }
         } else {
             // If 'url_key' is set, slug it and be done with it.
-            $productData['url_key'] = $this->helper->slug($productData['url_key']);
+            $productData['url_key'] = $this->arrayStringUtils->slugify($productData['url_key']);
         }
     }
 

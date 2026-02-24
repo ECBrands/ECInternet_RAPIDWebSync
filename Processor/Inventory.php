@@ -9,10 +9,10 @@ namespace ECInternet\RAPIDWebSync\Processor;
 
 use Magento\Framework\Module\Manager as ModuleManager;
 use ECInternet\RAPIDWebSync\Api\DataProcessorInterface;
-use ECInternet\RAPIDWebSync\Helper\Data;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 
 /**
  * Inventory processor
@@ -45,11 +45,6 @@ class Inventory implements DataProcessorInterface
     private $moduleManager;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Logger\Logger
      */
     private $logger;
@@ -65,6 +60,11 @@ class Inventory implements DataProcessorInterface
     private $db;
 
     /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
+
+    /**
      * @var string
      */
     private $sku;
@@ -77,24 +77,24 @@ class Inventory implements DataProcessorInterface
     /**
      * Inventory constructor.
      *
-     * @param \Magento\Framework\Module\Manager      $moduleManager
-     * @param \ECInternet\RAPIDWebSync\Helper\Data   $helper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Config  $config
-     * @param \ECInternet\RAPIDWebSync\Model\Db      $db
+     * @param \Magento\Framework\Module\Manager         $moduleManager
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger    $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config     $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db         $db
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString $arrayStringUtils
      */
     public function __construct(
         ModuleManager $moduleManager,
-        Data $helper,
         Logger $logger,
         Config $config,
-        Db $db
+        Db $db,
+        ArrayString $arrayStringUtils,
     ) {
-        $this->moduleManager = $moduleManager;
-        $this->helper        = $helper;
-        $this->logger        = $logger;
-        $this->config        = $config;
-        $this->db            = $db;
+        $this->moduleManager    = $moduleManager;
+        $this->logger           = $logger;
+        $this->config           = $config;
+        $this->db               = $db;
+        $this->arrayStringUtils = $arrayStringUtils;
     }
 
     public function processProductData(array $productData, string $sku, int $entityId)
@@ -235,8 +235,8 @@ class Inventory implements DataProcessorInterface
         // Create update string from 'stock_item' columns in $product
         /** @var string[] $productStockItemColumns */
         $productStockItemColumns         = array_intersect(array_keys($product), self::STOCK_ITEM_COLUMNS);
-        $productStockItemValues          = $this->helper->filterKeyValueArray($product, $productStockItemColumns);
-        $productStockItemKeyValuesString = $this->helper->arrayToCommaSeparatedUpdateString($productStockItemValues);
+        $productStockItemValues          = $this->arrayStringUtils->filterKeyValueArray($product, $productStockItemColumns);
+        $productStockItemKeyValuesString = $this->arrayStringUtils->arrayToCommaSeparatedUpdateString($productStockItemValues);
 
         $table = $this->db->getTableName('cataloginventory_stock_item');
         $query = "UPDATE `$table` SET $productStockItemKeyValuesString WHERE `product_id` = ? AND `stock_id` = ?";

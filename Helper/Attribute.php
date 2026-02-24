@@ -23,6 +23,8 @@ use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
 use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
 
 /**
@@ -49,11 +51,6 @@ class Attribute
     private $eavConfig;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
     private $storeWebsiteHelper;
@@ -72,6 +69,16 @@ class Attribute
      * @var \ECInternet\RAPIDWebSync\Model\Db
      */
     private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * @var string
@@ -96,27 +103,30 @@ class Attribute
     /**
      * Attribute constructor.
      *
-     * @param \Magento\Eav\Model\Config                    $eavConfig
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Logger\Logger       $logger
-     * @param \ECInternet\RAPIDWebSync\Model\Config        $config
-     * @param \ECInternet\RAPIDWebSync\Model\Db            $db
+     * @param \Magento\Eav\Model\Config                          $eavConfig
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger             $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
      */
     public function __construct(
         EavConfig $eavConfig,
-        Data $helper,
         StoreWebsite $storeWebsiteHelper,
         Logger $logger,
         Config $config,
-        Db $db
+        Db $db,
+        Environment $magentoEnvironment,
+        ArrayString $arrayStringUtils,
     ) {
         $this->eavConfig          = $eavConfig;
-        $this->helper             = $helper;
         $this->storeWebsiteHelper = $storeWebsiteHelper;
         $this->logger             = $logger;
         $this->config             = $config;
         $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->arrayStringUtils   = $arrayStringUtils;
     }
 
     /**
@@ -282,7 +292,7 @@ class Attribute
     private function getProductIdColumn()
     {
         if ($this->productIdColumn === null) {
-            $this->productIdColumn = $this->helper->getProductIdColumn();
+            $this->productIdColumn = $this->magentoEnvironment->getProductIdColumn();
         }
 
         return $this->productIdColumn;
@@ -559,7 +569,7 @@ class Attribute
         } elseif ($attributeFrontendInput === 'multiselect') {
             $optionIds = [];
 
-            $values = $this->helper->commaSeparatedListToTrimmedArray((string)$value);
+            $values = $this->arrayStringUtils->commaSeparatedListToTrimmedArray((string)$value);
             foreach ($values as $value) {
                 $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
                 if ($existingOptionId) {

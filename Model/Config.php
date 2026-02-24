@@ -11,6 +11,8 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 
 class Config
 {
+    private const CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES       = 'catalog/seo/generate_category_product_rewrites';
+
     private const CONFIG_PATH_ENABLED                                 = 'rapid_web_sync/general/enable';
 
     private const CONFIG_PATH_ENABLE_SPEED_LOGGING                    = 'rapid_web_sync/general/speed_logging';
@@ -80,23 +82,14 @@ class Config
     }
 
     /**
-     * Is module enabled?
+     * Should we generated rewrites?
      *
      * @return bool
+     * @since 2.3.3
      */
-    public function isModuleEnabled()
+    public function shouldGenerateCatalogProductRewrites()
     {
-        return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_ENABLED);
-    }
-
-    /**
-     * Is speed logging enabled?
-     *
-     * @return bool
-     */
-    public function isSpeedLoggingEnabled()
-    {
-        return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_ENABLE_SPEED_LOGGING);
+        return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_GENERATE_CATALOG_PRODUCT_REWRITES);
     }
 
     /**
