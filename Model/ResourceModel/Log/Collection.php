@@ -34,7 +34,7 @@ class Collection extends AbstractCollection
     {
         /** @noinspection PhpFullyQualifiedNameUsageInspection */
         $this->_init(
-            \ECInternet\RAPIDWebSync\Model\Log::class,
+            \ECInternet\RAPIDWebSync\Model\Data\Log::class,
             \ECInternet\RAPIDWebSync\Model\ResourceModel\Log::class
         );
     }

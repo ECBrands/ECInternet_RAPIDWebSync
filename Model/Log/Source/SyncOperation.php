@@ -8,16 +8,13 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Model\Log\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
-use ECInternet\RAPIDWebSync\Model\Log;
+use ECInternet\RAPIDWebSync\Model\Data\Log;
 
 /**
  * Options for SyncOperation
  */
 class SyncOperation implements OptionSourceInterface
 {
-    /**
-     * @inheritDoc
-     */
     public function toOptionArray()
     {
         return [

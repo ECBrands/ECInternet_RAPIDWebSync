@@ -33,6 +33,7 @@ class ProductDataProcessorPool implements ProductDataProcessorPoolInterface
      * @param \Psr\Log\LoggerInterface $logger
      * @param array                    $productDataProcessors
      *
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function __construct(
         LoggerInterface $logger,

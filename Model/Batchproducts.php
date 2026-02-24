@@ -54,7 +54,7 @@ class Batchproducts implements BatchproductsInterface
     private $indexerHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Model\LogFactory
+     * @var \ECInternet\RAPIDWebSync\Model\Data\LogFactory
      */
     private $logFactory;
 

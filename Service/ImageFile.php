@@ -57,8 +57,8 @@ class ImageFile
     ) {
         $this->directoryList = $directoryList;
         $this->fileDriver    = $fileDriver;
-        $this->logger        = $logger;
         $this->config        = $config;
+        $this->logger        = $logger;
     }
 
     /**
