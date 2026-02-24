@@ -41,6 +41,14 @@ class ImageFile
      */
     private $lastProcessedImage = '';
 
+    /**
+     * ImageFile constructor.
+     *
+     * @param \Magento\Framework\Filesystem\DirectoryList $directoryList
+     * @param \Magento\Framework\Filesystem\Driver\File   $fileDriver
+     * @param \ECInternet\RAPIDWebSync\Logger\Logger      $logger
+     * @param \ECInternet\RAPIDWebSync\Model\Config       $config
+     */
     public function __construct(
         DirectoryList $directoryList,
         File $fileDriver,

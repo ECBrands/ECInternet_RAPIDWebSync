@@ -486,7 +486,7 @@ class Category
         $categoryAttributeList = [];
 
         // Explode string using TreeSeparator
-        $categoryDefinitions = explode($this->getCategoryTreeSeparator(), $categoryDefinitionString);
+        $categoryDefinitions = explode($this->getCategoryTreeSeparator(), $categoryDefinitionString ?? '');
         foreach ($categoryDefinitions as $categoryDefinition) {
             $parts             = explode('::', $categoryDefinition ?? '');
             $categoryName      = trim($parts[0] ?? '');

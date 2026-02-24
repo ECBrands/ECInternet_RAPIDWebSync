@@ -87,11 +87,8 @@ class StoreWebsite
     public function getStoreIds()
     {
         $storeIds = [];
-
-        if ($storesData = $this->getStoresData()) {
-            foreach (array_keys($storesData) as $storeId) {
-                $storeIds[] = $storeId;
-            }
+        foreach ($this->stores as $storeId => $storeData) {
+            $storeIds[] = $storeId;
         }
 
         return $storeIds;
@@ -323,14 +320,12 @@ class StoreWebsite
     {
         $websiteIds = [];
 
-        if ($storesData = $this->getStoresData()) {
-            foreach ($storesData as $storeData) {
-                if ((string)$storeData[StoreConfig::KEY_CODE] === $storeCode) {
-                    if (isset($storeData[StoreConfig::KEY_WEBSITE_ID])) {
-                        $websiteId = $storeData[StoreConfig::KEY_WEBSITE_ID];
-                        if (is_numeric($websiteId)) {
-                            $websiteIds[] = (int)$websiteId;
-                        }
+        foreach ($this->stores as $storeData) {
+            if ((string)$storeData[StoreConfig::KEY_CODE] === $storeCode) {
+                if (isset($storeData[StoreConfig::KEY_WEBSITE_ID])) {
+                    $websiteId = $storeData[StoreConfig::KEY_WEBSITE_ID];
+                    if (is_numeric($websiteId)) {
+                        $websiteIds[] = (int)$websiteId;
                     }
                 }
             }
