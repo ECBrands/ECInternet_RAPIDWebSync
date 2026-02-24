@@ -19,9 +19,13 @@ use Magento\Framework\Exception\StateException;
 use Magento\Framework\Exception\State\InitException;
 use Magento\Framework\Phrase;
 use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
-use Psr\Log\LoggerInterface;
+use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
+use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
+use Psr\Log\LoggerInterface;
 
 /**
  * Attribute Helper
@@ -34,79 +38,95 @@ class Attribute
     /**
      * @var string[]
      */
-    private $_validAttributeTypes = ['datetime', 'decimal', 'int', 'text', 'varchar'];
+    private $validAttributeTypes = ['datetime', 'decimal', 'int', 'text', 'varchar'];
 
     /**
      * @var string[]
      */
-    private $_imageAttributes = ['image', 'small_image', 'thumbnail'];
+    private $imageAttributes = ['image', 'small_image', 'thumbnail'];
 
     /**
      * @var \Magento\Eav\Model\Config
      */
-    private $_eavConfig;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $_helper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
+    private $eavConfig;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
-    private $_storeWebsiteHelper;
+    private $storeWebsiteHelper;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * @var \Psr\Log\LoggerInterface
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var string
      */
-    private $_productIdColumn;
+    private $productIdColumn;
 
     /**
      * @var int
      */
-    private $_catalogProductEntityTypeId;
+    private $catalogProductEntityTypeId;
 
     /**
      * @var array
      */
-    private $_attributeSets;
+    private $attributeSets;
 
     /**
      * @var array
      */
-    private $_attributes;
+    private $attributes;
 
     /**
      * Attribute constructor.
      *
-     * @param \Magento\Eav\Model\Config                    $eavConfig
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \Psr\Log\LoggerInterface                     $logger
+     * @param \Magento\Eav\Model\Config                          $eavConfig
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
+     * @param \Psr\Log\LoggerInterface                           $logger
      */
     public function __construct(
         EavConfig $eavConfig,
-        Data $helper,
-        Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
-        LoggerInterface $logger
+        Logger $logger,
+        Config $config,
+        Db $db,
+        Environment $magentoEnvironment,
+        ArrayString $arrayStringUtils,
     ) {
-        $this->_eavConfig          = $eavConfig;
-        $this->_helper             = $helper;
-        $this->_dbHelper           = $dbHelper;
-        $this->_storeWebsiteHelper = $storeWebsiteHelper;
-        $this->_logger             = $logger;
+        $this->eavConfig          = $eavConfig;
+        $this->storeWebsiteHelper = $storeWebsiteHelper;
+        $this->logger             = $logger;
+        $this->config             = $config;
+        $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->arrayStringUtils   = $arrayStringUtils;
     }
 
     /**
@@ -242,8 +262,13 @@ class Attribute
      *
      * @return void
      */
-    public function upsertProductAttributeValue(int $attributeId, int $storeId, int $productId, $value, string $attributeType)
-    {
+    public function upsertProductAttributeValue(
+        int $attributeId,
+        int $storeId,
+        int $productId,
+        mixed $value,
+        string $attributeType
+    ) {
         $this->log('upsertProductAttributeValue()', [
             'attributeId'   => $attributeId,
             'storeId'       => $storeId,
@@ -266,11 +291,11 @@ class Attribute
      */
     private function getProductIdColumn()
     {
-        if ($this->_productIdColumn === null) {
-            $this->_productIdColumn = $this->_helper->getProductIdColumn();
+        if ($this->productIdColumn === null) {
+            $this->productIdColumn = $this->magentoEnvironment->getProductIdColumn();
         }
 
-        return $this->_productIdColumn;
+        return $this->productIdColumn;
     }
 
     /**
@@ -281,11 +306,11 @@ class Attribute
      */
     private function getProductEntityTypeId()
     {
-        if ($this->_catalogProductEntityTypeId === null) {
-            $this->_catalogProductEntityTypeId = $this->initializeCatalogProductEntityTypeId();
+        if ($this->catalogProductEntityTypeId === null) {
+            $this->catalogProductEntityTypeId = $this->initializeCatalogProductEntityTypeId();
         }
 
-        return $this->_catalogProductEntityTypeId;
+        return $this->catalogProductEntityTypeId;
     }
 
     /**
@@ -296,11 +321,11 @@ class Attribute
      */
     private function getAttributeSets()
     {
-        if ($this->_attributeSets === null) {
+        if ($this->attributeSets === null) {
             $this->initializeAttributeSets();
         }
 
-        return $this->_attributeSets;
+        return $this->attributeSets;
     }
 
     /**
@@ -311,11 +336,11 @@ class Attribute
      */
     private function getCatalogProductAttributes()
     {
-        if ($this->_attributes === null) {
+        if ($this->attributes === null) {
             $this->initializeCatalogProductAttributes();
         }
 
-        return $this->_attributes;
+        return $this->attributes;
     }
 
     /**
@@ -325,11 +350,11 @@ class Attribute
      */
     private function initializeCatalogProductEntityTypeId()
     {
-        $table = $this->_dbHelper->getTableName('eav_entity_type');
+        $table = $this->db->getTableName('eav_entity_type');
         $query = "SELECT `entity_type_id` FROM `$table` WHERE `entity_type_code` = ?";
         $binds = ['catalog_product'];
 
-        $results = $this->_dbHelper->select($query, $binds);
+        $results = $this->db->select($query, $binds);
         if (!$results) {
             throw new InitException(__("Unable to lookup 'entity_type_id' for 'entity_type_code' = 'catalog_product'"));
         }
@@ -355,15 +380,15 @@ class Attribute
      */
     private function initializeAttributeSets()
     {
-        $table = $this->_dbHelper->getTableName('eav_attribute_set');
+        $table = $this->db->getTableName('eav_attribute_set');
         $query = "SELECT `attribute_set_id`, `attribute_set_name`
                   FROM `$table`
                   WHERE `entity_type_id` = ?";
         $binds = [$this->getProductEntityTypeId()];
 
-        $results = $this->_dbHelper->select($query, $binds);
+        $results = $this->db->select($query, $binds);
         foreach ($results as $result) {
-            $this->_attributeSets[$result['attribute_set_name']] = (int)$result['attribute_set_id'];
+            $this->attributeSets[$result['attribute_set_name']] = (int)$result['attribute_set_id'];
         }
     }
 
@@ -375,8 +400,8 @@ class Attribute
      */
     private function initializeCatalogProductAttributes()
     {
-        $eav_attribute         = $this->_dbHelper->getTableName('eav_attribute');
-        $catalog_eav_attribute = $this->_dbHelper->getTableName('catalog_eav_attribute');
+        $eav_attribute         = $this->db->getTableName('eav_attribute');
+        $catalog_eav_attribute = $this->db->getTableName('catalog_eav_attribute');
 
         $query = "SELECT
                     `$eav_attribute`.`attribute_id`,
@@ -399,9 +424,9 @@ class Attribute
                     `$eav_attribute`.`entity_type_id` = ?";
         $binds = [$this->getProductEntityTypeId()];
 
-        $results = $this->_dbHelper->select($query, $binds);
+        $results = $this->db->select($query, $binds);
         foreach ($results as $result) {
-            $this->_attributes[$result[AttributeInterface::ATTRIBUTE_CODE]] = [
+            $this->attributes[$result[AttributeInterface::ATTRIBUTE_CODE]] = [
                 AttributeInterface::ATTRIBUTE_ID    => (int)$result[AttributeInterface::ATTRIBUTE_ID],
                 AttributeInterface::BACKEND_TYPE    => (string)$result[AttributeInterface::BACKEND_TYPE],
                 AttributeInterface::FRONTEND_INPUT  => (string)$result[AttributeInterface::FRONTEND_INPUT],
@@ -465,134 +490,136 @@ class Attribute
         $this->log('upsertProductAttribute()', [
             'productId'     => $productId,
             'attributeCode' => $attributeCode,
-            'value'         => $product[$attributeCode]
+            'value'         => $value
         ]);
 
+        $attributeInfo = $this->getCatalogProductAttributeInfoByCode($attributeCode);
+
         // Make sure the attribute is in our system
-        if ($attributeInfo = $this->getCatalogProductAttributeInfoByCode($attributeCode)) {
-            $attributeId            = (int)$attributeInfo[AttributeInterface::ATTRIBUTE_ID];
-            $attributeBackendType   = (string)$attributeInfo[AttributeInterface::BACKEND_TYPE];
-            $attributeFrontendInput = (string)$attributeInfo[AttributeInterface::FRONTEND_INPUT];
-            $attributeSourceModel   = (string)$attributeInfo[AttributeInterface::SOURCE_MODEL];
-            $attributeScope         = (int)$attributeInfo[CatalogAttribute::KEY_IS_GLOBAL];
+        if (!$attributeInfo) {
+            return;
+        }
 
-            // We only handle a subset of attribute types
-            if (!$this->isValidAttributeType($attributeBackendType)) {
-                $this->log('upsertProductAttribute()', ['invalidAttributeType' => $attributeBackendType]);
+        $attributeId            = (int)$attributeInfo[AttributeInterface::ATTRIBUTE_ID];
+        $attributeBackendType   = (string)$attributeInfo[AttributeInterface::BACKEND_TYPE];
+        $attributeFrontendInput = (string)$attributeInfo[AttributeInterface::FRONTEND_INPUT];
+        $attributeSourceModel   = (string)$attributeInfo[AttributeInterface::SOURCE_MODEL];
+        $attributeScope         = (int)$attributeInfo[CatalogAttribute::KEY_IS_GLOBAL];
 
-                return;
+        // We only handle a subset of attribute types
+        if (!$this->isValidAttributeType($attributeBackendType)) {
+            $this->log('upsertProductAttribute()', ['invalidAttributeType' => $attributeBackendType]);
+            return;
+        }
+
+        // Handle delete
+        if ($value === '__DELETE__') {
+            /** @var int[] $storeIds */
+            $storeIds = $this->storeWebsiteHelper->getStoreIdsForProduct($product);
+            foreach ($storeIds as $storeId) {
+                $this->deleteProductAttributeValue($productId, $storeId, $attributeInfo);
             }
 
-            // Handle delete
-            if ($value === '__DELETE__') {
-                /** @var int[] $storeIds */
-                $storeIds = $this->_storeWebsiteHelper->getStoreIdsForProduct($product);
-                foreach ($storeIds as $storeId) {
-                    $this->deleteProductAttributeValue($productId, $storeId, $attributeInfo);
-                }
+            return;
+        }
 
-                return;
-            }
+        // If attribute type is select or multiselect, then we need to query the system
+        if ($attributeFrontendInput === 'select') {
+            if (empty($attributeSourceModel) || $attributeSourceModel === Table::class) {
+                /** @var int|null $existingOptionId */
+                if ($existingOptionId = $this->getAttributeOptionId($attributeCode, $value)) {
+                    $value = $existingOptionId;
+                } else {
+                    if ($this->config->allowNewAttributeValues()) {
+                        // Cache new option_id value for writing to catalog_product_entity_*
+                        $newOptionId = $this->addAttributeOptionRecord($attributeId);
+                        $this->addAttributeOptionValueRecord($newOptionId, $value);
 
-            // If attribute type is select or multiselect, then we need to query the system
-            if ($attributeFrontendInput === 'select') {
-                if (empty($attributeSourceModel) || $attributeSourceModel === Table::class) {
-                    /** @var int|null $existingOptionId */
-                    $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
-                    if ($existingOptionId) {
-                        $value = $existingOptionId;
+                        // We write the option_id to catalog_product_entity_int
+                        $value = $newOptionId;
                     } else {
-                        if ($this->_helper->allowNewAttributeValues()) {
-                            // Cache new option_id value for writing to catalog_product_entity_*
-                            $newOptionId = $this->addAttributeOptionRecord($attributeId);
-                            $this->addAttributeOptionValueRecord($newOptionId, $value);
+                        $this->log('upsertProductAttribute() - Not allowing new attribute values.');
 
-                            // We write the option_id to catalog_product_entity_int
-                            $value = $newOptionId;
-                        } else {
-                            $this->log('upsertProductAttribute() - Not allowing new attribute values.');
+                        switch ($this->config->getIllegalNewAttributeAction()) {
+                            case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
+                                break;
 
-                            switch ($this->_helper->getIllegalNewAttributeAction()) {
-                                case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
-                                    break;
-
-                                case IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE:
-                                case IllegalNewAttributeActionOption::ACTION_SKIP_BATCH_VALUE:
-                                    throw new IllegalNewAttributeOptionException(__("Attempted to add new attribute value '$value'."));
-                            }
-
-                            return;
+                            case IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE:
+                            case IllegalNewAttributeActionOption::ACTION_SKIP_BATCH_VALUE:
+                                throw new IllegalNewAttributeOptionException(__("Attempted to add new attribute value '$value'."));
                         }
+
+                        return;
+                    }
+                }
+            } else {
+                $optionId = $this->getAttributeSourceOptionId($attributeCode, $value);
+                $this->log('upsertProductAttribute()', [
+                    'attributeCode' => $attributeCode,
+                    'value'         => $value,
+                    'optionId'      => $optionId
+                ]);
+
+                if ($optionId !== null) {
+                    $value = $optionId;
+                } else {
+                    throw new LocalizedException(__('Unable to find option key for attribute ' . $attributeCode . ' and value ' . $value));
+                }
+            }
+        } elseif ($attributeFrontendInput === 'multiselect') {
+            $optionIds = [];
+
+            $values = $this->arrayStringUtils->commaSeparatedListToTrimmedArray((string)$value);
+            foreach ($values as $value) {
+                $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
+                if ($existingOptionId) {
+                    // Don't add if it's already in array (in case someone accidentally puts same Option twice)
+                    if (!in_array($existingOptionId, $optionIds)) {
+                        $optionIds[] = $existingOptionId;
+                    } else {
+                        $this->log("Value `$value` already in Multi-Select value list");
                     }
                 } else {
-                    $optionId = $this->getAttributeSourceOptionId($attributeCode, $value);
-                    $this->log('upsertProductAttribute()', [
-                        'attributeCode' => $attributeCode,
-                        'value'         => $value,
-                        'optionId'      => $optionId
-                    ]);
+                    if ($this->config->allowNewAttributeValues()) {
+                        // Cache new option_id value for writing to catalog_product_entity_*
+                        $newOptionId = $this->addAttributeOptionRecord($attributeId);
+                        $this->addAttributeOptionValueRecord($newOptionId, $value);
 
-                    if ($optionId !== null) {
-                        $value = $optionId;
+                        // We write the option_ids to catalog_product_entity_varchar
+                        $optionIds[] = $newOptionId;
                     } else {
-                        throw new LocalizedException(__('Unable to find option key for attribute ' . $attributeCode . ' and value ' . $value));
+                        $this->log('upsertProductAttribute() - Not allowing new attribute values.');
+
+                        switch ($this->config->getIllegalNewAttributeAction()) {
+                            case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
+                                break;
+
+                            case IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE:
+                            case IllegalNewAttributeActionOption::ACTION_SKIP_BATCH_VALUE:
+                                throw new IllegalNewAttributeOptionException(__("Attempted to add new attribute value '$value'."));
+                        }
+
+                        return;
                     }
                 }
-            } elseif ($attributeFrontendInput === 'multiselect') {
-                $optionIds = [];
-
-                $values = $this->_helper->commaSeparatedListToTrimmedArray((string)$value);
-                foreach ($values as $value) {
-                    $existingOptionId = $this->getAttributeOptionId($attributeCode, $value);
-                    if ($existingOptionId) {
-                        // Don't add if it's already in array (in case someone accidentally puts same Option twice)
-                        if (!in_array($existingOptionId, $optionIds)) {
-                            $optionIds[] = $existingOptionId;
-                        } else {
-                            $this->log("Value `$value` already in Multi-Select value list");
-                        }
-                    } else {
-                        if ($this->_helper->allowNewAttributeValues()) {
-                            // Cache new option_id value for writing to catalog_product_entity_*
-                            $newOptionId = $this->addAttributeOptionRecord($attributeId);
-                            $this->addAttributeOptionValueRecord($newOptionId, $value);
-
-                            // We write the option_ids to catalog_product_entity_varchar
-                            $optionIds[] = $newOptionId;
-                        } else {
-                            $this->log('upsertProductAttribute() - Not allowing new attribute values.');
-
-                            switch ($this->_helper->getIllegalNewAttributeAction()) {
-                                case IllegalNewAttributeActionOption::ACTION_IGNORE_VALUE:
-                                    break;
-
-                                case IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE:
-                                case IllegalNewAttributeActionOption::ACTION_SKIP_BATCH_VALUE:
-                                    throw new IllegalNewAttributeOptionException(__("Attempted to add new attribute value '$value'."));
-                            }
-
-                            return;
-                        }
-                    }
-                }
-
-                $value = implode(',', $optionIds);
             }
 
-            /** @var int[] $storeIds */
-            $storeIds = isset($product['store'])
-                ? $this->_storeWebsiteHelper->getStoreIdsForProduct($product, $attributeScope)
-                : [0];
+            $value = implode(',', $optionIds);
+        }
 
-            // TODO: Add handling for deleting from ALL stores when not singleStore.
-            if ($this->_dbHelper->isSingleStore()) {
-                // Delete from all but 0
-                $this->deleteProductAttributeValueExclude($productId, 0, $attributeInfo);
-            }
+        /** @var int[] $storeIds */
+        $storeIds = isset($product['store'])
+            ? $this->storeWebsiteHelper->getStoreIdsForProduct($product, $attributeScope)
+            : [0];
 
-            foreach ($storeIds as $storeId) {
-                $this->upsertProductAttributeValue($attributeId, $storeId, $productId, $value, $attributeBackendType);
-            }
+        // TODO: Add handling for deleting from ALL stores when not singleStore.
+        if ($this->db->isSingleStore()) {
+            // Delete from all but 0
+            $this->deleteProductAttributeValueExclude($productId, 0, $attributeInfo);
+        }
+
+        foreach ($storeIds as $storeId) {
+            $this->upsertProductAttributeValue($attributeId, $storeId, $productId, $value, $attributeBackendType);
         }
     }
 
@@ -615,13 +642,13 @@ class Attribute
             'attributeType' => $attributeType
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $attributeType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $attributeType);
         $query = "SELECT COUNT(*) as 'count'
                   FROM `$table`
                   WHERE `attribute_id`=? AND `store_id`=? AND `{$this->getProductIdColumn()}`=?";
         $binds = [$attributeId, $storeId, $productId];
 
-        return ((int)$this->_dbHelper->selectOne($query, $binds, 'count')) > 0;
+        return ((int)$this->db->selectOne($query, $binds, 'count')) > 0;
     }
 
     /**
@@ -635,20 +662,25 @@ class Attribute
      *
      * @return void
      */
-    private function insertProductAttributeValue(int $attributeId, int $storeId, int $productId, $value, string $attributeType)
-    {
+    private function insertProductAttributeValue(
+        int $attributeId,
+        int $storeId,
+        int $productId,
+        mixed $value,
+        string $attributeType
+    ) {
         $this->log('insertProductAttributeValue()', [
-            'attribute_id'   => $attributeId,
-            'store_id'       => $storeId,
-            'product_id'     => $productId,
-            'value'          => $value,
-            'attribute_type' => $attributeType]);
+            'attributeId'   => $attributeId,
+            'storeId'       => $storeId,
+            'productId'     => $productId,
+            'value'         => $value,
+            'attributeType' => $attributeType]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $attributeType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $attributeType);
         $query = "INSERT INTO `$table` (`attribute_id`,`store_id`,`{$this->getProductIdColumn()}`,`value`) VALUES (?,?,?,?)";
         $binds = [$attributeId, $storeId, $productId, $value];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -662,8 +694,13 @@ class Attribute
      *
      * @return void
      */
-    private function updateProductAttributeValue(int $productId, int $storeId, int $attributeId, string $attributeType, $value)
-    {
+    private function updateProductAttributeValue(
+        int $productId,
+        int $storeId,
+        int $attributeId,
+        string $attributeType,
+        mixed $value
+    ) {
         $this->log('updateProductAttributeValue()', [
             'productId'     => $productId,
             'storeId'       => $storeId,
@@ -672,11 +709,11 @@ class Attribute
             'value'         => $value
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $attributeType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $attributeType);
         $query = "UPDATE `$table` SET `value`=? WHERE `attribute_id`=? AND `store_id`=? AND `{$this->getProductIdColumn()}`=?";
         $binds = [$value, $attributeId, $storeId, $productId];
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     /**
@@ -710,7 +747,7 @@ class Attribute
      */
     private function isValidAttributeType(string $attributeType)
     {
-        return in_array($attributeType, $this->_validAttributeTypes);
+        return in_array($attributeType, $this->validAttributeTypes);
     }
 
     /**
@@ -722,7 +759,7 @@ class Attribute
      */
     private function isImageAttribute(string $attributeCode)
     {
-        return in_array($attributeCode, $this->_imageAttributes);
+        return in_array($attributeCode, $this->imageAttributes);
     }
 
     /**
@@ -736,11 +773,11 @@ class Attribute
     {
         $this->log('getTopSortOrderEavAttributeOption()', ['attribute_id' => $attributeId]);
 
-        $table = $this->_dbHelper->getTableName('eav_attribute_option');
+        $table = $this->db->getTableName('eav_attribute_option');
         $query = "SELECT MAX(`sort_order`) as 'sort_order' FROM `$table` WHERE `attribute_id`=?";
         $binds = [$attributeId];
 
-        return $this->_dbHelper->selectOne($query, $binds, 'sort_order');
+        return $this->db->selectOne($query, $binds, 'sort_order');
     }
 
     /**
@@ -751,16 +788,16 @@ class Attribute
      *
      * @return int|null
      */
-    private function getAttributeOptionId(string $attributeCode, $attributeOptionValue)
+    private function getAttributeOptionId(string $attributeCode, mixed $attributeOptionValue)
     {
         $this->log('getAttributeOptionId()', [
             'attribute_code' => $attributeCode,
             'value'          => $attributeOptionValue
         ]);
 
-        $eavAttribute            = $this->_dbHelper->getTableName('eav_attribute');
-        $eavAttributeOption      = $this->_dbHelper->getTableName('eav_attribute_option');
-        $eavAttributeOptionValue = $this->_dbHelper->getTableName('eav_attribute_option_value');
+        $eavAttribute            = $this->db->getTableName('eav_attribute');
+        $eavAttributeOption      = $this->db->getTableName('eav_attribute_option');
+        $eavAttributeOptionValue = $this->db->getTableName('eav_attribute_option_value');
 
         $query = "SELECT
                     `$eavAttribute`.`attribute_code`,
@@ -780,32 +817,38 @@ class Attribute
                     `$eavAttribute`.`attribute_code`=? AND `$eavAttributeOptionValue`.`value`=?";
         $binds = [$attributeCode, $attributeOptionValue];
 
-        return (int)$this->_dbHelper->selectOne($query, $binds, 'option_id');
+        return (int)$this->db->selectOne($query, $binds, 'option_id');
     }
 
+    /**
+     * @param string $attributeCode
+     * @param string $value
+     *
+     * @return mixed|null
+     */
     private function getAttributeSourceOptionId(string $attributeCode, string $value)
     {
-        //$this->log('getAttributeSourceOptionId()', ['attributeCode' => $attributeCode, 'value' => $value]);
-
-        if ($attribute = $this->getAttribute($attributeCode)) {
-            if ($attribute->usesSource()) {
-                return $this->getOptionId($attribute, $value);
-            } else {
-                $this->log('getAttributeSourceOptionId()', [
-                    'attributeCode' => $attributeCode,
-                    'value'         => $value,
-                    'error'         => 'Attribute does not use source model.'
-                ]);
-            }
-        } else {
+        /** @var \Magento\Eav\Model\Entity\Attribute\AbstractAttribute $attribute */
+        $attribute = $this->getAttribute($attributeCode);
+        if (!$attribute) {
             $this->log('getAttributeSourceOptionId()', [
                 'attributeCode' => $attributeCode,
                 'value'         => $value,
                 'error'         => 'getAttribute() failed for attributeCode'
             ]);
+            return null;
         }
 
-        return null;
+        if (!$attribute->usesSource()) {
+            $this->log('getAttributeSourceOptionId()', [
+                'attributeCode' => $attributeCode,
+                'value'         => $value,
+                'error'         => 'Attribute does not use source model.'
+            ]);
+            return null;
+        }
+
+        return $this->getOptionId($attribute, $value);
     }
 
     /**
@@ -884,7 +927,7 @@ class Attribute
     private function getAttribute(string $attributeCode)
     {
         try {
-            return $this->_eavConfig->getAttribute(Product::ENTITY, $attributeCode);
+            return $this->eavConfig->getAttribute(Product::ENTITY, $attributeCode);
         } catch (LocalizedException $e) {
             $this->log('getAttribute()', ['attribute' => $attributeCode, 'error' => $e->getMessage()]);
         }
@@ -914,11 +957,11 @@ class Attribute
             $sortOrder = 0;
         }
 
-        $table = $this->_dbHelper->getTableName('eav_attribute_option');
+        $table = $this->db->getTableName('eav_attribute_option');
         $query = "INSERT INTO `$table` (`attribute_id`, `sort_order`) VALUES (?,?)";
         $binds = [$attributeId, $sortOrder];
 
-        return $this->_dbHelper->insert($query, $binds);
+        return $this->db->insert($query, $binds);
     }
 
     /**
@@ -930,19 +973,22 @@ class Attribute
      *
      * @return void
      */
-    private function addAttributeOptionValueRecord(int $optionId, $value, int $storeId = 0)
-    {
+    private function addAttributeOptionValueRecord(
+        int $optionId,
+        mixed $value,
+        int $storeId = 0
+    ) {
         $this->log('addAttributeOptionValueRecord()', [
             'storeId'  => $storeId,
             'optionId' => $optionId,
             'value'    => $value,
         ]);
 
-        $table = $this->_dbHelper->getTableName('eav_attribute_option_value');
+        $table = $this->db->getTableName('eav_attribute_option_value');
         $query = "INSERT INTO `$table` (`option_id`, `store_id`, `value`) VALUES (?,?,?)";
         $binds = [$optionId, $storeId, $value];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -966,11 +1012,11 @@ class Attribute
         $attributeId = $attributeInfo[AttributeInterface::ATTRIBUTE_ID];
         $backendType = $attributeInfo[AttributeInterface::BACKEND_TYPE];
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $backendType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $backendType);
         $query = "DELETE FROM `$table` WHERE `attribute_id` = ? AND `store_id` = ? AND `{$this->getProductIdColumn()}` = ?";
         $binds = [$attributeId, $storeId, $productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -994,11 +1040,11 @@ class Attribute
         $attributeId = $attributeInfo[AttributeInterface::ATTRIBUTE_ID];
         $backendType = $attributeInfo[AttributeInterface::BACKEND_TYPE];
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_' . $backendType);
+        $table = $this->db->getTableName('catalog_product_entity_' . $backendType);
         $query = "DELETE FROM `$table` WHERE `attribute_id` = ? AND `store_id` <> ? AND `{$this->getProductIdColumn()}` = ?";
         $binds = [$attributeId, $storeId, $productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -1009,6 +1055,6 @@ class Attribute
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('AttributeHelper - ' . $message, $extra);
+        $this->logger->info('AttributeHelper - ' . $message, $extra);
     }
 }

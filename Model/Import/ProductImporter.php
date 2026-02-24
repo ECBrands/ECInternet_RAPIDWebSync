@@ -5,155 +5,181 @@
  */
 declare(strict_types=1);
 
-namespace ECInternet\RAPIDWebSync\Helper;
+namespace ECInternet\RAPIDWebSync\Model\Import;
 
+use DateInterval;
+use DateTime;
+use ECInternet\RAPIDWebSync\Helper\Attribute;
+use ECInternet\RAPIDWebSync\Helper\Category;
+use ECInternet\RAPIDWebSync\Helper\Configurable;
+use ECInternet\RAPIDWebSync\Helper\Image;
+use ECInternet\RAPIDWebSync\Helper\Link;
+use ECInternet\RAPIDWebSync\Helper\Rewrite;
+use ECInternet\RAPIDWebSync\Helper\StoreWebsite;
+use ECInternet\RAPIDWebSync\Helper\TierPrice;
+use ECInternet\RAPIDWebSync\Model\Config;
+use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Processor\Inventory;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
+use Exception;
 use Magento\Framework\Exception\IntegrationException;
 use Psr\Log\LoggerInterface;
-use DateTime;
-use DateInterval;
-use Exception;
 
-/**
- * Import Helper
- */
-class Import
+class ProductImporter
 {
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $_helper;
-
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Attribute
      */
-    private $_attributeHelper;
+    private $attributeHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Category
      */
-    private $_categoryHelper;
+    private $categoryHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Configurable
      */
-    private $_configurableHelper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
+    private $configurableHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Image
      */
-    private $_imageHelper;
+    private $imageHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Link
      */
-    private $_linkHelper;
+    private $linkHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Rewrite
      */
-    private $_rewriteHelper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Stock
-     */
-    private $_stockHelper;
+    private $rewriteHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
-    private $_storeWebsiteHelper;
+    private $storeWebsiteHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\TierPrice
      */
-    private $_tierPriceHelper;
+    private $tierPriceHelper;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Processor\Inventory
+     */
+    private $inventoryProcessor;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * @var \Psr\Log\LoggerInterface
      */
-    private $_logger;
+    private $logger;
 
     /**
      * Array for holding sku-entity_id records
      *
      * @var array
      */
-    private $_skuEntityIdArray = [];
+    private $skuEntityIdArray = [];
 
     /**
      * Array for holding sku-row_id records
      *
      * @var array
      */
-    private $_skuRowIdArray = [];
+    private $skuRowIdArray = [];
 
     /**
      * @var bool
      */
-    private $_refreshEntityIdArray = true;
+    private $refreshEntityIdArray = true;
 
     /**
      * @var bool
      */
-    private $_refreshRowIdArray = true;
+    private $refreshRowIdArray = true;
 
     /**
      * @var string
      */
-    private $_sku;
+    private $sku;
 
     /**
      * @var int
      */
-    private $_productId;
+    private $productId;
 
     /**
      * Import constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Attribute    $attributeHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Category     $categoryHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Configurable $configurableHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Image        $imageHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Link         $linkHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Rewrite      $rewriteHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Stock        $stockHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\TierPrice    $tierPriceHelper
-     * @param \Psr\Log\LoggerInterface                     $logger
+     * @param \ECInternet\RAPIDWebSync\Helper\Attribute          $attributeHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Category           $categoryHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Configurable       $configurableHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Image              $imageHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Link               $linkHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\Rewrite            $rewriteHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\TierPrice          $tierPriceHelper
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Processor\Inventory       $inventoryProcessor
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
+     * @param \Psr\Log\LoggerInterface                           $logger
      */
     public function __construct(
-        Data $helper,
         Attribute $attributeHelper,
         Category $categoryHelper,
         Configurable $configurableHelper,
-        Db $dbHelper,
         Image $imageHelper,
         Link $linkHelper,
         Rewrite $rewriteHelper,
-        Stock $stockHelper,
         StoreWebsite $storeWebsiteHelper,
         TierPrice $tierPriceHelper,
-        LoggerInterface $logger
+        Config $config,
+        Db $db,
+        Environment $magentoEnvironment,
+        Inventory $inventoryProcessor,
+        ArrayString  $arrayStringUtils,
+        \Psr\Log\LoggerInterface $logger,
     ) {
-        $this->_helper             = $helper;
-        $this->_attributeHelper    = $attributeHelper;
-        $this->_categoryHelper     = $categoryHelper;
-        $this->_configurableHelper = $configurableHelper;
-        $this->_dbHelper           = $dbHelper;
-        $this->_imageHelper        = $imageHelper;
-        $this->_linkHelper         = $linkHelper;
-        $this->_rewriteHelper      = $rewriteHelper;
-        $this->_stockHelper        = $stockHelper;
-        $this->_storeWebsiteHelper = $storeWebsiteHelper;
-        $this->_tierPriceHelper    = $tierPriceHelper;
-        $this->_logger             = $logger;
+        $this->attributeHelper    = $attributeHelper;
+        $this->categoryHelper     = $categoryHelper;
+        $this->configurableHelper = $configurableHelper;
+        $this->imageHelper        = $imageHelper;
+        $this->linkHelper         = $linkHelper;
+        $this->rewriteHelper      = $rewriteHelper;
+        $this->storeWebsiteHelper = $storeWebsiteHelper;
+        $this->tierPriceHelper    = $tierPriceHelper;
+        $this->config             = $config;
+        $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->inventoryProcessor = $inventoryProcessor;
+        $this->arrayStringUtils   = $arrayStringUtils;
+        $this->logger             = $logger;
 
         // Build SKU array so we can test for existing / new products
         $this->initSkuArray();
@@ -170,7 +196,7 @@ class Import
      */
     public function getSalesOrderColumns()
     {
-        return $this->_dbHelper->getTableColumns('sales_order');
+        return $this->db->getTableColumns('sales_order');
     }
 
     /**
@@ -193,14 +219,12 @@ class Import
     {
         $this->log('addProduct()');
 
-        $startTime = microtime(true);
-
         // Cache product sku
-        $this->_sku = (string)$product['sku'];
+        $this->sku = (string)$product['sku'];
 
         // Start building response
         $response        = [];
-        $response['sku'] = $this->_sku;
+        $response['sku'] = $this->sku;
         $response['new'] = true;
 
         // Check required fields
@@ -218,17 +242,18 @@ class Import
 
         // Prep product for insert
         $this->setNewProductDefaults($product);
+        $this->handleTaxClassId($product);
 
         // Creates master product record and adds to local dictionary of Sku/product_id
-        $this->createProductRecord($product, $this->_sku);
+        $this->createProductRecord($product, $this->sku);
 
         // Extract newly added entity_id (or row_id) and set it in response and private variable.
-        $entityId         = $this->_helper->isVersionCommunity() ? (int)$this->_skuEntityIdArray[$this->_sku] : (int)$this->_skuRowIdArray[$this->_sku];
-        $response['id']   = $entityId;
-        $this->_productId = $entityId;
+        $entityId        = $this->magentoEnvironment->isVersionCommunity() ? (int)$this->skuEntityIdArray[$this->sku] : (int)$this->skuRowIdArray[$this->sku];
+        $response['id']  = $entityId;
+        $this->productId = $entityId;
 
         /** @var int[] $websiteIds */
-        $websiteIds = $this->_storeWebsiteHelper->getWebsiteIdsForProduct($product);
+        $websiteIds = $this->storeWebsiteHelper->getWebsiteIdsForProduct($product);
         foreach ($websiteIds as $websiteId) {
             $this->addWebsiteRecord($entityId, $websiteId);
         }
@@ -246,9 +271,6 @@ class Import
             $response['trace'] = $trace;
         }
 
-        $endTime = microtime(true);
-        $this->_helper->logSpeedTest($startTime, $endTime, 'addProduct()');
-
         // Repopulate our array
         //$this->initSkuArray();
 
@@ -264,22 +286,20 @@ class Import
     {
         $this->log('updateProduct()');
 
-        $startTime = microtime(true);
-
         // Cache product sku and id
-        $this->_sku       = (string)$product['sku'];
-        $this->_productId = $this->getProductIdForSku($this->_sku);
+        $this->sku       = (string)$product['sku'];
+        $this->productId = $this->getProductIdForSku($this->sku);
 
         // Start building response
         $response        = [];
-        $response['sku'] = $this->_sku;
-        $response['id']  = $this->_productId;
+        $response['sku'] = $this->sku;
+        $response['id']  = $this->productId;
         $response['new'] = false;
 
         try {
             $this->processProduct($product, false);
-            $this->updateWebsites($this->_productId, $product);
-            $this->touchProduct($this->_productId);
+            $this->updateWebsites($this->productId, $product);
+            $this->touchProduct($this->productId);
         } catch (Exception $e) {
             $message = $e->getMessage();
             $trace   = $e->getTraceAsString();
@@ -290,9 +310,6 @@ class Import
             $response['error'] = $message;
             $response['trace'] = $trace;
         }
-
-        $endTime = microtime(true);
-        $this->_helper->logSpeedTest($startTime, $endTime, 'updateProduct()');
 
         return $response;
     }
@@ -308,7 +325,7 @@ class Import
     {
         //$this->log('getProductIdForSku()', ['sku' => $sku]);
 
-        if ($this->_helper->isVersionCommunity()) {
+        if ($this->magentoEnvironment->isVersionCommunity()) {
             // Handle for COMMUNITY
             if ($entityIdArray = $this->getEntityIdSkuArray()) {
                 if (isset($entityIdArray[$sku])) {
@@ -346,27 +363,27 @@ class Import
      */
     protected function initSkuArray()
     {
-        $table = $this->_dbHelper->getTableName('catalog_product_entity');
+        $table = $this->db->getTableName('catalog_product_entity');
         $query = "SELECT DISTINCT `entity_id`, `sku` FROM `$table`";
 
         // If we're COMMUNITY we also want to pick up row_id
-        if (!$this->_helper->isVersionCommunity()) {
+        if (!$this->magentoEnvironment->isVersionCommunity()) {
             $query = "SELECT `row_id`, `entity_id`, `sku` FROM `$table`";
         }
 
-        $results = $this->_dbHelper->select($query);
+        $results = $this->db->select($query);
         foreach ($results as $result) {
             // Always add rows to entity_id / sku array
-            $this->_skuEntityIdArray[$result['sku']] = (int)$result['entity_id'];
+            $this->skuEntityIdArray[$result['sku']] = (int)$result['entity_id'];
 
             // Only add rows to row_id / sku array if we're in COMMUNITY
-            if (!$this->_helper->isVersionCommunity()) {
-                $this->_skuRowIdArray[$result['sku']] = (int)$result['row_id'];
+            if (!$this->magentoEnvironment->isVersionCommunity()) {
+                $this->skuRowIdArray[$result['sku']] = (int)$result['row_id'];
             }
         }
 
-        $this->_refreshEntityIdArray = false;
-        $this->_refreshRowIdArray    = false;
+        $this->refreshEntityIdArray = false;
+        $this->refreshRowIdArray    = false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -385,34 +402,31 @@ class Import
     {
         $this->log('processProduct()', ['isNew' => $isNew ? 'TRUE' : 'FALSE']);
 
-        // HANDLE 'URL_KEY'
+        // 'URL_KEY'
         $this->handleUrlKey($productData, $isNew);
 
-        // HANDLE 'TAX_CLASS_ID'
-        $this->handleTaxClassId($productData, $isNew);
-
-        // HANDLE ATTRIBUTES
+        // ATTRIBUTES
         $this->processAttributes($productData);
 
-        // HANDLE STOCK ITEM COLUMNS
-        $this->processStockItem($productData);
+        // INVENTORY
+        $this->runInventoryProcessor($productData);
 
-        // HANDLE TIER PRICES
+        // TIER PRICES
         $this->processTierPrices($productData);
 
-        // HANDLE CONFIGURABLE COLUMNS
+        // CONFIGURABLE COLUMNS
         $this->processConfigurableProduct($productData, $isNew);
 
-        // HANDLE IMAGE COLUMNS
+        // IMAGE COLUMNS
         $this->processImageFields($productData);
 
-        // HANDLE CATEGORY COLUMN
+        // CATEGORY COLUMN
         $this->processCategories($productData);
 
-        // HANDLE RELATED_PRODUCTS COLUMN
+        // RELATED_PRODUCTS COLUMN
         $this->processLinks($productData);
 
-        // HANDLE URL_REWRITE'S (this should be last)
+        // URL_REWRITE'S (this should be last)
         $this->processRewrites($productData);
     }
 
@@ -426,22 +440,22 @@ class Import
     {
         $this->log('processAttributes()');
 
-        $this->_attributeHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->attributeHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     /**
-     * Process StockItem fields of product
+     * Run InventoryProcessor on product data
      *
-     * @param array $product
+     * @param array $productData
      *
      * @return void
      * @throws Exception
      */
-    private function processStockItem(array $product)
+    private function runInventoryProcessor(array $productData)
     {
-        $this->log('processStockItem()');
+        $this->log('runInventoryProcessor()');
 
-        $this->_stockHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->inventoryProcessor->processProductData($productData, $this->sku, $this->productId);
     }
 
     /**
@@ -456,7 +470,7 @@ class Import
     {
         $this->log('processTierPrices()');
 
-        $this->_tierPriceHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->tierPriceHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     /**
@@ -472,7 +486,7 @@ class Import
     {
         $this->log('processConfigurableProduct()');
 
-        $this->_configurableHelper->processProduct($product, $this->_sku, $this->_productId, $isNew);
+        $this->configurableHelper->processProduct($product, $this->sku, $this->productId, $isNew);
     }
 
     /**
@@ -488,7 +502,7 @@ class Import
         $this->log('processImageFields()');
 
         try {
-            $this->_imageHelper->processProduct($product, $this->_sku, $this->_productId);
+            $this->imageHelper->processProduct($product, $this->sku, $this->productId);
         } catch (Exception $e) {
             $this->log("Error found in ImageProcessor: [{$e->getMessage()}].");
             throw new IntegrationException(__("Error found in ImageProcessor: [{$e->getMessage()}]."));
@@ -507,7 +521,7 @@ class Import
     {
         $this->log('processCategories()');
 
-        $this->_categoryHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->categoryHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     /**
@@ -522,7 +536,7 @@ class Import
     {
         $this->log('processLinks()');
 
-        $this->_linkHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->linkHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     /**
@@ -535,7 +549,7 @@ class Import
     {
         $this->log('processRewrites()');
 
-        $this->_rewriteHelper->processProduct($product, $this->_sku, $this->_productId);
+        $this->rewriteHelper->processProduct($product, $this->sku, $this->productId);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -551,7 +565,7 @@ class Import
      */
     private function getProductColumns()
     {
-        return $this->_dbHelper->getTableColumns('catalog_product_entity');
+        return $this->db->getTableColumns('catalog_product_entity');
     }
 
     /**
@@ -561,14 +575,14 @@ class Import
      */
     private function getEntityIdSkuArray()
     {
-        if ($this->_skuEntityIdArray === null ||
-            count($this->_skuEntityIdArray) === 0 ||
-            $this->_refreshEntityIdArray === true
+        if ($this->skuEntityIdArray === null ||
+            count($this->skuEntityIdArray) === 0 ||
+            $this->refreshEntityIdArray === true
         ) {
             $this->initSkuArray();
         }
 
-        return $this->_skuEntityIdArray;
+        return $this->skuEntityIdArray;
     }
 
     /**
@@ -578,14 +592,14 @@ class Import
      */
     private function getRowIdSkuArray()
     {
-        if ($this->_skuRowIdArray == null ||
-            count($this->_skuRowIdArray) == 0 ||
-            $this->_refreshRowIdArray === true
+        if ($this->skuRowIdArray === null ||
+            count($this->skuRowIdArray) === 0 ||
+            $this->refreshRowIdArray === true
         ) {
             $this->initSkuArray();
         }
 
-        return $this->_skuRowIdArray;
+        return $this->skuRowIdArray;
     }
 
     /**
@@ -599,14 +613,14 @@ class Import
     {
         $this->log('setNewProductDefaults()');
 
-        $product['attribute_set_id'] = $product['attribute_set_id'] ?? $this->_helper->getDefaultAttributeSetId();
-        $product['type_id']          = $product['type_id']          ?? $this->_helper->getDefaultType();
-        $product['status']           = $product['status']           ?? $this->_helper->getDefaultStatus();
-        $product['visibility']       = $product['visibility']       ?? $this->_helper->getDefaultVisibility();
+        $product['attribute_set_id'] = $product['attribute_set_id'] ?? $this->config->getDefaultAttributeSetId();
+        $product['type_id']          = $product['type_id']          ?? $this->config->getDefaultType();
+        $product['status']           = $product['status']           ?? $this->config->getDefaultStatus();
+        $product['visibility']       = $product['visibility']       ?? $this->config->getDefaultVisibility();
         // TODO: Add tax_class default value
         $product['weight']           = $product['weight']           ?? 1;
 
-        $newsToDateSetting = $this->_helper->getDefaultNewsToDateDays();
+        $newsToDateSetting = $this->config->getDefaultNewsToDateDays();
         if (is_numeric($newsToDateSetting) && $newsToDateSetting > 0) {
             if (empty($product['news_from_date']) && empty($product['news_to_date'])) {
                 $dateTime = new DateTime();
@@ -644,10 +658,10 @@ class Import
         $catalogProductEntityId = null;
 
         try {
-            $this->_dbHelper->beginTransaction();
+            $this->db->beginTransaction();
 
             // Insert into sequence_product if we're in EE
-            if (!$this->_helper->isVersionCommunity()) {
+            if (!$this->magentoEnvironment->isVersionCommunity()) {
                 // Create a `sequence_product` record which will be like CE's entity_id
                 $sequenceProductId = $this->createSequenceProductRecord();
 
@@ -658,37 +672,37 @@ class Import
             // Filter out non-`catalog_product_entity` columns
             /** @var string[] $filteredColumns */
             $filteredColumns = array_intersect(array_keys($productData), $productColumns);
-            $values          = $this->_helper->filterKeyValueArray($productData, $filteredColumns);
+            $values          = $this->arrayStringUtils->filterKeyValueArray($productData, $filteredColumns);
 
             // Extract column and value strings
             $columnString = implode(',', $filteredColumns);
-            $valuesString = $this->_helper->arrayToCommaSeparatedValueString($filteredColumns);
+            $valuesString = $this->arrayStringUtils->arrayToCommaSeparatedValueString($filteredColumns);
 
             // Let's write this baby
-            $table = $this->_dbHelper->getTableName('catalog_product_entity');
+            $table = $this->db->getTableName('catalog_product_entity');
             $query = "INSERT INTO `$table` ($columnString) VALUES ($valuesString)";
             $binds = array_values($values);
 
             // For CE this will be new `entity_id`
             // For EE this will be new `row_id`
-            $catalogProductEntityId = $this->_dbHelper->insert($query, $binds);
+            $catalogProductEntityId = $this->db->insert($query, $binds);
 
-            $this->_dbHelper->commit();
+            $this->db->commit();
         } catch (Exception $e) {
-            $this->_dbHelper->rollBack();
+            $this->db->rollBack();
             throw $e;
         }
 
-        if (!$this->_helper->isVersionCommunity()) {
+        if (!$this->magentoEnvironment->isVersionCommunity()) {
             // ENTERPRISE
             // $skuRowIdArray[$sku] gets newly created `row_id` value.
             // $skuEntityIdArray[$sku] gets `sequence_product` Id, which was originally used as 'entity_id' when creating product record.
-            $this->_skuRowIdArray[$sku]    = $catalogProductEntityId;
-            $this->_skuEntityIdArray[$sku] = $sequenceProductId;
+            $this->skuRowIdArray[$sku]    = $catalogProductEntityId;
+            $this->skuEntityIdArray[$sku] = $sequenceProductId;
         } else {
             // COMMUNITY
             // $skuEntityIdArray[$sku] gets newly created 'entity_id' value.
-            $this->_skuEntityIdArray[$sku] = $catalogProductEntityId;
+            $this->skuEntityIdArray[$sku] = $catalogProductEntityId;
         }
     }
 
@@ -701,10 +715,10 @@ class Import
     {
         $this->log('createSequenceProductRecord()');
 
-        $table = $this->_dbHelper->getTableName('sequence_product');
+        $table = $this->db->getTableName('sequence_product');
         $query = "INSERT INTO `$table` VALUES (null)";
 
-        return $this->_dbHelper->insert($query);
+        return $this->db->insert($query);
     }
 
     /**
@@ -721,16 +735,16 @@ class Import
             $attributeSetId = $product['attribute_set_id'];
             if (is_numeric($attributeSetId)) {
                 return (int)$attributeSetId;
-            } else {
-                // Check for existing AttributeSet with this name
-                if ($existingAttributeSetId = $this->_attributeHelper->getAttributeSetId((string)$attributeSetId)) {
-                    return $existingAttributeSetId;
-                }
+            }
+
+            // If not numeric, check for existing AttributeSet with this name
+            if ($existingAttributeSetId = $this->attributeHelper->getAttributeSetId((string)$attributeSetId)) {
+                return $existingAttributeSetId;
             }
         }
 
         // Else return the default
-        return $this->_helper->getDefaultAttributeSetId();
+        return $this->config->getDefaultAttributeSetId();
     }
 
     /**
@@ -743,11 +757,11 @@ class Import
     {
         $this->log('addWebsiteRecord()', ['productId' => $productId, 'websiteId' => $websiteId]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_website');
+        $table = $this->db->getTableName('catalog_product_website');
         $query = "INSERT IGNORE INTO `$table` (`product_id`, `website_id`) VALUES (?,?)";
         $binds = [$productId, $websiteId];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -761,6 +775,7 @@ class Import
      *
      * If 'url_key' is not set AND it's a new product, we need a value.
      * Try to pull it from name.  If that fails, fall back to sku.
+     * This can probably be driven by Magento settings.
      *
      * @param array $productData
      * @param bool  $isNew
@@ -772,14 +787,14 @@ class Import
         if (!isset($productData['url_key'])) {
             if ($isNew) {
                 if (isset($productData['name'])) {
-                    $productData['url_key'] = $this->_helper->slug($productData['name']);
+                    $productData['url_key'] = $this->arrayStringUtils->slugify($productData['name']);
                 } else {
-                    $productData['url_key'] = $this->_helper->slug($productData['sku']);
+                    $productData['url_key'] = $this->arrayStringUtils->slugify($productData['sku']);
                 }
             }
         } else {
             // If 'url_key' is set, slug it and be done with it.
-            $productData['url_key'] = $this->_helper->slug($productData['url_key']);
+            $productData['url_key'] = $this->arrayStringUtils->slugify($productData['url_key']);
         }
     }
 
@@ -789,13 +804,12 @@ class Import
      * Should only run in product insert.
      *
      * @param array $productData
-     * @param bool  $isNew
      *
      * @return void
      */
-    private function handleTaxClassId(array &$productData, bool $isNew)
+    private function handleTaxClassId(array &$productData)
     {
-        if ($isNew && !isset($productData['tax_class_id'])) {
+        if (!isset($productData['tax_class_id'])) {
             $productData['tax_class_id'] = 'Taxable Goods';
         }
     }
@@ -814,7 +828,7 @@ class Import
             $websites = (string)$product['websites'];
 
             /** @var int[] $websiteIds */
-            $websiteIds = $this->_storeWebsiteHelper->getWebsiteIdsFromWebsitesColumn($websites);
+            $websiteIds = $this->storeWebsiteHelper->getWebsiteIdsFromWebsitesColumn($websites);
 
             // Clear existing -- SHOULD THIS BE REPLACE OR ADDITION?
             $this->clearProductWebsites($productId);
@@ -837,11 +851,11 @@ class Import
     {
         $this->log('clearProductWebsites()', ['productId' => $productId]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_website');
+        $table = $this->db->getTableName('catalog_product_website');
         $query = "DELETE FROM `$table` WHERE `product_id` = ?";
         $binds = [$productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -857,11 +871,11 @@ class Import
 
         $timestamp = date('Y-m-d H:i:s');
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity');
+        $table = $this->db->getTableName('catalog_product_entity');
         $query = "UPDATE `$table` SET `updated_at`=? WHERE `entity_id`=?";
         $binds = [$timestamp, $productId];
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     /**
@@ -872,6 +886,6 @@ class Import
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info("ImportHelper - $message", $extra);
+        $this->logger->info("ImportHelper - $message", $extra);
     }
 }

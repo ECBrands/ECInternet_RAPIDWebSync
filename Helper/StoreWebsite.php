@@ -10,29 +10,39 @@ namespace ECInternet\RAPIDWebSync\Helper;
 use Magento\Framework\Exception\InputException;
 use Magento\Store\Model\Data\StoreConfig;
 use Magento\Store\Model\Store;
+use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
  * Store / Website helper
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class StoreWebsite
 {
-    public const ADMIN_STORECODE = 'admin';
+    private const ADMIN_STORECODE = 'admin';
 
-    public const FIELD_STORE     = 'store';
+    private const FIELD_STORE     = 'store';
 
-    public const FIELD_WEBSITES  = 'websites';
+    private const FIELD_WEBSITES  = 'websites';
+
+    public const SCOPE_STORE      = 0;
+
+    public const SCOPE_GLOBAL     = 1;
+
+    public const SCOPE_WEBSITE    = 2;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $helper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
+     * @var \ECInternet\RAPIDWebSync\Model\Db
      */
     private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * @var \Psr\Log\LoggerInterface
@@ -50,18 +60,20 @@ class StoreWebsite
     private $websites = [];
 
     /**
-     * @param \ECInternet\RAPIDWebSync\Helper\Data $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db   $db
-     * @param \Psr\Log\LoggerInterface             $logger
+     * StoreWebsite constructor.
+     *
+     * @param \ECInternet\RAPIDWebSync\Model\Db         $db
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString $arrayStringUtils
+     * @param \Psr\Log\LoggerInterface                  $logger
      */
     public function __construct(
-        Data $helper,
         Db $db,
+        ArrayString $arrayStringUtils,
         LoggerInterface $logger
     ) {
-        $this->helper = $helper;
-        $this->db     = $db;
-        $this->logger = $logger;
+        $this->db               = $db;
+        $this->arrayStringUtils = $arrayStringUtils;
+        $this->logger           = $logger;
 
         $this->initStoreArray();
         $this->initWebsiteArray();
@@ -103,18 +115,15 @@ class StoreWebsite
         }
 
         switch ($scope) {
-            // Store-View Scope
-            case 0:
+            case self::SCOPE_STORE:
                 // Gets store_ids for the values in $product['store'] (possibly "admin" if nothing passed in)
                 return $this->getStoreIdsForStoreScope((string)$product[self::FIELD_STORE]);
 
-            // Global Scope
-            case 1:
+            case self::SCOPE_GLOBAL:
                 // Gets store_id for the store with code "admin" (usually store_id = 0)
                 return $this->getStoreIdsForStoreScope(static::ADMIN_STORECODE);
 
-            // Website Scope
-            case 2:
+            case self::SCOPE_WEBSITE:
                 // Gets store_ids that share website of $product['store'] (possibly "admin" if nothing is passed in)
                 return $this->getStoreIdsForWebsiteScope((string)$product[self::FIELD_STORE]);
 
@@ -134,8 +143,8 @@ class StoreWebsite
     {
         $storeIds = [];
 
-        $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($storeCodeString);
-        $values     = $this->helper->arrayToCommaSeparatedValueString($storeCodes);
+        $storeCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($storeCodeString);
+        $values     = $this->arrayStringUtils->arrayToCommaSeparatedValueString($storeCodes);
 
         $table = $this->db->getTableName('store');
         $query = "SELECT `store_id` FROM `$table` WHERE `code` IN ($values)";
@@ -189,7 +198,7 @@ class StoreWebsite
     {
         $websiteIds = [];
 
-        $websiteCodes = $this->helper->commaSeparatedListToTrimmedArray($websitesString);
+        $websiteCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($websitesString);
         foreach ($websiteCodes as $websiteCode) {
             if ($websiteId = $this->getWebsiteIdForWebsiteCode($websiteCode)) {
                 $websiteIds[] = $websiteId;
@@ -212,8 +221,8 @@ class StoreWebsite
     {
         $storeIds = [];
 
-        $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($storeCodeString);
-        $values     = $this->helper->arrayToCommaSeparatedValueString($storeCodes);
+        $storeCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($storeCodeString);
+        $values     = $this->arrayStringUtils->arrayToCommaSeparatedValueString($storeCodes);
 
         $table = $this->db->getTableName('store');
         $query = "SELECT `b`.`store_id` FROM `$table` as a
@@ -273,22 +282,24 @@ class StoreWebsite
         $key = (string)$product[self::FIELD_STORE];
 
         if (trim($key) !== static::ADMIN_STORECODE) {
-            $storeCodes = $this->helper->commaSeparatedListToTrimmedArray($key);
+            $storeCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($key);
             foreach ($storeCodes as $storeCode) {
                 $websiteIds[] = $this->getWebsiteIdsForStoreCode($storeCode);
             }
-        } else {
-            foreach ($this->stores as $storeId => $storeData) {
-                if ($storeId != 0) {
-                    if (isset($storeData[StoreConfig::KEY_WEBSITE_ID])) {
-                        $websiteId = $storeData[StoreConfig::KEY_WEBSITE_ID];
-                        if (is_numeric($websiteId)) {
-                            // Cast as int
-                            $websiteId = (int)$websiteId;
 
-                            if (!in_array($websiteId, $websiteIds)) {
-                                $websiteIds[] = $websiteId;
-                            }
+            return $websiteIds;
+        }
+
+        foreach ($this->stores as $storeId => $storeData) {
+            if ($storeId != 0) {
+                if (isset($storeData[StoreConfig::KEY_WEBSITE_ID])) {
+                    $websiteId = $storeData[StoreConfig::KEY_WEBSITE_ID];
+                    if (is_numeric($websiteId)) {
+                        // Cast as int
+                        $websiteId = (int)$websiteId;
+
+                        if (!in_array($websiteId, $websiteIds)) {
+                            $websiteIds[] = $websiteId;
                         }
                     }
                 }
@@ -358,7 +369,7 @@ class StoreWebsite
 
         $results = $this->db->select($query);
         foreach ($results as $result) {
-            if (isset($result[StoreConfig::KEY_CODE]) && isset($result[StoreConfig::KEY_WEBSITE_ID])) {
+            if (isset($result[StoreConfig::KEY_CODE], $result[StoreConfig::KEY_WEBSITE_ID])) {
                 $code      = $result[StoreConfig::KEY_CODE];
                 $websiteId = $result[StoreConfig::KEY_WEBSITE_ID];
 

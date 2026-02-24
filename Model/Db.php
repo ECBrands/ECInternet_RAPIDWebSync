@@ -5,52 +5,47 @@
  */
 declare(strict_types=1);
 
-namespace ECInternet\RAPIDWebSync\Helper;
+namespace ECInternet\RAPIDWebSync\Model;
 
-use Magento\Framework\App\Helper\AbstractHelper;
-use Magento\Framework\App\Helper\Context;
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Select;
 use Psr\Log\LoggerInterface;
+use Zend_Db_Statement_Exception;
+use Zend_Db_Statement_Interface;
 
 /**
- * Db Helper
+ * @SuppressWarnings(PHPMD.ShortClassName)
  */
-class Db extends AbstractHelper
+class Db
 {
-    private const CONFIG_PATH_ENABLE_QUERY_LOGGING = 'rapid_web_sync/general/query_logging';
-
-    /**
-     * @var \Psr\Log\LoggerInterface
-     */
-    protected $_logger;
-
     /**
      * @var \Magento\Framework\App\ResourceConnection
      */
-    private $_resourceConnection;
+    private $resourceConnection;
 
     /**
      * @var \Magento\Framework\DB\Adapter\AdapterInterface
      */
-    private $_connection;
+    private $connection;
+
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
+    private $logger;
 
     /**
      * Db constructor.
      *
-     * @param \Magento\Framework\App\Helper\Context     $context
      * @param \Magento\Framework\App\ResourceConnection $resourceConnection
      * @param \Psr\Log\LoggerInterface                  $logger
      */
     public function __construct(
-        Context $context,
         ResourceConnection $resourceConnection,
-        LoggerInterface $logger
+        \Psr\Log\LoggerInterface $logger
     ) {
-        parent::__construct($context);
-
-        $this->_resourceConnection = $resourceConnection;
-        $this->_connection         = $resourceConnection->getConnection();
-        $this->_logger             = $logger;
+        $this->resourceConnection = $resourceConnection;
+        $this->connection         = $resourceConnection->getConnection();
+        $this->logger             = $logger;
     }
 
     /**
@@ -58,7 +53,7 @@ class Db extends AbstractHelper
      */
     public function beginTransaction()
     {
-        $this->_connection->beginTransaction();
+        $this->connection->beginTransaction();
     }
 
     /**
@@ -66,7 +61,7 @@ class Db extends AbstractHelper
      */
     public function commit()
     {
-        $this->_connection->commit();
+        $this->connection->commit();
     }
 
     /**
@@ -74,7 +69,7 @@ class Db extends AbstractHelper
      */
     public function rollBack()
     {
-        $this->_connection->rollBack();
+        $this->connection->rollBack();
     }
 
     /**
@@ -86,7 +81,7 @@ class Db extends AbstractHelper
      */
     public function getTableName(string $tableName)
     {
-        return $this->_resourceConnection->getTableName($tableName);
+        return $this->resourceConnection->getTableName($tableName);
     }
 
     /**
@@ -98,7 +93,7 @@ class Db extends AbstractHelper
      */
     public function doesTableExist(string $tableName)
     {
-        return $this->_connection->isTableExists($tableName);
+        return $this->connection->isTableExists($tableName);
     }
 
     /**
@@ -133,9 +128,7 @@ class Db extends AbstractHelper
      */
     public function select(string $query, array $params = [])
     {
-        $this->logQuery($query, $params);
-
-        return $this->_connection->fetchAll($query, $params);
+        return $this->connection->fetchAll($query, $params);
     }
 
     /**
@@ -149,8 +142,6 @@ class Db extends AbstractHelper
      */
     public function selectOne(string $query, array $params, string $column)
     {
-        $this->logQuery($query, $params);
-
         // fetchRow() returns the first row
         if ($record = $this->fetchRow($query, $params)) {
             if (isset($record[$column])) {
@@ -163,9 +154,7 @@ class Db extends AbstractHelper
 
     public function fetchRow(string $query, array $params = [])
     {
-        $this->logQuery($query, $params);
-
-        return $this->_connection->fetchRow($query, $params);
+        return $this->connection->fetchRow($query, $params);
     }
 
     /**
@@ -173,11 +162,9 @@ class Db extends AbstractHelper
      *
      * @return array
      */
-    public function fetchCol(\Magento\Framework\DB\Select $query)
+    public function fetchCol(Select $query)
     {
-        $this->logQuery($query->assemble());
-
-        return $this->_connection->fetchCol($query);
+        return $this->connection->fetchCol($query);
     }
 
     /**
@@ -190,12 +177,10 @@ class Db extends AbstractHelper
      */
     public function insert(string $query, array $params = [])
     {
-        $this->logQuery($query, $params);
-
         // Send INSERT query
-        $this->_connection->query($query, $params);
+        $this->connection->query($query, $params);
 
-        return (int)$this->_connection->lastInsertId();
+        return (int)$this->connection->lastInsertId();
     }
 
     /**
@@ -204,18 +189,16 @@ class Db extends AbstractHelper
      * @param string $query
      * @param array  $params
      *
-     * @return \Zend_Db_Statement_Interface|null
+     * @return Zend_Db_Statement_Interface|null
      */
     public function update(string $query, array $params = [])
     {
-        $this->logQuery($query, $params);
-
         try {
-            $result = $this->_connection->query($query, $params);
+            $result = $this->connection->query($query, $params);
             $this->log('update()', ['rowCount' => $result->rowCount()]);
 
             return $result;
-        } catch (\Zend_Db_Statement_Exception $e) {
+        } catch (Zend_Db_Statement_Exception $e) {
             $this->log('update()', ['error' => $e->getMessage()]);
         }
 
@@ -228,13 +211,11 @@ class Db extends AbstractHelper
      * @param string $query
      * @param array  $params
      *
-     * @return \Zend_Db_Statement_Interface
+     * @return Zend_Db_Statement_Interface
      */
     public function delete(string $query, array $params = [])
     {
-        $this->logQuery($query, $params);
-
-        return $this->_connection->query($query, $params);
+        return $this->connection->query($query, $params);
     }
 
     /**
@@ -242,13 +223,11 @@ class Db extends AbstractHelper
      *
      * @param string $query
      *
-     * @return \Zend_Db_Statement_Interface
+     * @return Zend_Db_Statement_Interface
      */
     public function execute(string $query)
     {
-        $this->logQuery($query);
-
-        return $this->_connection->query($query);
+        return $this->connection->query($query);
     }
 
     /**
@@ -321,40 +300,12 @@ class Db extends AbstractHelper
         $tableName = $this->getTableName('catalog_product_link');
 
         /** @var \Magento\Framework\DB\Select $select */
-        $select = $this->_connection->select()
+        $select = $this->connection->select()
             ->from($tableName, ['linked_product_id'])
             ->where('product_id = ?', $productId)
             ->where('link_type_id = ?', $linkTypeId);
 
         return $this->fetchCol($select);
-    }
-
-    /**
-     * Write the SQL query to log
-     *
-     * @param string $query
-     * @param array  $binds
-     *
-     * @return void
-     */
-    private function logQuery(string $query, array $binds = [])
-    {
-        if ($this->isQueryLoggingEnabled()) {
-            $this->log('--- SQL QUERY ---');
-            $this->log('| QUERY', [$query]);
-            $this->log('| BINDS', [$binds]);
-            $this->log('--- SQL QUERY ---' . PHP_EOL);
-        }
-    }
-
-    /**
-     * Should we write to query log?
-     *
-     * @return bool
-     */
-    private function isQueryLoggingEnabled()
-    {
-        return $this->scopeConfig->isSetFlag(self::CONFIG_PATH_ENABLE_QUERY_LOGGING);
     }
 
     /**
@@ -365,6 +316,6 @@ class Db extends AbstractHelper
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('DbHelper - ' . $message, $extra);
+        $this->logger->info('Model/Db - ' . $message, $extra);
     }
 }

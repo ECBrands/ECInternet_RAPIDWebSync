@@ -11,6 +11,8 @@ use Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection;
 
 /**
  * Log Collection
+ *
+ * @SuppressWarnings(PHPMD.CamelCasePropertyName)
  */
 class Collection extends AbstractCollection
 {
@@ -24,6 +26,9 @@ class Collection extends AbstractCollection
      * Define resource model
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+     * @noinspection MagicMethodsValidityInspection
      */
     protected function _construct()
     {

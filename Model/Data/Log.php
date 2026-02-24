@@ -5,14 +5,17 @@
  */
 declare(strict_types=1);
 
-namespace ECInternet\RAPIDWebSync\Model;
+namespace ECInternet\RAPIDWebSync\Model\Data;
 
 use Magento\Framework\DataObject\IdentityInterface;
 use Magento\Framework\Model\AbstractModel;
 use ECInternet\RAPIDWebSync\Api\Data\LogInterface;
+use ECInternet\RAPIDWebSync\Model\ResourceModel;
 
 /**
  * Log Model
+ *
+ * @SuppressWarnings(PHPMD.CamelCasePropertyName)
  */
 class Log extends AbstractModel implements IdentityInterface, LogInterface
 {
@@ -26,6 +29,9 @@ class Log extends AbstractModel implements IdentityInterface, LogInterface
 
     /**
      * @inheritDoc
+     *
+     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+     * @noinspection MagicMethodsValidityInspection
      */
     protected function _construct()
     {

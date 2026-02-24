@@ -8,97 +8,118 @@ declare(strict_types=1);
 namespace ECInternet\RAPIDWebSync\Helper;
 
 use Magento\Framework\Exception\InputException;
-use Psr\Log\LoggerInterface;
+use ECInternet\RAPIDWebSync\Model\Config;
+use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
+use Psr\Log\LoggerInterface;
 
 /**
  * Category Helper
  *
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class Category
 {
-    public const KEY                       = 'categories';
+    private const KEY                       = 'categories';
 
-    public const DEFAULT_ROOT_PATH_KEY     = '%RP:base%';
+    private const DEFAULT_ROOT_PATH_KEY     = '%RP:base%';
 
-    public const CATEGORY_MODE_ADDITION    = 1;
+    private const CATEGORY_MODE_ADDITION    = 1;
 
-    public const CATEGORY_MODE_REPLACEMENT = 2;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $_helper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
+    private const CATEGORY_MODE_REPLACEMENT = 2;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\Rewrite
      */
-    private $_rewriteHelper;
+    private $rewriteHelper;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
-    private $_storeWebsiteHelper;
+    private $storeWebsiteHelper;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Magento\Environment
+     */
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * @var \Psr\Log\LoggerInterface
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var string
      */
-    private $_productIdColumn;
+    private $productIdColumn;
 
     /**
      * @var array
      */
-    private $_categoryInfos = [];
+    private $categoryInfos = [];
 
     /**
      * @var array
      */
-    private $_categoryRootStores = [];
+    private $categoryRootStores = [];
 
     /**
      * @var array
      */
-    private $_categoryRootWebsites = [];
+    private $categoryRootWebsites = [];
 
     /**
      * Tricky escaped separator that matches slugging separator
      *
      * @var string
      */
-    private $_escapedTreeSeparator = '---';
+    private $escapedTreeSeparator = '---';
 
     /**
      * Category constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\Rewrite      $rewriteHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \Psr\Log\LoggerInterface                     $logger
+     * @param \ECInternet\RAPIDWebSync\Helper\Rewrite            $rewriteHelper
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
+     * @param \Psr\Log\LoggerInterface                           $logger
      */
     public function __construct(
-        Data $helper,
-        Db $dbHelper,
         Rewrite $rewriteHelper,
         StoreWebsite $storeWebsiteHelper,
-        LoggerInterface $logger
+        Config $config,
+        Db $db,
+        Environment $magentoEnvironment,
+        ArrayString $arrayStringUtils,
+        LoggerInterface $logger,
     ) {
-        $this->_helper             = $helper;
-        $this->_dbHelper           = $dbHelper;
-        $this->_rewriteHelper      = $rewriteHelper;
-        $this->_storeWebsiteHelper = $storeWebsiteHelper;
-        $this->_logger             = $logger;
+        $this->rewriteHelper      = $rewriteHelper;
+        $this->storeWebsiteHelper = $storeWebsiteHelper;
+        $this->logger             = $logger;
+        $this->config             = $config;
+        $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->arrayStringUtils   = $arrayStringUtils;
 
         $this->initializeCategories();
         $this->initializeCategoryInfo();
@@ -161,12 +182,9 @@ class Category
                 // Assign to category roots
                 if (!$this->assignProductsToLastCategoryOnly()) {
                     foreach ($storeRootPaths as $base => $ra) {
-                        // Find root length
-                        $baseLength = strlen($base);
-
                         // For each part of category list to include upwards, match up to local root
                         foreach ($explodedProductCategoriesStrings as $categoryItem) {
-                            if (substr($categoryItem, 0, $baseLength) == $base) {
+                            if (str_starts_with($categoryItem, $base)) {
                                 $rootPath = $ra['rootarr'];
                                 array_shift($rootPath);
                                 $categoryIds = array_merge($categoryIds, $rootPath);
@@ -192,11 +210,11 @@ class Category
      */
     private function getCategoryData()
     {
-        if ($this->_categoryInfos === null) {
+        if ($this->categoryInfos === null) {
             $this->initializeCategoryInfo();
         }
 
-        return $this->_categoryInfos;
+        return $this->categoryInfos;
     }
 
     /**
@@ -206,11 +224,11 @@ class Category
      */
     private function getProductIdColumn()
     {
-        if ($this->_productIdColumn === null) {
-            $this->_productIdColumn = $this->_helper->getProductIdColumn();
+        if ($this->productIdColumn === null) {
+            $this->productIdColumn = $this->magentoEnvironment->getProductIdColumn();
         }
 
-        return $this->_productIdColumn;
+        return $this->productIdColumn;
     }
 
     /**
@@ -220,25 +238,25 @@ class Category
      */
     private function initializeCategoryInfo()
     {
-        $this->_categoryInfos = [
+        $this->categoryInfos = [
             'varchar' => [
-                'name' => [],
-                'url_key' => [],
-                'url_path' => []
+                'name'            => [],
+                'url_key'         => [],
+                'url_path'        => []
             ],
             'int' => [
-                'is_active' => [],
-                'is_anchor' => [],
+                'is_active'       => [],
+                'is_anchor'       => [],
                 'include_in_menu' => []
             ]
         ];
 
-        foreach ($this->_categoryInfos as $categoryType => $attributeList) {
+        foreach ($this->categoryInfos as $categoryType => $attributeList) {
             foreach (array_keys($attributeList) as $categoryAttribute) {
                 // Make sure it's a string
                 $categoryAttributeCode = (string)$categoryAttribute;
 
-                $this->_categoryInfos[$categoryType][$categoryAttributeCode] = $this->getCategoryAttributeInfos($categoryAttributeCode);
+                $this->categoryInfos[$categoryType][$categoryAttributeCode] = $this->getCategoryAttributeInfos($categoryAttributeCode);
             }
         }
     }
@@ -250,11 +268,11 @@ class Category
      */
     private function initializeCategories()
     {
-        $categoryEntity        = $this->_dbHelper->getTableName('catalog_category_entity');
-        $categoryEntityVarchar = $this->_dbHelper->getTableName('catalog_category_entity_varchar');
-        $storeGroup            = $this->_dbHelper->getTableName('store_group');
-        $store                 = $this->_dbHelper->getTableName('store');
-        $eavAttribute          = $this->_dbHelper->getTableName('eav_attribute');
+        $categoryEntity        = $this->db->getTableName('catalog_category_entity');
+        $categoryEntityVarchar = $this->db->getTableName('catalog_category_entity_varchar');
+        $storeGroup            = $this->db->getTableName('store_group');
+        $store                 = $this->db->getTableName('store');
+        $eavAttribute          = $this->db->getTableName('eav_attribute');
 
         $query = "SELECT
                     `$store`.`store_id`,
@@ -281,7 +299,7 @@ class Category
                     `$categoryEntityVarchar`.`attribute_id` = `$eavAttribute`.`attribute_id`
                     AND `$categoryEntityVarchar`.`{$this->getProductIdColumn()}` = `$categoryEntity`.`{$this->getProductIdColumn()}`";
 
-        $result = $this->_dbHelper->select($query);
+        $result = $this->db->select($query);
 
         foreach ($result as $row) {
             $rootCategoryInfo = [
@@ -293,8 +311,8 @@ class Category
             $storeId = $row['store_id'];
             $websiteId = $row['website_id'];
 
-            $this->_categoryRootStores[$storeId] = $rootCategoryInfo;
-            $this->_categoryRootWebsites[$websiteId][] = $storeId;
+            $this->categoryRootStores[$storeId]       = $rootCategoryInfo;
+            $this->categoryRootWebsites[$websiteId][] = $storeId;
         }
     }
 
@@ -307,11 +325,11 @@ class Category
      */
     private function getCategoryAttributeInfos(string $attributeCode)
     {
-        $table = $this->_dbHelper->getTableName('eav_attribute');
+        $table = $this->db->getTableName('eav_attribute');
         $query = "SELECT * FROM `$table` WHERE `entity_type_id` = 3 AND `attribute_code` = ?";
         $binds = [$attributeCode];
 
-        $result = $this->_dbHelper->select($query, $binds);
+        $result = $this->db->select($query, $binds);
 
         return $result[0];
     }
@@ -325,12 +343,12 @@ class Category
      * @param array $parentPath         A list of parent categories from root to immediate parent
      * @param array $categoryAttributes Category attributes from getCatAttributeInfos()
      *
-     * @return int                      ID of existing category
+     * @return mixed|null               ID of existing category
      */
-    private function getExistingCategory($parentPath, $categoryAttributes)
+    private function getExistingCategory(array $parentPath, array $categoryAttributes)
     {
-        $categoryEntity        = $this->_dbHelper->getTableName('catalog_category_entity');
-        $categoryEntityVarchar = $this->_dbHelper->getTableName('catalog_category_entity_varchar');
+        $categoryEntity        = $this->db->getTableName('catalog_category_entity');
+        $categoryEntityVarchar = $this->db->getTableName('catalog_category_entity_varchar');
 
         $parentId = array_pop($parentPath);
         $categoryData = $this->getCategoryData();
@@ -354,7 +372,7 @@ class Category
             $parentId
         ];
 
-        return $this->_dbHelper->selectOne($query, $binds, 'entity_id');
+        return $this->db->selectOne($query, $binds, 'entity_id');
     }
 
     /**
@@ -373,7 +391,7 @@ class Category
 
         // Clean category name
         $categoryAttributes['name'] = str_replace(
-            $this->_escapedTreeSeparator,
+            $this->escapedTreeSeparator,
             $this->getCategoryTreeSeparator(),
             $categoryAttributes['name']
         );
@@ -381,16 +399,15 @@ class Category
         // Check for existing category, and return its ID if found
         // If we return then WE DON'T UPDATE CATEGORY ATTRIBUTES
         $categoryId = $this->getExistingCategory($parentPaths, $categoryAttributes);
-        if ($categoryId !== null) {
-            $this->log('getCategoryId() - Existing ID found:', [$categoryId]);
-
-            return $categoryId;
-        } else {
-            $this->log('getCategoryId() - Existing ID not found.');
+        if (is_numeric($categoryId)) {
+            $this->log('getCategoryId() - Found existing categoryId', ['categoryId' => $categoryId]);
+            return (int)$categoryId;
         }
 
+        $this->log('getCategoryId() - Existing ID not found.');
+
         // Otherwise, get new category values from parent & siblings
-        $categoryEntity = $this->_dbHelper->getTableName('catalog_category_entity');
+        $categoryEntity = $this->db->getTableName('catalog_category_entity');
         $path = implode('/', $parentPaths);
 
         if ($parentId = array_pop($parentPaths)) {
@@ -414,7 +431,7 @@ class Category
                     `c2`.`parent_id`";
                 $binds = [$parentId];
 
-                $info = $this->_dbHelper->select($query, $binds);
+                $info = $this->db->select($query, $binds);
                 $info = $info[0];
 
                 // Insert new record into "catalog_category_entity"
@@ -429,7 +446,7 @@ class Category
 
                 if ($categoryId !== null) {
                     // Set category path with inserted category id
-                    $this->updateCategoryRecordPath($path, $categoryId);
+                    $this->updateCategoryRecordPath($categoryId, $path);
 
                     // Set category attributes
                     $this->log('getCategoryId() - Setting Category Attributes...');
@@ -460,7 +477,7 @@ class Category
      *
      * @return array                            A list of category info
      */
-    private function extractCategoryAttributes(&$categoryDefinitionString)
+    private function extractCategoryAttributes(string &$categoryDefinitionString)
     {
         $this->log('extractCategoryAttributes()', ['categoryDefinitionString' => $categoryDefinitionString]);
 
@@ -477,7 +494,7 @@ class Category
             $lastPart          = array_pop($parts);
 
             // Check for storename::[defaultname] syntax
-            if ($categoryName !== $lastPart && stripos($lastPart, '[') === 0) {
+            if ($categoryName !== $lastPart && str_starts_with($lastPart, '[')) {
                 $categoryName = trim($lastPart, '[]');
             } else {
                 // If not translation add $last back to array
@@ -493,14 +510,14 @@ class Category
                 'is_active'       => $partsCount > 1 ? $parts[1] : 1,
                 'is_anchor'       => $partsCount > 2 ? $parts[2] : 1,
                 'include_in_menu' => $partsCount > 3 ? $parts[3] : 1,
-                'url_key'         => $this->_helper->slug($categoryName),
-                'url_path'        => $this->_helper->slug(implode('/', $categoryNames), true),
+                'url_key'         => $this->arrayStringUtils->slugify($categoryName),
+                'url_path'        => $this->arrayStringUtils->slugify(implode('/', $categoryNames), true),
             ];
 
             if ($categoryName !== $storeCategoryName) {
                 $attributes['translated_name']     = $storeCategoryName;
-                $attributes['translated_url_key']  = $this->_helper->slug($storeCategoryName);
-                $attributes['translated_url_path'] = $this->_helper->slug(implode('/', $storeCategoryNames), true);
+                $attributes['translated_url_key']  = $this->arrayStringUtils->slugify($storeCategoryName);
+                $attributes['translated_url_path'] = $this->arrayStringUtils->slugify(implode('/', $storeCategoryNames), true);
             }
 
             $categoryAttributeList[] = $attributes;
@@ -534,6 +551,7 @@ class Category
                 break;
             }
         }
+
         $this->log("getCategoryIdsFromDefinition() - Using StoreRootPath [$storeRootPath]");
 
         // Remove explicit root ([Default Root Path]| vs [Default Root Path] |)
@@ -545,14 +563,13 @@ class Category
 
         // Cleaning parts: trim, remove empty
         $pCategoryParts = [];
-        $explodedCategoryStringPartsCount = count($explodedCategoryStringParts);
-        for ($i = 0; $i < $explodedCategoryStringPartsCount; $i++) {
-            $trimmedExplodedCategoryPartsString = trim($explodedCategoryStringParts[$i]);
-            if ($trimmedExplodedCategoryPartsString != '') {
+        foreach ($explodedCategoryStringParts as $explodedCategoryStringPart) {
+            if ($trimmedExplodedCategoryPartsString = trim($explodedCategoryStringPart)) {
                 $pCategoryParts[] = $trimmedExplodedCategoryPartsString;
             }
         }
 
+        /** @var string[] $categoryParts */
         $categoryParts     = [];
         $categoryPositions = [];
 
@@ -579,7 +596,7 @@ class Category
             }
 
             $translationOption = array_values(array_filter($a, function ($option) {
-                return stripos($option, '[') === 0;
+                return str_starts_with($option, '[');
             }));
 
             $translationOptionPart = count($translationOption)
@@ -613,7 +630,7 @@ class Category
 
         // Iterate on missing levels
         for ($i = 0; $i < $categoryPartsCount; $i++) {
-            if ($categoryParts[$i] == '') {
+            if ($categoryParts[$i] === '') {
                 continue;
             }
 
@@ -659,23 +676,25 @@ class Category
         $rootPaths['__error__'] = [];
 
         /** @var int[] $storeIds */
-        $storeIds = $this->_storeWebsiteHelper->getStoreIdsForProduct($product, 2);
+        $storeIds = $this->storeWebsiteHelper->getStoreIdsForProduct($product, StoreWebsite::SCOPE_WEBSITE);
         $this->log('getStoreRootPaths()', ['storeIds' => $storeIds]);
 
         // Remove 'admin' from StoreIds (no category root in it)
-        if ($storeIds[0] == 0) {
+        if ($storeIds[0] === 0) {
             array_shift($storeIds);
         }
 
         // If only 'admin' store is set, use website store roots
-        if (count($storeIds) == 0) {
-            $websiteIds = $this->_storeWebsiteHelper->getWebsiteIdsForProduct($product);
-            foreach ($websiteIds as $websiteId) {
-                $websiteStoreIds = $this->_categoryRootWebsites[$websiteId];
+        if (count($storeIds) === 0) {
+            $websiteStoreIds = [];
 
-                // Add website-level StoreIds to array of store-level StoreIds
-                $storeIds = array_merge($storeIds, $websiteStoreIds);
+            $websiteIds = $this->storeWebsiteHelper->getWebsiteIdsForProduct($product);
+            foreach ($websiteIds as $websiteId) {
+                $websiteStoreIds[] = $this->categoryRootWebsites[$websiteId];
             }
+
+            // Add website-level StoreIds to array of store-level StoreIds
+            $storeIds = array_merge($storeIds, $websiteStoreIds);
         }
 
         // Check for explicit root assignment (wrapping root in brackets)
@@ -687,7 +706,7 @@ class Category
             for ($i = 0; $i < $firstMatchCount; $i++) {
                 // Test store matching
                 foreach ($storeIds as $storeId) {
-                    $storeRootPath = $this->_categoryRootStores[$storeId];
+                    $storeRootPath = $this->categoryRootStores[$storeId];
                     $storeRootName = $matches[1][$i];
                     $foundMatch    = trim($storeRootName) === (string)$storeRootPath['name'];
 
@@ -717,8 +736,8 @@ class Category
             }
         }
 
-        $storeIds = array_keys($this->_categoryRootStores);
-        $storeRootPath = $this->_categoryRootStores[$storeIds[0]];
+        $storeIds = array_keys($this->categoryRootStores);
+        $storeRootPath = $this->categoryRootStores[$storeIds[0]];
         $rootPaths[self::DEFAULT_ROOT_PATH_KEY] = [
             'path'    => $storeRootPath['path'],
             'rootarr' => $storeRootPath['rootarr']
@@ -751,17 +770,13 @@ class Category
             $categoryIds = $this->getCategoryIds($categoryData);
 
             // Now get the diff
-            $diff      = array_diff(array_keys($categoryData), $categoryIds);
-            $diffCount = count($diff);
+            $diffs     = array_diff(array_keys($categoryData), $categoryIds);
+            $diffCount = count($diffs);
 
-            // If there are some... warning:
+            // Remove invalid category entries
             if ($diffCount > 0) {
-                $this->log("WARNING: DiffCount: [$diffCount]");
-                $this->log("WARNING: Invalid category_id's found for sku {$product['sku']}: " . implode(',', $diff));
-
-                // Remove invalid category entries
-                for ($i = 0; $i < $diffCount; $i++) {
-                    unset($categoryData[$diff[$i]]);
+                foreach ($diffs as $diff) {
+                    unset($categoryData[$diff]);
                 }
             }
 
@@ -777,7 +792,7 @@ class Category
                     }
 
                     // Add category rewrites
-                    $this->_rewriteHelper->upsertCategoryRewrite((int)$categoryId);
+                    $this->rewriteHelper->upsertCategoryRewrite((int)$categoryId);
                 }
             }
         }
@@ -794,8 +809,8 @@ class Category
     {
         $this->log('resetCategories()', ['productId' => $productId]);
 
-        $categoryTable        = $this->_dbHelper->getTableName('catalog_category_entity');
-        $categoryProductTable = $this->_dbHelper->getTableName('catalog_category_product');
+        $categoryTable        = $this->db->getTableName('catalog_category_entity');
+        $categoryProductTable = $this->db->getTableName('catalog_category_product');
 
         // Handle assignment reset
         $query = "DELETE `$categoryProductTable`.*
@@ -804,7 +819,7 @@ class Category
                   WHERE `product_id` = ?";
         $binds = [$productId];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -821,52 +836,52 @@ class Category
         $productCategoryIds = (string)$product['category_ids'];
         $this->log('buildCategoryData()', ['category_ids' => $productCategoryIds]);
 
-        if ($productCategoryIds != '') {
-            $categoryData = [];
+        if ($productCategoryIds === '') {
+            return null;
+        }
 
-            /** @var string[] $categoryIds */
-            $categoryIds = $this->_helper->commaSeparatedListToTrimmedArray($productCategoryIds);
-            $this->log('buildCategoryData()', ['categoryIdsCount' => count($categoryIds)]);
+        $categoryData = [];
 
-            // Find positive category assignments
-            foreach ($categoryIds as $categoryDefinition) {
-                if ($categoryDefinition) {
-                    if ($a = explode('::', $categoryDefinition)) {
-                        if (isset($a[0])) {
-                            $categoryId = $a[0];
-                            if (is_numeric($categoryId)) {
-                                // Cast to int
-                                $categoryId = (int)$categoryId;
+        /** @var string[] $categoryIds */
+        $categoryIds = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($productCategoryIds);
+        $this->log('buildCategoryData()', ['categoryIdsCount' => count($categoryIds)]);
 
-                                /** @var int $categoryId */
-                                if (!in_array($categoryId, [1, 2])) {
-                                    if (count($a) > 1) {
-                                        if (is_numeric($a[1])) {
-                                            $categoryPosition = (int)$a[1];
-                                        } else {
-                                            $categoryPosition = 0;
-                                        }
+        // Find positive category assignments
+        foreach ($categoryIds as $categoryDefinition) {
+            if ($categoryDefinition) {
+                if ($a = explode('::', $categoryDefinition)) {
+                    if (isset($a[0])) {
+                        $categoryId = $a[0];
+                        if (is_numeric($categoryId)) {
+                            // Cast to int
+                            $categoryId = (int)$categoryId;
+
+                            /** @var int $categoryId */
+                            if (!in_array($categoryId, [1, 2])) {
+                                if (count($a) > 1) {
+                                    if (is_numeric($a[1])) {
+                                        $categoryPosition = (int)$a[1];
                                     } else {
                                         $categoryPosition = 0;
                                     }
-
-                                    $this->log('buildCategoryData()', [
-                                        'categoryId'       => $categoryId,
-                                        'categoryPosition' => $categoryPosition
-                                    ]);
-
-                                    $categoryData[$categoryId] = $categoryPosition;
+                                } else {
+                                    $categoryPosition = 0;
                                 }
+
+                                $this->log('buildCategoryData()', [
+                                    'categoryId'       => $categoryId,
+                                    'categoryPosition' => $categoryPosition
+                                ]);
+
+                                $categoryData[$categoryId] = $categoryPosition;
                             }
                         }
                     }
                 }
             }
-
-            return $categoryData;
         }
 
-        return null;
+        return $categoryData;
     }
 
     /**
@@ -881,13 +896,13 @@ class Category
         $categoryIds = [];
 
         $keys   = array_keys($categoryData);
-        $values = $this->_helper->arrayToCommaSeparatedValueString($keys);
+        $values = $this->arrayStringUtils->arrayToCommaSeparatedValueString($keys);
 
-        $table = $this->_dbHelper->getTableName('catalog_category_entity');
+        $table = $this->db->getTableName('catalog_category_entity');
         $query = "SELECT `{$this->getProductIdColumn()}` FROM `$table` WHERE `{$this->getProductIdColumn()}` IN ($values)";
         $binds = $keys;
 
-        $results = $this->_dbHelper->select($query, $binds);
+        $results = $this->db->select($query, $binds);
         foreach ($results as $result) {
             if (isset($result[$this->getProductIdColumn()])) {
                 $categoryId = $result[$this->getProductIdColumn()];
@@ -918,8 +933,14 @@ class Category
      *
      * @return int|null
      */
-    private function addCategoryRecord(int $attributeSetId, int $parentId, int $position, int $level, string $path = '', int $childrenCount = 0)
-    {
+    private function addCategoryRecord(
+        int $attributeSetId,
+        int $parentId,
+        int $position,
+        int $level,
+        string $path = '',
+        int $childrenCount = 0
+    ) {
         $this->log('addCategoryRecord()', [
             'attributeSetId' => $attributeSetId,
             'parentId'       => $parentId,
@@ -929,10 +950,10 @@ class Category
             'childrenCount'  => $childrenCount
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_category_entity');
+        $table = $this->db->getTableName('catalog_category_entity');
 
         try {
-            $this->_dbHelper->beginTransaction();
+            $this->db->beginTransaction();
 
             // insert new category
             if ($this->getProductIdColumn() !== 'entity_id') {
@@ -945,14 +966,14 @@ class Category
                 $binds = [$attributeSetId, $parentId, $position, $level, $path, $childrenCount];
             }
 
-            $result = $this->_dbHelper->insert($query, $binds);
+            $result = $this->db->insert($query, $binds);
 
-            $this->_dbHelper->commit();
+            $this->db->commit();
 
             return $result;
         } catch (Exception $e) {
             $this->log("addCategoryRecord() - Rolling back due to EXCEPTION: {$e->getMessage()}");
-            $this->_dbHelper->rollBack();
+            $this->db->rollBack();
         }
 
         return null;
@@ -967,29 +988,29 @@ class Category
     {
         $this->log('addSequenceCategoryRecord()');
 
-        $table = $this->_dbHelper->getTableName('sequence_catalog_category');
+        $table = $this->db->getTableName('sequence_catalog_category');
         $query = "INSERT INTO `$table` VALUES (null)";
 
-        return $this->_dbHelper->insert($query);
+        return $this->db->insert($query);
     }
 
     /**
      * Set category path with inserted category id
      *
-     * @param string $path
      * @param int    $categoryId
+     * @param string $path
      *
      * @return void
      */
-    private function updateCategoryRecordPath(string $path, int $categoryId)
+    private function updateCategoryRecordPath(int $categoryId, string $path)
     {
-        $this->log('updateCategoryRecordPath()', ['path' => $path, 'categoryId' => $categoryId]);
+        $this->log('updateCategoryRecordPath()', ['categoryId' => $categoryId, 'path' => $path]);
 
-        $table = $this->_dbHelper->getTableName('catalog_category_entity');
+        $table = $this->db->getTableName('catalog_category_entity');
         $query = "UPDATE `$table` SET `path` = ?, `created_at`= NOW(), `updated_at` = NOW() WHERE `{$this->getProductIdColumn()}`=?";
         $binds = ["$path/$categoryId",$categoryId];
 
-        $this->_dbHelper->update($query, $binds);
+        $this->db->update($query, $binds);
     }
 
     /**
@@ -1009,14 +1030,14 @@ class Category
             'position'   => $position
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_category_product');
+        $table = $this->db->getTableName('catalog_category_product');
 
         $query = "INSERT INTO `$table` (`category_id`, `product_id`, `position`)
                   VALUES (?,?,?)
                   ON DUPLICATE KEY UPDATE position=VALUES(`position`)";
         $binds = [$categoryId, $productId, $position];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     /**
@@ -1030,16 +1051,21 @@ class Category
      *
      * @return void
      */
-    private function upsertCategoryAttributeValue(int $attributeId, int $storeId, int $categoryId, $value, $attributeType)
-    {
+    private function upsertCategoryAttributeValue(
+        int $attributeId,
+        int $storeId,
+        int $categoryId,
+        mixed $value,
+        string $attributeType
+    ) {
         $this->log('upsertCategoryAttributeValue()', [$attributeId, $storeId, $categoryId, $value, $attributeType]);
 
-        $table = $this->_dbHelper->getTableName('catalog_category_entity_' . $attributeType);
+        $table = $this->db->getTableName('catalog_category_entity_' . $attributeType);
         $query = "INSERT INTO `$table` (`attribute_id`,`store_id`,`{$this->getProductIdColumn()}`,`value`) VALUES (?,?,?,?)
                   ON DUPLICATE KEY UPDATE value=VALUES(`value`)";
         $binds = [$attributeId, $storeId, $categoryId, $value];
 
-        $this->_dbHelper->insert($query, $binds);
+        $this->db->insert($query, $binds);
     }
 
     //////////////////////////////////////////////////
@@ -1053,7 +1079,7 @@ class Category
      */
     private function assignProductsToLastCategoryOnly()
     {
-        return $this->_helper->getCategoryAssignToLastCategoryOnly();
+        return $this->config->getCategoryAssignToLastCategoryOnly();
     }
 
     /**
@@ -1061,7 +1087,7 @@ class Category
      */
     private function shouldResetCategories()
     {
-        return $this->_helper->getCategoryMode() == self::CATEGORY_MODE_REPLACEMENT;
+        return $this->config->getCategoryMode() == self::CATEGORY_MODE_REPLACEMENT;
     }
 
     /**
@@ -1069,7 +1095,7 @@ class Category
      */
     private function getCategoryTreeSeparator()
     {
-        return $this->_helper->getCategoryTreeDelimeter();
+        return $this->config->getCategoryTreeDelimeter();
     }
 
     /**
@@ -1077,7 +1103,7 @@ class Category
      */
     private function getCategoryStringDelimeter()
     {
-        return $this->_helper->getCategoryDelimeter();
+        return $this->config->getCategoryDelimeter();
     }
 
     /**
@@ -1090,6 +1116,6 @@ class Category
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('Helper/Category - ' . $message, $extra);
+        $this->logger->info('Helper/Category - ' . $message, $extra);
     }
 }

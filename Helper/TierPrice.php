@@ -7,65 +7,87 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Helper;
 
-use Psr\Log\LoggerInterface;
+use Magento\Customer\Api\Data\GroupInterface;
+use ECInternet\RAPIDWebSync\Model\Config;
+use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
 use Exception;
+use Psr\Log\LoggerInterface;
 
 /**
  * TierPrice Helper
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class TierPrice
 {
-    public const PRICE_SCOPE_GLOBAL       = 0;
+    private const ALL_GROUPS_KEY           = 'ALL_GROUPS';
 
-    public const TIER_PRICES_KEY          = 'tier_prices';
+    private const PRICE_SCOPE_GLOBAL       = 0;
 
-    public const PRICING_MODE_ADDITION    = 1;
+    private const TIER_PRICES_KEY          = 'tier_prices';
 
-    public const PRICING_MODE_REPLACEMENT = 2;
+    private const PRICING_MODE_ADDITION    = 1;
 
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Data
-     */
-    private $_helper;
-
-    /**
-     * @var \ECInternet\RAPIDWebSync\Helper\Db
-     */
-    private $_dbHelper;
+    private const PRICING_MODE_REPLACEMENT = 2;
 
     /**
      * @var \ECInternet\RAPIDWebSync\Helper\StoreWebsite
      */
-    private $_storeWebsiteHelper;
+    private $storeWebsiteHelper;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Config
+     */
+    private $config;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Model\Db
+     */
+    private $db;
+
+    private $magentoEnvironment;
+
+    /**
+     * @var \ECInternet\RAPIDWebSync\Util\ArrayString
+     */
+    private $arrayStringUtils;
 
     /**
      * @var \Psr\Log\LoggerInterface
      */
-    private $_logger;
+    private $logger;
 
     /**
      * @var string
      */
-    private $_productIdColumn;
+    private $productIdColumn;
 
     /**
      * TierPrice constructor.
      *
-     * @param \ECInternet\RAPIDWebSync\Helper\Data         $helper
-     * @param \ECInternet\RAPIDWebSync\Helper\Db           $dbHelper
-     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite $storeWebsiteHelper
-     * @param \Psr\Log\LoggerInterface                     $logger
+     * @param \ECInternet\RAPIDWebSync\Helper\StoreWebsite       $storeWebsiteHelper
+     * @param \ECInternet\RAPIDWebSync\Model\Config              $config
+     * @param \ECInternet\RAPIDWebSync\Model\Db                  $db
+     * @param \ECInternet\RAPIDWebSync\Model\Magento\Environment $magentoEnvironment
+     * @param \ECInternet\RAPIDWebSync\Util\ArrayString          $arrayStringUtils
+     * @param \Psr\Log\LoggerInterface                           $logger
      */
     public function __construct(
-        Data $helper,
-        Db $dbHelper,
         StoreWebsite $storeWebsiteHelper,
+        Config $config,
+        Db $db,
+        Environment $magentoEnvironment,
+        ArrayString $arrayStringUtils,
         LoggerInterface $logger
     ) {
-        $this->_helper             = $helper;
-        $this->_dbHelper           = $dbHelper;
-        $this->_storeWebsiteHelper = $storeWebsiteHelper;
-        $this->_logger             = $logger;
+        $this->storeWebsiteHelper = $storeWebsiteHelper;
+        $this->config             = $config;
+        $this->db                 = $db;
+        $this->magentoEnvironment = $magentoEnvironment;
+        $this->arrayStringUtils   = $arrayStringUtils;
+        $this->logger             = $logger;
     }
 
     /**
@@ -81,47 +103,62 @@ class TierPrice
         $this->log("| Sku: [$sku]");
         $this->log("| ProductId: [$productId]");
 
-        if (isset($product[self::TIER_PRICES_KEY]) && is_array($product[self::TIER_PRICES_KEY])) {
-            // Cache TierPrices
-            $productTierPrices = $product[self::TIER_PRICES_KEY];
+        if (!isset($product[self::TIER_PRICES_KEY])) {
+            $this->log('| Tier price key not found');
+            $this->log('| -- End Tier Price Processor --' . PHP_EOL);
+            return;
+        }
 
-            /** @var int[] $websiteIds */
-            $websiteIds = $this->getWebsiteIds($product);
+        if (!is_array($product[self::TIER_PRICES_KEY])) {
+            $this->log('| Tier price key is not an array');
+            $this->log('| -- End Tier Price Processor --' . PHP_EOL);
+            return;
+        }
 
-            ////////////////////////////////////////
-            // DELETE PREVIOUS DATA
-            ////////////////////////////////////////
+        // Cache TierPrices
+        $productTierPrices = $product[self::TIER_PRICES_KEY];
 
-            if ($this->shouldClearPricingRecords()) {
-                // Find CustomerGroupIds specified in data (if any)
-                $customerGroupIds = $this->aggregateCustomerGroupIds($productTierPrices);
+        /** @var int[] $websiteIds */
+        $websiteIds = $this->getWebsiteIds($product);
 
-                // If we find any, remove those records from DB
-                if (!empty($customerGroupIds)) {
-                    $this->deleteProductTierPriceRecordsForWebsiteAndGroup($productId, $websiteIds, $customerGroupIds);
-                } else {
-                    $this->deleteProductTierPriceRecordsForWebsite($productId, $websiteIds);
-                }
+        ////////////////////////////////////////
+        // DELETE PREVIOUS DATA
+        ////////////////////////////////////////
 
-                // Delete records for 'all_groups' = 1
-                $this->deleteProductTierPriceRecordsForAllGroups($productId);
+        if ($this->shouldClearPricingRecords()) {
+            // Find CustomerGroupIds specified in data (if any)
+            $customerGroupIds = $this->aggregateCustomerGroupIds($productTierPrices);
+
+            // If we find any, remove those records from DB
+            if (!empty($customerGroupIds)) {
+                $this->deleteProductTierPriceRecordsForWebsiteAndGroup($productId, $websiteIds, $customerGroupIds);
+            } else {
+                $this->deleteProductTierPriceRecordsForWebsite($productId, $websiteIds);
             }
 
-            ////////////////////////////////////////
-            /// INSERT NEW DATA
-            ////////////////////////////////////////
+            // Delete records for 'all_groups' = 1
+            $this->deleteProductTierPriceRecordsForAllGroups($productId);
+        }
 
-            // Iterate over the Product's TierPrices.  Add record for each website.
-            foreach ($productTierPrices as $productTierPrice) {
-                // Default CustomerGroupId to null which will create a record for 'all_groups'
-                $customerGroupId   = null;
-                $customerGroupCode = null;
+        ////////////////////////////////////////
+        /// INSERT NEW DATA
+        ////////////////////////////////////////
 
-                // Attempt to parse CustomerGroup from data
-                if (isset($productTierPrice['customer_group_id'])) {
-                    $customerGroupCode = (string)$productTierPrice['customer_group_id'];
-                    if ($customerGroupCode !== '') {
-                        /** @var int|null $customerGroupId */
+        // Iterate over the Product's TierPrices.  Add record for each website.
+        foreach ($productTierPrices as $productTierPrice) {
+            // Default CustomerGroupId to null which will create a record for 'all_groups'
+
+            /** @var int|null $customerGroupId */
+            $customerGroupId   = null;
+            $customerGroupCode = null;
+
+            // Attempt to parse CustomerGroup from data
+            if (isset($productTierPrice['customer_group_id'])) {
+                if ($customerGroupCode = (string)$productTierPrice['customer_group_id']) {
+                    // First check for ALL_GROUPS
+                    if ($customerGroupCode === self::ALL_GROUPS_KEY) {
+                        $customerGroupId = GroupInterface::CUST_GROUP_ALL;
+                    } else {
                         $customerGroupId = $this->getCustomerGroupId($customerGroupCode);
 
                         // Create one if we can't find existing one
@@ -130,29 +167,44 @@ class TierPrice
                         }
                     }
                 }
+            }
 
-                // Set the rest of TierPrice values
-                $allGroups = $customerGroupId === null ? 1 : 0;
-                $qty       = $productTierPrice['qty'];
-                $price     = $productTierPrice['price'];
+            // Set the rest of TierPrice values
+            if ($customerGroupId === null || $customerGroupId === GroupInterface::CUST_GROUP_ALL) {
+                $allGroups = 1;
+            } else {
+                $allGroups = 0;
+            }
 
-                // If we never found a value, set to 0 for 'all_groups'
-                if ($customerGroupId == null) {
-                    $customerGroupId = 0;
-                }
+            if (!isset($productTierPrice['qty'])) {
+                $this->log('processProduct()', ['"qty" field missing.']);
+                continue;
+            }
 
-                // We are guaranteed to have at least 1 (either list from IMan, or default of [0]
-                foreach ($websiteIds as $websiteId) {
-                    // If we don't have CustomerGroup, create on-the-fly
-                    if ($customerGroupId == null) {
-                        if ($customerGroupCode != null) {
-                            $customerGroupId = $this->createCustomerGroup($customerGroupCode);
-                        }
+            if (!isset($productTierPrice['price'])) {
+                $this->log('processProduct()', ['"price" field missing.']);
+                continue;
+            }
+
+            $qty   = (int)$productTierPrice['qty'];
+            $price = (float)$productTierPrice['price'];
+
+            // If we never found a value, set to 0 for 'all_groups'
+            if ($customerGroupId === null) {
+                $customerGroupId = 0;
+            }
+
+            // We are guaranteed to have at least 1 (either list from IMan, or default of [0])
+            foreach ($websiteIds as $websiteId) {
+                // If we don't have CustomerGroup, create on-the-fly
+                if ($customerGroupId === null) {
+                    if ($customerGroupCode !== null) {
+                        $customerGroupId = $this->createCustomerGroup($customerGroupCode);
                     }
-
-                    // One of these will be added for each record of data we want to add.
-                    $this->addIgnoreTierPriceRecord($productId, $allGroups, $customerGroupId, $qty, $price, $websiteId);
                 }
+
+                // One of these will be added for each record of data we want to add.
+                $this->addIgnoreTierPriceRecord($productId, $allGroups, $customerGroupId, $qty, $price, $websiteId);
             }
         }
 
@@ -164,11 +216,11 @@ class TierPrice
      */
     private function getProductIdColumn()
     {
-        if ($this->_productIdColumn == null) {
-            $this->_productIdColumn = $this->_helper->getProductIdColumn();
+        if ($this->productIdColumn === null) {
+            $this->productIdColumn = $this->magentoEnvironment->getProductIdColumn();
         }
 
-        return $this->_productIdColumn;
+        return $this->productIdColumn;
     }
 
     /**
@@ -176,9 +228,9 @@ class TierPrice
      *
      * @return int|null
      */
-    private function getCustomerGroupId($customerGroupCode)
+    private function getCustomerGroupId(string $customerGroupCode)
     {
-        $this->log('getCustomerGroupId', ['customerGroupCode' => $customerGroupCode]);
+        $this->log('getCustomerGroupId()', ['customerGroupCode' => $customerGroupCode]);
 
         $customerGroups = $this->getCustomerGroups();
 
@@ -197,15 +249,15 @@ class TierPrice
      *
      * @return int
      */
-    private function createCustomerGroup($groupName)
+    private function createCustomerGroup(string $groupName)
     {
         $this->log('createCustomerGroup()', ['groupName' => $groupName]);
 
-        $table = $this->_dbHelper->getTableName('customer_group');
+        $table = $this->db->getTableName('customer_group');
         $query = "INSERT INTO `$table` (`customer_group_code`, `tax_class_id`) VALUES (?, ?)";
         $binds = [$groupName, $this->getTaxClassId()];
 
-        return $this->_dbHelper->insert($query, $binds);
+        return $this->db->insert($query, $binds);
     }
 
     /**
@@ -215,10 +267,10 @@ class TierPrice
     {
         $customerGroups = [];
 
-        $table = $this->_dbHelper->getTableName('customer_group');
+        $table = $this->db->getTableName('customer_group');
         $query = "SELECT `customer_group_id`, `customer_group_code` FROM `$table`";
 
-        $results = $this->_dbHelper->select($query);
+        $results = $this->db->select($query);
         foreach ($results as $result) {
             $customerGroups[$result['customer_group_code']] = $result['customer_group_id'];
         }
@@ -233,11 +285,11 @@ class TierPrice
      */
     protected function getTaxClassId()
     {
-        $table = $this->_dbHelper->getTableName('tax_class');
+        $table = $this->db->getTableName('tax_class');
         $query = "SELECT `class_id` FROM `$table` WHERE `class_type` = ?";
         $binds = ['CUSTOMER'];
 
-        return $this->_dbHelper->selectOne($query, $binds, 'class_id');
+        return $this->db->selectOne($query, $binds, 'class_id');
     }
 
     /**
@@ -247,17 +299,30 @@ class TierPrice
      */
     protected function getWebsiteIds(array $product)
     {
-        $websiteIds = [0];
-
-        if (!$this->_dbHelper->isSingleStore() && $this->getPriceScope() != self::PRICE_SCOPE_GLOBAL) {
-            try {
-                $websiteIds = $this->_storeWebsiteHelper->getWebsiteIdsForProduct($product);
-            } catch (Exception $e) {
-                error_log("Unable to 'getWebsiteIds()` - " . $e->getMessage());
-            }
+        // Single store, only set for storeId 0
+        if (!$this->db->isSingleStore()) {
+            return [0];
         }
 
-        return $websiteIds;
+        // Confirm valid price scope for comparison
+        $priceScope = $this->getPriceScope();
+        if (!is_numeric($priceScope)) {
+            $this->log('getWebsiteIds() - Non-numeric price scope.');
+            return [0];
+        }
+
+        // Global price, only set for storeId 0
+        if ((int)$priceScope === self::PRICE_SCOPE_GLOBAL) {
+            return [0];
+        }
+
+        try {
+            return $this->storeWebsiteHelper->getWebsiteIdsForProduct($product);
+        } catch (Exception $e) {
+            $this->log('getWebsiteIds()', ['exception' => $e]);
+        }
+
+        return [0];
     }
 
     /**
@@ -267,7 +332,7 @@ class TierPrice
      */
     private function shouldClearPricingRecords()
     {
-        return $this->_helper->getPricingMode() === self::PRICING_MODE_REPLACEMENT;
+        return $this->config->getPricingMode() === self::PRICING_MODE_REPLACEMENT;
     }
 
     /**
@@ -275,27 +340,29 @@ class TierPrice
      */
     private function getPriceScope()
     {
-        $table = $this->_dbHelper->getTableName('core_config_data');
+        $table = $this->db->getTableName('core_config_data');
 
         // Check price attribute scope in config (0 = global, 1 = website)
         $query = "SELECT `value` FROM `$table` WHERE `path` = ?";
         $binds = ['catalog/price/scope'];
 
-        return $this->_dbHelper->selectOne($query, $binds, 'value');
+        return $this->db->selectOne($query, $binds, 'value');
     }
 
     /**
      * @param array $tierPrices
      *
-     * @return array
+     * @return string[]
      */
-    protected function aggregateCustomerGroupIds($tierPrices)
+    protected function aggregateCustomerGroupIds(array $tierPrices)
     {
         $customerGroupIds = [];
 
         foreach ($tierPrices as $tierPrice) {
-            if (isset($tierPrice['customer_group_id']) && $tierPrice['customer_group_id'] != '') {
-                $customerGroupIds[] = $tierPrice['customer_group_id'];
+            if (isset($tierPrice['customer_group_id'])) {
+                if ((string)$tierPrice['customer_group_id'] !== '') {
+                    $customerGroupIds[] = $tierPrice['customer_group_id'];
+                }
             }
         }
 
@@ -312,8 +379,14 @@ class TierPrice
      *
      * @return int
      */
-    protected function addIgnoreTierPriceRecord(int $productId, int $allGroups, $customerGroupId, $qty, $value, int $websiteId)
-    {
+    protected function addIgnoreTierPriceRecord(
+        int $productId,
+        int $allGroups,
+        int $customerGroupId,
+        int $qty,
+        float $value,
+        int $websiteId
+    ) {
         $this->log('addIgnoreTierPriceRecord', [
             'productId'       => $productId,
             'allGroups'       => $allGroups,
@@ -323,12 +396,12 @@ class TierPrice
             'websiteId'       => $websiteId
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_tier_price');
+        $table = $this->db->getTableName('catalog_product_entity_tier_price');
         $query = "INSERT INTO `$table` (`{$this->getProductIdColumn()}`, `all_groups`, `customer_group_id`, `qty`, `value`, `website_id`)
                   VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
         $binds = [$productId, $allGroups, $customerGroupId, $qty, $value, $websiteId];
 
-        return $this->_dbHelper->insert($query, $binds);
+        return $this->db->insert($query, $binds);
     }
 
     /**
@@ -342,12 +415,12 @@ class TierPrice
             'websiteIds' => $websiteIds
         ]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_tier_price');
+        $table = $this->db->getTableName('catalog_product_entity_tier_price');
         $query = "DELETE FROM `$table` WHERE `{$this->getProductIdColumn()}` = ? AND `website_id` IN (?)";
-        $binds = [$productId, $this->_helper->arrayToCommaSeparatedValues($websiteIds)];
+        $binds = [$productId, $this->arrayStringUtils->arrayToCommaSeparatedValues($websiteIds)];
 
         try {
-            $this->_dbHelper->select($query, $binds);
+            $this->db->select($query, $binds);
         } catch (Exception $exception) {
             $this->log("Cannot call 'deleteProductTierPriceRecordsForWebsite' - {$exception->getMessage()}.");
         }
@@ -362,8 +435,11 @@ class TierPrice
      *
      * @return void
      */
-    protected function deleteProductTierPriceRecordsForWebsiteAndGroup(int $productId, array $websiteIds, array $customerGroupCodes)
-    {
+    protected function deleteProductTierPriceRecordsForWebsiteAndGroup(
+        int $productId,
+        array $websiteIds,
+        array $customerGroupCodes
+    ) {
         $this->log('deleteProductTierPriceRecordsForWebsiteAndGroup()', [
             'productId'          => $productId,
             'websiteIds'         => $websiteIds,
@@ -373,20 +449,20 @@ class TierPrice
         $customerGroupIds = [];
         foreach ($customerGroupCodes as $customerGroupCode) {
             $customerGroupId = $this->getCustomerGroupId($customerGroupCode);
-            if ($customerGroupId != null) {
+            if ($customerGroupId !== null) {
                 $customerGroupIds[] = $customerGroupId;
             }
         }
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_tier_price');
+        $table = $this->db->getTableName('catalog_product_entity_tier_price');
         $query = "DELETE FROM `$table` WHERE `{$this->getProductIdColumn()}` = ? AND `website_id` IN (?) AND `customer_group_id` IN (?)";
         $binds = [
             $productId,
-            $this->_helper->arrayToCommaSeparatedValues($websiteIds),
-            $this->_helper->arrayToCommaSeparatedValues($customerGroupIds)
+            $this->arrayStringUtils->arrayToCommaSeparatedValues($websiteIds),
+            $this->arrayStringUtils->arrayToCommaSeparatedValues($customerGroupIds)
         ];
 
-        $this->_dbHelper->delete($query, $binds);
+        $this->db->delete($query, $binds);
     }
 
     /**
@@ -398,12 +474,12 @@ class TierPrice
     {
         $this->log('deleteProductTierPriceRecordsForAllGroups()', ['productId' => $productId]);
 
-        $table = $this->_dbHelper->getTableName('catalog_product_entity_tier_price');
+        $table = $this->db->getTableName('catalog_product_entity_tier_price');
         $query = "DELETE FROM `$table` WHERE `{$this->getProductIdColumn()}` = ? AND `all_groups` = 1";
         $binds = [$productId];
 
         try {
-            $this->_dbHelper->delete($query, $binds);
+            $this->db->delete($query, $binds);
         } catch (Exception $e) {
             $this->log('deleteProductTierPriceRecordsForAllGroups()', ['exception' => $e->getMessage()]);
         }
@@ -419,6 +495,6 @@ class TierPrice
      */
     private function log(string $message, array $extra = [])
     {
-        $this->_logger->info('Helper/TierPrice - ' . $message, $extra);
+        $this->logger->info('Helper/TierPrice - ' . $message, $extra);
     }
 }
