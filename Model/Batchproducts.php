@@ -17,6 +17,7 @@ use ECInternet\RAPIDWebSync\Helper\Attribute as AttributeHelper;
 use ECInternet\RAPIDWebSync\Helper\Indexer as IndexerHelper;
 use ECInternet\RAPIDWebSync\Logger\Logger;
 use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
+use ECInternet\RAPIDWebSync\Model\Data\Log;
 use ECInternet\RAPIDWebSync\Model\Data\LogFactory;
 use ECInternet\RAPIDWebSync\Model\Import\ProductImporter;
 use ECInternet\RAPIDWebSync\Model\Magento\Environment;
@@ -53,7 +54,7 @@ class Batchproducts implements BatchproductsInterface
     private $indexerHelper;
 
     /**
-     * @var \ECInternet\RAPIDWebSync\Model\LogFactory
+     * @var \ECInternet\RAPIDWebSync\Model\Data\LogFactory
      */
     private $logFactory;
 
@@ -136,7 +137,7 @@ class Batchproducts implements BatchproductsInterface
 
         $startTime = microtime(true);
 
-        /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
+        /** @var \ECInternet\RAPIDWebSync\Model\Data\Log $log */
         $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_INSERT);
 
@@ -238,7 +239,7 @@ class Batchproducts implements BatchproductsInterface
 
         $startTime = microtime(true);
 
-        /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
+        /** @var \ECInternet\RAPIDWebSync\Model\Data\Log $log */
         $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_UPDATE);
 
@@ -335,7 +336,7 @@ class Batchproducts implements BatchproductsInterface
 
         $startTime = microtime(true);
 
-        /** @var \ECInternet\RAPIDWebSync\Model\Log $log */
+        /** @var \ECInternet\RAPIDWebSync\Model\Data\Log $log */
         $log = $this->logFactory->create();
         $log->setSyncOperation(Log::SYNC_OPERATION_UPSERT);
 
