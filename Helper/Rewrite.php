@@ -436,8 +436,14 @@ class Rewrite
      * @return void
      * @throws Exception
      */
-    private function upsertUrlRewriteRecord(string $entityType, int $entityId, string $requestPath, string $targetPath, int $storeId = 1, string $metadata = null)
-    {
+    private function upsertUrlRewriteRecord(
+        string $entityType,
+        int $entityId,
+        string $requestPath,
+        string $targetPath,
+        int $storeId = 1,
+        ?string $metadata = null
+    ) {
         $this->log('upsertUrlRewriteRecord()', [
             'entityType'  => $entityType,
             'entityId'    => $entityId,

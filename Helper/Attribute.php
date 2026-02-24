@@ -943,7 +943,7 @@ class Attribute
      *
      * @return int
      */
-    private function addAttributeOptionRecord(int $attributeId, int $sortOrder = null)
+    private function addAttributeOptionRecord(int $attributeId, ?int $sortOrder = null)
     {
         $this->log('addAttributeOptionRecord()', ['attributeId' => $attributeId, 'sortOrder' => $sortOrder]);
 

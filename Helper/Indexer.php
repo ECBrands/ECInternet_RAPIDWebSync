@@ -42,7 +42,7 @@ class Indexer
     public function __construct(
         IndexerFactory $indexerFactory,
         IndexerCollectionFactory $indexerCollectionFactory,
-        Logger $logger
+        Logger $logger,
     ) {
         $this->indexerFactory           = $indexerFactory;
         $this->indexerCollectionFactory = $indexerCollectionFactory;

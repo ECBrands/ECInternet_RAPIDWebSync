@@ -26,9 +26,6 @@ class IllegalNewAttributeActionOption implements OptionSourceInterface
 
     public const ACTION_SKIP_BATCH_LABEL   = 'Skip entire batch (Error)';
 
-    /**
-     * @inheritDoc
-     */
     public function toOptionArray()
     {
         return [
