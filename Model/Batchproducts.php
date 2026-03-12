@@ -106,7 +106,7 @@ class Batchproducts implements BatchproductsInterface
         LogFactory $logFactory,
         Config $config,
         ProductImporter $productImporter,
-        Environment $magentoEnvironment
+        Environment $magentoEnvironment,
         LoggerInterface $logger
     ) {
         $this->productImage       = $productImage;
