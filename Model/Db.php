@@ -41,7 +41,7 @@ class Db
      */
     public function __construct(
         ResourceConnection $resourceConnection,
-        \Psr\Log\LoggerInterface $logger
+        LoggerInterface $logger
     ) {
         $this->resourceConnection = $resourceConnection;
         $this->connection         = $resourceConnection->getConnection();

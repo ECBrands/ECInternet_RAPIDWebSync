@@ -7,11 +7,11 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Processor;
 
-use Magento\Framework\Module\Manager as ModuleManager;
 use ECInternet\RAPIDWebSync\Api\DataProcessorInterface;
 use ECInternet\RAPIDWebSync\Model\Config;
 use ECInternet\RAPIDWebSync\Model\Db;
 use ECInternet\RAPIDWebSync\Util\ArrayString;
+use Magento\Framework\Module\Manager as ModuleManager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -88,7 +88,7 @@ class Inventory implements DataProcessorInterface
         Config $config,
         Db $db,
         ArrayString $arrayStringUtils,
-        \Psr\Log\LoggerInterface $logger,
+        LoggerInterface $logger,
     ) {
         $this->moduleManager    = $moduleManager;
         $this->logger           = $logger;

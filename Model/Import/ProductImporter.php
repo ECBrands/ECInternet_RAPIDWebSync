@@ -164,7 +164,7 @@ class ProductImporter
         Environment $magentoEnvironment,
         Inventory $inventoryProcessor,
         ArrayString  $arrayStringUtils,
-        \Psr\Log\LoggerInterface $logger,
+        LoggerInterface $logger,
     ) {
         $this->attributeHelper    = $attributeHelper;
         $this->categoryHelper     = $categoryHelper;

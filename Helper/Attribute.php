@@ -7,6 +7,13 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Helper;
 
+use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
+use ECInternet\RAPIDWebSync\Model\Config;
+use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
+use ECInternet\RAPIDWebSync\Model\Db;
+use ECInternet\RAPIDWebSync\Model\Magento\Environment;
+use ECInternet\RAPIDWebSync\Util\ArrayString;
+use Exception;
 use Magento\Catalog\Api\Data\EavAttributeInterface as CatalogAttributeInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Eav\Attribute as CatalogAttribute;
@@ -18,13 +25,6 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\StateException;
 use Magento\Framework\Exception\State\InitException;
 use Magento\Framework\Phrase;
-use ECInternet\RAPIDWebSync\Exception\IllegalNewAttributeOptionException;
-use ECInternet\RAPIDWebSync\Model\Config;
-use ECInternet\RAPIDWebSync\Model\Config\Source\IllegalNewAttributeActionOption;
-use ECInternet\RAPIDWebSync\Model\Db;
-use ECInternet\RAPIDWebSync\Model\Magento\Environment;
-use ECInternet\RAPIDWebSync\Util\ArrayString;
-use Exception;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -114,11 +114,11 @@ class Attribute
     public function __construct(
         EavConfig $eavConfig,
         StoreWebsite $storeWebsiteHelper,
-        Logger $logger,
         Config $config,
         Db $db,
         Environment $magentoEnvironment,
         ArrayString $arrayStringUtils,
+        LoggerInterface $logger,
     ) {
         $this->eavConfig          = $eavConfig;
         $this->storeWebsiteHelper = $storeWebsiteHelper;

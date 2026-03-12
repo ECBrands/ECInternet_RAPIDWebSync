@@ -53,7 +53,7 @@ class ImageFile
         DirectoryList $directoryList,
         File $fileDriver,
         Config $config,
-       \Psr\Log\LoggerInterface $logger,
+        LoggerInterface $logger,
     ) {
         $this->directoryList = $directoryList;
         $this->fileDriver    = $fileDriver;
