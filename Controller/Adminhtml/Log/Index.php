@@ -50,7 +50,7 @@ class Index extends Action implements HttpGetActionInterface
         $resultPage = $this->resultPageFactory->create();
 
         // Active menu
-        $resultPage->setActiveMenu(static::MENU_ID);
+        $resultPage->setActiveMenu(self::MENU_ID);
 
         // Page title
         $resultPage->getConfig()->getTitle()->prepend(__('RAPID Web Sync Log'));

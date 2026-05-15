@@ -111,7 +111,7 @@ class StoreWebsite
 
         // If 'store' is not set, assume we're referring to admin (store_id = 0)
         if (!isset($product[self::FIELD_STORE])) {
-            $product[self::FIELD_STORE] = static::ADMIN_STORECODE;
+            $product[self::FIELD_STORE] = self::ADMIN_STORECODE;
         }
 
         switch ($scope) {
@@ -121,7 +121,7 @@ class StoreWebsite
 
             case self::SCOPE_GLOBAL:
                 // Gets store_id for the store with code "admin" (usually store_id = 0)
-                return $this->getStoreIdsForStoreScope(static::ADMIN_STORECODE);
+                return $this->getStoreIdsForStoreScope(self::ADMIN_STORECODE);
 
             case self::SCOPE_WEBSITE:
                 // Gets store_ids that share website of $product['store'] (possibly "admin" if nothing is passed in)
@@ -276,12 +276,12 @@ class StoreWebsite
         $websiteIds = [];
 
         // Default 'store' value to "admin" if not set
-        $product[self::FIELD_STORE] = $product[self::FIELD_STORE] ?? static::ADMIN_STORECODE;
+        $product[self::FIELD_STORE] = $product[self::FIELD_STORE] ?? self::ADMIN_STORECODE;
 
         // Use this value as our key when we iterate through website_ids
         $key = (string)$product[self::FIELD_STORE];
 
-        if (trim($key) !== static::ADMIN_STORECODE) {
+        if (trim($key) !== self::ADMIN_STORECODE) {
             $storeCodes = $this->arrayStringUtils->commaSeparatedListToTrimmedArray($key);
             foreach ($storeCodes as $storeCode) {
                 $websiteIds[] = $this->getWebsiteIdsForStoreCode($storeCode);
