@@ -118,7 +118,7 @@ class Batchproducts implements BatchproductsInterface
         $this->config             = $config;
         $this->productImporter    = $productImporter;
         $this->magentoEnvironment = $magentoEnvironment;
-        $this->_logger            = $logger;
+        $this->logger             = $logger;
     }
 
     /**
