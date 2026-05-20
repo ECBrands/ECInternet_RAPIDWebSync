@@ -10,6 +10,107 @@
 	<preference for="ECInternet\RAPIDWebSync\Api\Data\LogInterface"
 	            type="ECInternet\RAPIDWebSync\Model\Data\Log" />
 
+	<!-- Use logger -->
+	<type name="ECInternet\Base\Plugin\Sales\Api\OrderRepositoryInterfacePlugin">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Controller\Adminhtml\Export\Download">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\Attribute">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\Category">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\Configurable">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\Image">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\Indexer">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\Link">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\Rewrite">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\StoreWebsite">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Helper\TierPrice">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Model\Batchproducts">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Model\BulkOperation">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Model\Db">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Model\Import\ProductImporter">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Model\ProductDataProcessorPool">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Processor\Inventory">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+	<type name="ECInternet\RAPIDWebSync\Service\ImageFile">
+		<arguments>
+			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
+		</arguments>
+	</type>
+
+	<!-- Custom Logger - Must be injected into each class which needs it -->
+	<virtualType name="ECInternetRAPIDWebSyncLogger" type="Magento\Framework\Logger\Monolog">
+		<arguments>
+			<argument name="handlers" xsi:type="array">
+				<item name="info" xsi:type="object">ECInternet\RAPIDWebSync\Logger\Handler</item>
+			</argument>
+		</arguments>
+	</virtualType>
+
 	<!-- Define grid data sources and matching Virtual Types -->
 	<type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
 		<arguments>
