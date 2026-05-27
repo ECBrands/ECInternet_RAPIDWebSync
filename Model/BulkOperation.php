@@ -205,7 +205,7 @@ class BulkOperation implements BulkOperationInterface
 
         // Check for required fields
         foreach ($this->requiredFields as $requiredField) {
-            if (!isset($product[$requiredField])) {
+            if (!$product->hasData($requiredField)) {
                 throw new InputException(
                     __("Attribute '$requiredField' is required for new products.")
                 );
