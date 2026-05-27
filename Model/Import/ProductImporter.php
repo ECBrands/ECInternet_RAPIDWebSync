@@ -649,7 +649,7 @@ class ProductImporter
         $productColumns = $this->getProductColumns();
 
         //$productData['entity_type_id']   = $this->getCatalogProductEntityTypeId();
-        $productData['type_id']          = $product['type_id'] ?? 'simple';
+        $productData['type_id']          = $productData['type_id'] ?? 'simple';
         $productData['attribute_set_id'] = $this->getAttributeSetId($productData);
 
         // Variables for holding Ids.  We won't know if we need to store these until after our Transaction.
