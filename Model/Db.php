@@ -173,14 +173,28 @@ class Db
      * @param string $query
      * @param array  $params
      *
-     * @return int
+     * @return int|null
      */
     public function insert(string $query, array $params = [])
     {
-        // Send INSERT query
-        $this->connection->query($query, $params);
+        try {
+            /** @var Zend_Db_Statement_Interface $result */
+            $result = $this->connection->query($query, $params);
+            $this->log('insert()', ['rowCount' => $result->rowCount()]);
 
-        return (int)$this->connection->lastInsertId();
+            $lastInsertId = (int)$this->connection->lastInsertId();
+            $this->log('insert()', ['lastInsertId' => $lastInsertId]);
+
+            return $lastInsertId;
+        } catch (Zend_Db_Statement_Exception $e) {
+            $this->log('insert()', [
+                'query'     => $query,
+                'params'    => $params,
+                'exception' => $e
+            ]);
+        }
+
+        return null;
     }
 
     /**
@@ -194,12 +208,17 @@ class Db
     public function update(string $query, array $params = [])
     {
         try {
+            /** @var Zend_Db_Statement_Interface $result */
             $result = $this->connection->query($query, $params);
             $this->log('update()', ['rowCount' => $result->rowCount()]);
 
             return $result;
         } catch (Zend_Db_Statement_Exception $e) {
-            $this->log('update()', ['error' => $e->getMessage()]);
+            $this->log('update()', [
+                'query'     => $query,
+                'params'    => $params,
+                'exception' => $e
+            ]);
         }
 
         return null;
