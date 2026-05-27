@@ -387,6 +387,13 @@ class Batchproducts implements BatchproductsInterface
                             $productOutCount++;
                         }
                     } catch (Exception $e) {
+                        // If this was from attempting to add new attribute option, and we're skipping product, simply log it and move only next product
+                        if ($e instanceof IllegalNewAttributeOptionException && $this->config->getIllegalNewAttributeAction() == IllegalNewAttributeActionOption::ACTION_SKIP_PRODUCT_VALUE) {
+                            $this->log('update() - Attempted to add new attribute option.');
+
+                            continue;
+                        }
+
                         $response['error'] = $e->getMessage();
                         $errorCount++;
                     }
