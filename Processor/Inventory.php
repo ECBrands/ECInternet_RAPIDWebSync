@@ -380,8 +380,7 @@ class Inventory implements DataProcessorInterface
         $query = "DELETE FROM `$table` WHERE `sku` = ?";
         $binds = [$sku];
 
-        $response = $this->db->delete($query, $binds);
-        $this->log('clearReservations()', ['rowCount' => $response->rowCount()]);
+        $this->db->delete($query, $binds);
     }
 
     private function upsertInventorySourceItemRecord(string $sourceCode, string $sku, int $qty, int $status = 0)

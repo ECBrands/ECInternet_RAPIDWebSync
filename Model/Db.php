@@ -234,7 +234,18 @@ class Db
      */
     public function delete(string $query, array $params = [])
     {
-        return $this->connection->query($query, $params);
+        try {
+            $result = $this->connection->query($query, $params);
+            $this->log('delete()', ['rowCount' => $result->rowCount()]);
+
+            return $result;
+        } catch (Zend_Db_Statement_Exception $e) {
+            $this->log('delete()', [
+                'query'     => $query,
+                'params'    => $params,
+                'exception' => $e
+            ]);
+        }
     }
 
     /**
