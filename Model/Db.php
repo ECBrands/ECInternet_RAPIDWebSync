@@ -230,7 +230,7 @@ class Db
      * @param string $query
      * @param array  $params
      *
-     * @return Zend_Db_Statement_Interface
+     * @return Zend_Db_Statement_Interface|null
      */
     public function delete(string $query, array $params = [])
     {
@@ -246,6 +246,8 @@ class Db
                 'exception' => $e
             ]);
         }
+
+        return null;
     }
 
     /**

@@ -32,6 +32,7 @@ class Log extends AbstractModel implements IdentityInterface, LogInterface
      *
      * @SuppressWarnings(PHPMD.CamelCaseMethodName)
      * @noinspection MagicMethodsValidityInspection
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     protected function _construct()
     {
