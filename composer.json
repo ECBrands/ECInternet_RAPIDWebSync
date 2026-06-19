@@ -8,7 +8,8 @@
 	"type": "magento2-module",
 	"version": "2.0.0.0",
 	"require": {
-		"php": ">=7.4.0"
+		"ecinternet/base": "2.4.7.x-dev",
+		"php": "~8.2.0||~8.3.0"
 	},
 	"autoload": {
 		"files": [

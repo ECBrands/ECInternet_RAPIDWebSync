@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace ECInternet\RAPIDWebSync\Model\Magento;
 
+use Magento\Framework\App\ProductMetadataInterface;
+
 class Environment
 {
     private const COMMUNITY_EDITION_VALUE = 'Community';
@@ -22,7 +24,7 @@ class Environment
      * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
      */
     public function __construct(
-        \Magento\Framework\App\ProductMetadataInterface $productMetadata
+        ProductMetadataInterface $productMetadata
     ) {
         $this->productMetadata = $productMetadata;
     }
