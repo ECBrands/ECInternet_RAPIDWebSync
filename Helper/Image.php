@@ -242,7 +242,7 @@ class Image
             $this->log('addImageToGallery() - Unable to get image attribute info');
             return;
         }
-        
+
         $mediaGalleryAttributeId = $mediaGalleryAttributeInfo['attribute_id'];
         $this->log('addImageToGallery()', ['mediaGalleryAttributeId' => $mediaGalleryAttributeId]);
 
