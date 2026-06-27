@@ -26,6 +26,10 @@ use Exception;
 use Magento\Framework\Exception\IntegrationException;
 use Psr\Log\LoggerInterface;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ */
 class ProductImporter
 {
     /**

@@ -11,7 +11,7 @@
 	            type="ECInternet\RAPIDWebSync\Model\Data\Log" />
 
 	<!-- Use logger -->
-	<type name="ECInternet\Base\Plugin\Sales\Api\OrderRepositoryInterfacePlugin">
+	<type name="ECInternet\Base\Plugin\Magento\Sales\Api\OrderRepositoryInterfacePlugin">
 		<arguments>
 			<argument name="logger" xsi:type="object">ECInternetRAPIDWebSyncLogger</argument>
 		</arguments>
