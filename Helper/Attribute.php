@@ -397,6 +397,8 @@ class Attribute
      *
      * @return void
      * @throws Exception
+     *
+     * @SuppressWarnings(PHPMD.CamelCaseVariableName)
      */
     private function initializeCatalogProductAttributes()
     {
