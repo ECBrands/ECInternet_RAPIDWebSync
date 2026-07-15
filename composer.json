@@ -2,8 +2,8 @@
 	"name": "ecinternet/rapidwebsync",
 	"description": "EC Internet RAPID Web Sync",
 	"require": {
-		"php": "~8.3.0||~8.4.0",
-		"ecinternet/base": "2.4.8.x-dev"
+		"php": "~8.4.0||~8.5.0",
+		"ecinternet/base": "2.4.9.x-dev"
 	},
 	"type": "magento2-module",
 	"version": "2.0.0.0",
